@@ -30,15 +30,17 @@ Za razvoj Reacta pusti `start.bat` zagnan in v drugem terminalu uporabi `npm run
 
 ## Preverjanja in CI
 
-GitHub Actions ob vsakem potisku in pull requestu namesti odvisnosti z `npm ci`, preveri sintakso datotek JavaScript v `backend/src` in zgradi frontend z `npm run build`. Projekt trenutno nima ločenih testnih ali lint ukazov, zato jih CI še ne izvaja.
+GitHub Actions ob vsakem potisku in pull requestu namesti odvisnosti z `npm ci`, preveri sintakso datotek JavaScript v `backend/src` in `scripts/start.js`, izvede API integracijski preizkus z MongoDB ter zgradi frontend z `npm run build`. Projekt nima ločenega lint ukaza.
 
-Preverjanja lahko lokalno zaženeš iz korenske mape. V Windows PowerShellu uporabi `npm.cmd`, če pravilnik izvajanja blokira skripto `npm.ps1`:
+Preverjanja lahko lokalno zaženeš iz korenske mape. MongoDB mora biti dosegljiv na `127.0.0.1:27027`, lahko pa povezavo nastaviš z `SOTOVOR_MONGO_URI`. V Windows PowerShellu uporabi `npm.cmd`, če pravilnik izvajanja blokira skripto `npm.ps1`:
 
 ```powershell
 npm.cmd ci
 node --check backend/src/api.js
 node --check backend/src/db.js
 node --check backend/src/server.js
+node --check scripts/start.js
+npm.cmd test
 npm.cmd run build
 ```
 

@@ -6,6 +6,7 @@
   "workspaces": ["backend", "frontend"],
   "scripts": {
     "build": "npm run build --workspace frontend",
+    "test": "node --test backend/test/api.integration.test.js",
     "start": "node scripts/start.js"
   }
 }
