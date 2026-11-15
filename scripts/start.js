@@ -19,12 +19,45 @@ function mongoExecutable() {
   return versions.map(version => join(base, version, 'bin', 'mongod.exe')).find(existsSync) || 'mongod';
 }
 
-function checkPort() {
+function isPortFree() {
   return new Promise((resolve, reject) => {
     const probe = createServer();
-    probe.once('error', () => reject(new Error(`Vrata MongoDB ${port} so že v uporabi.`)));
-    probe.listen(port, '127.0.0.1', () => probe.close(resolve));
+    probe.once('error', error => error.code === 'EADDRINUSE' ? resolve(false) : reject(error));
+    probe.listen(port, '127.0.0.1', () => probe.close(() => resolve(true)));
   });
+}
+
+function openBrowser(port) {
+  if (stopping || process.platform !== 'win32' || process.env.SOTOVOR_NO_BROWSER === '1') return;
+  if (!Number.isInteger(port) || port < 1 || port > 65535) return;
+  const browser = spawn('rundll32.exe', ['url.dll,FileProtocolHandler', `http://127.0.0.1:${port}/`], {
+    stdio: 'ignore', windowsHide: true,
+  });
+  browser.once('error', error => console.error(`Odpri naslov v brskalniku ročno. ${error.message}`));
+  browser.unref();
+}
+
+async function runningApp(port) {
+  try {
+    const result = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(1000) });
+    return result.ok && (await result.json()).service === 'sotovor';
+  } catch {
+    return false;
+  }
+}
+
+async function checkExistingMongo() {
+  const client = new MongoClient(uri, { serverSelectionTimeoutMS: 1500 });
+  try {
+    const result = await client.db('admin').command({ getCmdLineOpts: 1 });
+    const path = result.parsed?.storage?.dbPath;
+    if (path && resolve(path).toLowerCase() === data.toLowerCase()) return;
+  } catch {
+    // A different service may be listening on this port.
+  } finally {
+    await client.close();
+  }
+  throw new Error(`Vrata ${port} uporablja druga storitev. Nastavi SOTOVOR_MONGO_PORT na prosta vrata ali ustavi Compose.`);
 }
 
 async function stop() {
@@ -49,61 +82,64 @@ process.once('SIGTERM', stop);
 
 try {
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Neveljavna vrata MongoDB.');
-  await checkPort();
-  mkdirSync(data, { recursive: true });
-  mongo = spawn(mongoExecutable(), [
-    '--bind_ip', '127.0.0.1', '--port', String(port), '--dbpath', data,
-    '--logpath', resolve('data/mongodb.log'), '--logappend',
-  ], { stdio: 'ignore' });
-  let mongoError;
-  mongo.once('error', error => { mongoError = error; });
-  const deadline = Date.now() + 25000;
-  let connectionError;
-  while (!stopping) {
-    if (mongoError?.code === 'ENOENT') throw new Error('Namesti MongoDB Community Server ali nastavi SOTOVOR_MONGOD.');
-    if (mongoError || mongo.exitCode !== null || Date.now() > deadline) {
-      throw new Error('MongoDB se ni zagnal. Preveri data/mongodb.log.', { cause: connectionError });
+  const httpPort = Number(process.env.SOTOVOR_PORT || 3000);
+  if (httpPort && await runningApp(httpPort)) {
+    console.log(`Sotovor že teče na http://127.0.0.1:${httpPort}/`);
+    openBrowser(httpPort);
+  } else {
+    if (await isPortFree()) {
+      mkdirSync(data, { recursive: true });
+      mongo = spawn(mongoExecutable(), [
+        '--bind_ip', '127.0.0.1', '--port', String(port), '--dbpath', data,
+        '--logpath', resolve('data/mongodb.log'), '--logappend',
+      ], { stdio: 'ignore' });
+      let mongoError;
+      mongo.once('error', error => { mongoError = error; });
+      const deadline = Date.now() + 25000;
+      let connectionError;
+      while (!stopping) {
+        if (mongoError?.code === 'ENOENT') throw new Error('Namesti MongoDB Community Server ali nastavi SOTOVOR_MONGOD.');
+        if (mongoError || mongo.exitCode !== null || Date.now() > deadline) {
+          throw new Error('MongoDB se ni zagnal. Preveri data/mongodb.log.', { cause: connectionError });
+        }
+        const client = new MongoClient(uri, { serverSelectionTimeoutMS: 1000 });
+        try {
+          await client.db('admin').command({ ping: 1 });
+          break;
+        } catch (error) {
+          connectionError = error;
+          await delay(250);
+        } finally {
+          await client.close();
+        }
+      }
+    } else {
+      await checkExistingMongo();
     }
-    const client = new MongoClient(uri, { serverSelectionTimeoutMS: 1000 });
-    try {
-      await client.db('admin').command({ ping: 1 });
-      break;
-    } catch (error) {
-      connectionError = error;
-      await delay(250);
-    } finally {
-      await client.close();
-    }
-  }
-  if (!stopping) {
-    api = spawn(process.execPath, ['backend/src/server.js'], {
-      stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
-      env: { ...process.env, SOTOVOR_MONGO_URI: uri },
-    });
-    api.once('message', ({ ready, port }) => {
-      if (!ready || stopping || process.platform !== 'win32' || process.env.SOTOVOR_NO_BROWSER === '1') return;
-      if (!Number.isInteger(port) || port < 1 || port > 65535) return;
-      const browser = spawn('rundll32.exe', ['url.dll,FileProtocolHandler', `http://127.0.0.1:${port}/`], {
-        stdio: 'ignore', windowsHide: true,
+    if (!stopping) {
+      api = spawn(process.execPath, ['backend/src/server.js'], {
+        stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
+        env: { ...process.env, SOTOVOR_MONGO_URI: uri },
       });
-      browser.once('error', error => console.error(`Odpri naslov v brskalniku ročno. ${error.message}`));
-      browser.unref();
-    });
-    api.once('exit', code => {
-      if (!stopping) process.exitCode = code ?? 1;
-      void stop();
-    });
-    api.once('error', error => {
-      console.error(error.message);
-      process.exitCode = 1;
-      void stop();
-    });
-    mongo.once('exit', () => {
-      if (stopping) return;
-      console.error('MongoDB se je ustavil. Preveri data/mongodb.log.');
-      process.exitCode = 1;
-      void stop();
-    });
+      api.once('message', ({ ready, port }) => {
+        if (ready) openBrowser(port);
+      });
+      api.once('exit', code => {
+        if (!stopping) process.exitCode = code ?? 1;
+        void stop();
+      });
+      api.once('error', error => {
+        console.error(error.message);
+        process.exitCode = 1;
+        void stop();
+      });
+      mongo?.once('exit', () => {
+        if (stopping) return;
+        console.error('MongoDB se je ustavil. Preveri data/mongodb.log.');
+        process.exitCode = 1;
+        void stop();
+      });
+    }
   }
 } catch (error) {
   console.error(error.message);

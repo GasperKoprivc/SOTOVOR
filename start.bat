@@ -19,7 +19,11 @@ if not exist "node_modules\mongodb\package.json" (
 )
 call npm run build
 if errorlevel 1 goto failed
-node --env-file-if-exists=.env scripts/start.js
+if exist ".env" (
+    node --env-file=.env scripts/start.js
+) else (
+    node scripts/start.js
+)
 set "SOTOVOR_EXIT=%ERRORLEVEL%"
 if not "%SOTOVOR_EXIT%"=="0" pause
 exit /b %SOTOVOR_EXIT%
