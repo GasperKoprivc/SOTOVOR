@@ -141,6 +141,7 @@ function WhatsAppDialog({ linked, onClose, onUpdate }) {
 }
 
 export default function App() {
+  const [inApp, setInApp] = useState(false);
   const [data, setData] = useState(undefined);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -221,15 +222,18 @@ export default function App() {
     return run(async () => {
       await request('/auth/logout', {});
       setData(null);
+      setInApp(false);
       setPage('profile');
       setModal(null);
     });
   }
 
-  if (!data?.profile) return <Landing legacy={Boolean(data?.household)} busy={busy} error={error} onAuth={(mode, fields) => run(async () => {
+  if (!inApp || !data?.profile) return <Landing signedIn={Boolean(data?.profile)} legacy={Boolean(data?.household && !data.profile)}
+    onEnter={() => { go('profile'); setInApp(true); }} busy={busy} error={error} onAuth={(mode, fields) => run(async () => {
     await request('/auth/' + mode, fields);
-    setPage('profile');
     setData(await request('/dashboard'));
+    go('profile');
+    setInApp(true);
   })} />;
 
   if (!data.household) return <ChooseHousehold profile={data.profile} busy={busy} error={error} onLogout={logout} onSubmit={(joining, fields) => run(async () => {

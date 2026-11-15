@@ -64,8 +64,8 @@ function AuthDialog({ mode, legacy, busy, error, onAuth, onMode }) {
   </dialog>;
 }
 
-export default function Landing({ legacy, busy, error, onAuth }) {
-  const [mode, setMode] = useState(legacy ? 'register' : null);
+export default function Landing({ signedIn, legacy, busy, error, onAuth, onEnter }) {
+  const [mode, setMode] = useState(null);
   const [active, setActive] = useState(0);
   const [motion, setMotion] = useState(true);
   const selected = modules[active];
@@ -73,7 +73,9 @@ export default function Landing({ legacy, busy, error, onAuth }) {
     <header className="landing-header">
       <a className="landing-brand" href="#domov"><Mark /> <span>SOTOVOR</span></a>
       <nav aria-label="Predstavitev"><a href="#funkcije">Funkcije</a><a href="#zacetek">Kako začeti</a></nav>
-      <button className="launch-button header-login" onClick={() => setMode('login')}>Prijava <ArrowUpRight size={16} /></button>
+      <button className="launch-button header-login" onClick={signedIn ? onEnter : () => setMode('login')}>
+        {signedIn ? 'Odpri profil' : 'Prijava'} <ArrowUpRight size={16} />
+      </button>
     </header>
     <main id="domov">
       <section className="landing-hero" aria-labelledby="hero-title">
@@ -81,15 +83,18 @@ export default function Landing({ legacy, busy, error, onAuth }) {
           <span className="orbital-grid" />
           <span className="orbit orbit-one" /><span className="orbit orbit-two" /><span className="orbit orbit-three" />
           <span className="orbit orbit-four" /><span className="orbit-origins" />
-          {satellites.map(([Icon, color], i) => <span key={i} className={`satellite satellite-${i + 1} palette-${color}`}><Icon strokeWidth={1.5} /></span>)}
+          <div className="satellite-track">
+            {satellites.map(([Icon, color], i) => <span key={color + i} className="satellite-arm" style={{ '--phase': `${-4 - i * 8}s` }}>
+              <span className={`satellite palette-${color}`}><Icon strokeWidth={1.5} /></span>
+            </span>)}
+          </div>
         </div>
         <div className="hero-copy">
           <h1 id="hero-title">SOTOVOR<span>.</span></h1>
           <h2>Manj skrbi. Več skupaj.</h2>
           <p>Skupni koledar, opravila in jasen pregled, kdo kaj prevzame. Za vse, ki si delite dom in obveznosti.</p>
           <div className="landing-actions">
-            <button className="launch-button solid" onClick={() => setMode('register')}>Ustvari družinski račun <ArrowUpRight size={18} /></button>
-            <a className="launch-button outline" href="#funkcije">Razišči funkcije <ArrowDown size={16} /></a>
+            <a className="launch-button solid" href="#funkcije">Razišči funkcije <ArrowDown size={16} /></a>
           </div>
         </div>
         <div className="hero-bottom">
@@ -115,7 +120,9 @@ export default function Landing({ legacy, busy, error, onAuth }) {
       </section>
       <section id="zacetek" className="landing-section landing-start">
         <div><h2>Začnite z enim opravilom.</h2><p>Ustvari prostor, s kodo povabi domače in dodaj prvo skupno opravilo.</p></div>
-        <button className="launch-button solid" onClick={() => setMode('register')}>Ustvari račun <ArrowRight size={19} /></button>
+        <button className="launch-button solid" onClick={signedIn ? onEnter : () => setMode('register')}>
+          {signedIn ? 'Odpri profil' : 'Ustvari račun'} <ArrowRight size={19} />
+        </button>
       </section>
     </main>
     <footer className="landing-footer"><a className="landing-brand" href="#domov"><Mark /> SOTOVOR</a><a href="#domov">Nazaj na vrh <ArrowUpRight size={16} /></a></footer>
