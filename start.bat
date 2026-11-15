@@ -13,10 +13,18 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
-if not exist "node_modules\mongodb\package.json" (
-    call npm ci
-    if errorlevel 1 goto failed
-)
+if not exist "node_modules\mongodb\package.json" goto install
+fc /b package-lock.json "node_modules\.sotovor-package-lock" >nul 2>nul
+if errorlevel 1 goto install
+goto build
+
+:install
+call npm ci
+if errorlevel 1 goto failed
+copy /y package-lock.json "node_modules\.sotovor-package-lock" >nul
+if errorlevel 1 goto failed
+
+:build
 call npm run build
 if errorlevel 1 goto failed
 if exist ".env" (
