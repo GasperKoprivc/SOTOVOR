@@ -10,6 +10,8 @@ Sotovor je družinski prostor za skupna opravila, koledar in pregled razporeditv
 
 Projektni MongoDB posluša na `127.0.0.1:27027` in hrani podatke v `data/mongodb`. Zaganjalnik poišče `mongod` v običajni namestitveni mapi ali v sistemski poti. Za drugo lokacijo nastavi `SOTOVOR_MONGOD` na absolutno pot do `mongod.exe`. Za druga vrata uporabi `SOTOVOR_PORT` in `SOTOVOR_MONGO_PORT`. Dnevnik baze je v `data/mongodb.log`.
 
+Če na vratih 3000 že odgovarja Sotovor, zaganjalnik prepozna njegovo `/api/health` pot in ne zažene druge kopije. Če so vrata zasedena z drugo storitvijo, izberi druga prosta vrata z `SOTOVOR_PORT`. Na vratih 27027 zaganjalnik uporabi samo MongoDB, ki že hrani podatke v `data/mongodb`; sicer izberi prosta vrata z `SOTOVOR_MONGO_PORT` ali ustavi drugo storitev. Ponovni zagon ponovno zgradi frontend, odvisnosti pa namesti le, če manjkajo ali se je spremenil `package-lock.json`.
+
 ## Zagon z Docker Compose
 
 Za lokalni zagon aplikacije in MongoDB v Dockerju namesti Docker Desktop ter v korenski mapi projekta zaženi:
@@ -64,7 +66,7 @@ Za razvoj Reacta pusti `start.bat` zagnan in v drugem terminalu uporabi `npm run
 
 ## Preverjanja in CI
 
-GitHub Actions ob vsakem potisku in pull requestu namesti odvisnosti z `npm ci`, preveri sintakso datotek JavaScript v `backend/src` in `scripts/start.js`, izvede API integracijski preizkus z MongoDB ter zgradi frontend z `npm run build`. Projekt nima ločenega lint ukaza.
+GitHub Actions ob vsakem potisku in pull requestu zažene Windows preizkus `start.bat` iz čistega checkouta (brez `node_modules`) z lokalnim nadomestnim odgovorom `/api/health`; ta preveri namestitev odvisnosti, gradnjo in zaznavo že delujoče aplikacije brez brskalnika. Ločeno Linux CI namesti odvisnosti z `npm ci`, preveri sintakso JavaScript, izvede API integracijski preizkus z MongoDB ter zgradi frontend z `npm run build`. Projekt nima ločenega lint ukaza.
 
 Preverjanja lahko lokalno zaženeš iz korenske mape. MongoDB mora biti dosegljiv na `127.0.0.1:27027`, lahko pa povezavo nastaviš z `SOTOVOR_MONGO_URI`. V Windows PowerShellu uporabi `npm.cmd`, če pravilnik izvajanja blokira skripto `npm.ps1`:
 
