@@ -6,7 +6,7 @@ Sotovor je družinski prostor za skupna opravila, koledar in pregled razporeditv
 
 1. Uporabi Node.js 24 ali novejši in MongoDB Community Server.
 2. Zaženi [start.bat](start.bat) z dvoklikom ali z ukazom `.\start.bat`. Ob prvem zagonu namesti pakete, nato zgradi React in zažene MongoDB ter Express.
-3. Odpri [http://127.0.0.1:3000](http://127.0.0.1:3000). Za ustavitev uporabi `Ctrl+C` v oknu zagona.
+3. Ko je aplikacija pripravljena, se odpre privzeti brskalnik na [http://127.0.0.1:3000](http://127.0.0.1:3000). Za ustavitev uporabi `Ctrl+C` v oknu zagona. Nastavi `SOTOVOR_NO_BROWSER=1`, če želiš zagon brez odpiranja brskalnika.
 
 Projektni MongoDB posluša na `127.0.0.1:27027` in hrani podatke v `data/mongodb`. Zaganjalnik poišče `mongod` v običajni namestitveni mapi ali v sistemski poti. Za drugo lokacijo nastavi `SOTOVOR_MONGOD` na absolutno pot do `mongod.exe`. Za druga vrata uporabi `SOTOVOR_PORT` in `SOTOVOR_MONGO_PORT`. Dnevnik baze je v `data/mongodb.log`.
 

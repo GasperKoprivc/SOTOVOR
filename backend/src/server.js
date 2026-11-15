@@ -21,7 +21,9 @@ app.use(handleError);
 const server = app.listen(port, host);
 server.once('listening', () => {
   const address = host === '0.0.0.0' ? '127.0.0.1' : host;
-  console.log(`Sotovor teče na http://${address.includes(':') ? `[${address}]` : address}:${server.address().port}`);
+  const url = `http://${address.includes(':') ? `[${address}]` : address}:${server.address().port}`;
+  console.log(`Sotovor teče na ${url}`);
+  process.send?.({ ready: true, port: server.address().port });
   console.log('Za ustavitev pritisni Ctrl+C.');
 });
 server.once('error', async error => {

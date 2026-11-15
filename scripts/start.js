@@ -77,8 +77,17 @@ try {
   }
   if (!stopping) {
     api = spawn(process.execPath, ['backend/src/server.js'], {
-      stdio: 'inherit',
+      stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
       env: { ...process.env, SOTOVOR_MONGO_URI: uri },
+    });
+    api.once('message', ({ ready, port }) => {
+      if (!ready || stopping || process.platform !== 'win32' || process.env.SOTOVOR_NO_BROWSER === '1') return;
+      if (!Number.isInteger(port) || port < 1 || port > 65535) return;
+      const browser = spawn('rundll32.exe', ['url.dll,FileProtocolHandler', `http://127.0.0.1:${port}/`], {
+        stdio: 'ignore', windowsHide: true,
+      });
+      browser.once('error', error => console.error(`Odpri naslov v brskalniku ročno. ${error.message}`));
+      browser.unref();
     });
     api.once('exit', code => {
       if (!stopping) process.exitCode = code ?? 1;
