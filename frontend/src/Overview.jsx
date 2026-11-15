@@ -56,7 +56,7 @@ export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAct
         </div>
         <span className="tag">{categories[task.category]}</span>
         <div className="row-actions">
-          {!task.completedAt && <button className="icon-button" aria-label={`Uredi ${task.title}`} onClick={() => onEdit(task)}><Pencil size={16} /></button>}
+          {!task.completedAt && onEdit && <button className="icon-button" aria-label={`Uredi ${task.title}`} onClick={() => onEdit(task)}><Pencil size={16} /></button>}
           {!task.completedAt && !task.assigneeId && <button className="soft-button" disabled={busy} onClick={() => onAction(task.id, 'claim')}>Prevzemi</button>}
           {!task.completedAt && task.assigneeId === memberId && <>
             <button className="soft-button" disabled={busy} onClick={() => onAction(task.id, 'cover')}>Prosi za zamenjavo</button>
@@ -69,7 +69,7 @@ export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAct
       <span className="empty-icon">{filter === 'done' ? <CircleCheckBig /> : <ListTodo />}</span>
       <strong>{tasks.length ? 'V tem pogledu ni opravil' : 'Začnite s prvim opravilom'}</strong>
       <p>{tasks.length ? 'Izberi drug filter za več opravil.' : 'Dodaj nekaj, kar bi radi uredili skupaj.'}</p>
-      {!tasks.length && <button className="soft-button" onClick={onAdd}><Plus size={17} /> Dodaj opravilo</button>}
+      {!tasks.length && onAdd && <button className="soft-button" onClick={onAdd}><Plus size={17} /> Dodaj opravilo</button>}
     </div>}
   </section>;
 }
@@ -100,7 +100,7 @@ export function Calendar({ entries, today, compact, onOpen, onAdd, onEdit }) {
           {compact ? <span className={items.length ? 'day-dot' : 'day-dot empty-dot'} /> :
             <ul className="day-entries">{items.map(entry => <li key={entry.id} className={entry.kind}>
               <span>{entry.kind === 'event' ? 'Dogodek' : entry.completedAt ? 'Zaključeno' : 'Opravilo'}</span>
-              {entry.completedAt ? entry.title : <button className="calendar-edit" onClick={() => onEdit(entry)} aria-label={`Uredi ${entry.title}`}>{entry.title}</button>}
+              {entry.completedAt || !onEdit ? entry.title : <button className="calendar-edit" onClick={() => onEdit(entry)} aria-label={`Uredi ${entry.title}`}>{entry.title}</button>}
               {entry.voice && <a className="voice-link" href={`/api/entries/${entry.id}/voice`} target="_blank" rel="noreferrer">Poslušaj</a>}
             </li>)}</ul>}
         </li>;
@@ -108,7 +108,7 @@ export function Calendar({ entries, today, compact, onOpen, onAdd, onEdit }) {
     </ol>
     {compact && <><p className="calendar-caption">{week.length ? `Vnosov ta teden: ${week.length}` : 'Ta teden še ni vnosov.'}</p>
       <button className="text-button" onClick={onOpen}>Odpri koledar <ArrowRight size={16} /></button></>}
-    {!compact && <button className="text-button" onClick={onAdd}><Plus size={17} /> Dodaj dogodek</button>}
+    {!compact && onAdd && <button className="text-button" onClick={onAdd}><Plus size={17} /> Dodaj dogodek</button>}
   </section>;
 }
 

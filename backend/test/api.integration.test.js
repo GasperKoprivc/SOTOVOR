@@ -211,3 +211,30 @@ test('entries can be edited and removed with stale-write protection', async () =
   assert.equal(removed.response.status, 200);
   assert.deepEqual(removed.data.entries, []);
 });
+
+test('accounts cannot switch households and only the owner can approve leaving or change permissions', async () => {
+  const owner = sessionCookie((await postJson('/households', { householdName: 'Pravice', memberName: 'Ana' })).response);
+  const original = (await dashboard(owner)).data;
+  const member = sessionCookie((await postJson('/households/join', {
+    memberName: 'Boris', inviteCode: original.household.inviteCode,
+  })).response);
+  const current = (await dashboard(member)).data;
+  const memberPath = '/households/members/' + current.memberId;
+  assert.equal(current.household.inviteCode, undefined);
+  assert.equal((await postJson('/households', { householdName: 'Nov' }, member)).response.status, 409);
+  assert.equal((await postJson(memberPath + '/remove', {}, member)).response.status, 403);
+  const fields = { kind: 'task', title: 'Pospravi', dueOn: '2027-02-10' };
+  const { data } = await postJson('/entries', fields, owner);
+  const path = '/entries/' + data.entries[0].id + '/edit';
+  assert.equal((await postJson(path, { ...fields, version: 0 }, member)).response.status, 403);
+  assert.equal((await postJson(memberPath + '/permissions', {
+    create: false, edit: false, move: true, remove: false,
+  }, owner)).response.status, 200);
+  assert.equal((await postJson('/entries', fields, member)).response.status, 403);
+  assert.equal((await postJson(path, { ...fields, title: 'Drugo', version: 0 }, member)).response.status, 403);
+  assert.equal((await postJson(path, { ...fields, dueOn: '2027-02-11', version: 0 }, member)).response.status, 200);
+  assert.equal((await postJson('/households/leave', {}, member)).response.status, 200);
+  assert.equal((await dashboard(member)).data.leaveRequested, true);
+  assert.equal((await postJson(memberPath + '/remove', {}, owner)).response.status, 200);
+  assert.equal((await dashboard(member)).data.household, null);
+});

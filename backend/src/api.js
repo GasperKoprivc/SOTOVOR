@@ -8,6 +8,11 @@ import { emailPattern, passwordHash, publicProfile, sessionSeconds, verifyPasswo
 const hash = value => createHash('sha256').update(value).digest('hex');
 const idPattern = /^[0-9a-f]{24}$/;
 const categories = new Set(['dom', 'druzina', 'opravki', 'zdravje', 'drugo']);
+const defaultPermissions = { create: true, edit: false, move: false, remove: false };
+const adminPermissions = { create: true, edit: true, move: true, remove: true };
+const isAdmin = (household, member) => (household.ownerId ?? household.members[0]?.id) === member.id;
+const access = (household, member) => isAdmin(household, member) ? adminPermissions :
+  { ...defaultPermissions, ...member.permissions };
 
 class HttpError extends Error {
   constructor(status, message) {
@@ -86,7 +91,7 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
   async function dashboard(household, member, account) {
     const profile = account ? publicProfile(account) : null;
     if (!household) return profile ? { profile, household: null } : null;
-    const admin = (household.ownerId ?? household.members[0]?.id) === member.id;
+    const admin = isAdmin(household, member);
     await materializeOccurrences(entries, household._id);
     const items = await entries.find({ householdId: household._id, archivedAt: null }, {
       projection: { householdId: 0, nextOccurrence: 0, whatsappMessageId: 0, 'voice.bytes': 0 },
@@ -95,11 +100,20 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
       memberId: member.id,
       profile,
       admin,
+      permissions: access(household, member),
+      leaveRequested: Boolean(member.leaveRequestedAt),
       whatsapp: { enabled: whatsappEnabled, linked: Boolean(household.whatsappSender) },
       household: { name: household.name, expectedMembers: household.expectedMembers ?? null,
         ...(admin ? { inviteCode: household.inviteCode } : {}) },
-      members: household.members.map(({ id, name, inactive }) => ({ id, name, inactive: Boolean(inactive) })),
-      entries: items.map(({ _id, ...item }) => ({ id: String(_id), ...item })),
+      members: household.members.map(person => ({
+        id: person.id, name: person.name, inactive: Boolean(person.inactive), admin: isAdmin(household, person),
+        ...(admin ? { permissions: access(household, person), leaveRequested: Boolean(person.leaveRequestedAt) } : {}),
+      })),
+      entries: items.map(({ _id, ...item }) => ({
+        id: String(_id), ...item,
+        assigneeId: !item.completedAt && household.members.some(person => person.id === item.assigneeId && person.inactive)
+          ? null : item.assigneeId,
+      })),
     };
   }
 
@@ -201,7 +215,51 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
     next();
   });
 
+  function requireAdmin(req) {
+    if (!isAdmin(req.household, req.member)) throw new HttpError(403, 'To lahko opravi samo skrbnik prostora.');
+  }
+
+  router.post('/households/invite/rotate', async (req, res) => {
+    requireAdmin(req);
+    await households.updateOne({ _id: req.household._id }, { $set: { inviteCode: randomBytes(16).toString('hex') } });
+    res.json({ ok: true });
+  });
+
+  router.post('/households/leave', async (req, res) => {
+    if (isAdmin(req.household, req.member)) throw new HttpError(403, 'Skrbnik ne more zapustiti svojega prostora.');
+    await households.updateOne({ _id: req.household._id, 'members.id': req.member.id },
+      { $set: { 'members.$.leaveRequestedAt': new Date() } });
+    res.json({ ok: true });
+  });
+
+  router.post('/households/members/:id/:action', async (req, res) => {
+    requireAdmin(req);
+    const { id, action } = req.params;
+    const person = req.household.members.find(member => member.id === id && !member.inactive);
+    if (!person) throw new HttpError(404, 'Član ne obstaja.');
+    if (isAdmin(req.household, person)) throw new HttpError(403, 'Skrbnikovih pravic ni mogoče spremeniti.');
+    const condition = { _id: req.household._id, members: { $elemMatch: { id, inactive: { $ne: true } } } };
+    if (action === 'permissions') {
+      if (!Object.keys(defaultPermissions).every(key => typeof req.body[key] === 'boolean')) {
+        throw new HttpError(400, 'Izberi veljavne pravice člana.');
+      }
+      const permissions = Object.fromEntries(Object.keys(defaultPermissions).map(key => [key, req.body[key]]));
+      await households.updateOne(condition, { $set: { 'members.$.permissions': permissions } });
+    } else if (action === 'deny') {
+      await households.updateOne(condition, { $unset: { 'members.$.leaveRequestedAt': '' } });
+    } else if (action === 'remove') {
+      await households.updateOne(condition, {
+        $set: { 'members.$.inactive': true },
+        $unset: { 'members.$.accountId': '', 'members.$.sessionHash': '', 'members.$.expiresAt': '', 'members.$.leaveRequestedAt': '' },
+      });
+    } else {
+      throw new HttpError(404, 'To dejanje ne obstaja.');
+    }
+    res.json({ ok: true });
+  });
+
   router.post('/whatsapp/pair', async (req, res) => {
+    requireAdmin(req);
     if (!whatsappEnabled) throw new HttpError(404, 'WhatsApp še ni nastavljen.');
     const code = randomBytes(12).toString('hex');
     await households.updateOne({ _id: req.household._id }, { $set: {
@@ -211,6 +269,7 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
   });
 
   router.post('/whatsapp/unlink', async (req, res) => {
+    requireAdmin(req);
     if (!whatsappEnabled) throw new HttpError(404, 'WhatsApp še ni nastavljen.');
     await households.updateOne({ _id: req.household._id }, { $unset: { whatsappSender: '', whatsappPairing: '' } });
     res.json({ ok: true });
@@ -237,13 +296,14 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
       throw new HttpError(400, 'Opomnik nastavi od 0 do 30 dni pred rokom.');
     }
     const assigneeId = kind === 'task' ? req.body.assigneeId ?? null : null;
-    if (assigneeId !== null && !req.household.members.some(member => member.id === assigneeId)) {
+    if (assigneeId !== null && !req.household.members.some(member => member.id === assigneeId && !member.inactive)) {
       throw new HttpError(400, 'Izberi člana tega prostora.');
     }
     return { kind, title, dueOn, category, assigneeId, repeatDays, rotate, reminderDays };
   }
 
   router.post('/entries', async (req, res) => {
+    if (!access(req.household, req.member).create) throw new HttpError(403, 'Nimaš dovoljenja za dodajanje vnosov.');
     const fields = entryFields(req);
     const voice = parseVoice(req.body.voice);
     await entries.insertOne({
@@ -262,11 +322,26 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
     const entry = await entries.findOne(condition, { projection: { voice: 0 } });
     if (!entry) throw new HttpError(404, 'Vnos ne obstaja.');
     if (entry.completedAt) throw new HttpError(409, 'Zaključeno opravilo ostane v zgodovini.');
+    const rights = access(req.household, req.member);
+    if (action === 'remove' && !rights.remove) throw new HttpError(403, 'Nimaš dovoljenja za odstranjevanje vnosov.');
+    if (action === 'edit' && !rights.move && !rights.edit) throw new HttpError(403, 'Nimaš dovoljenja za urejanje.');
     if (req.body.version !== (entry.version ?? 0)) {
       throw new HttpError(409, 'Vnos se je spremenil. Zapri obrazec in ga znova odpri.');
     }
     const fields = action === 'remove' ? { archivedAt: new Date() } : entryFields(req);
     if (action === 'edit' && fields.kind !== entry.kind) throw new HttpError(400, 'Vrste vnosa ni mogoče spremeniti.');
+    if (action === 'edit' && fields.dueOn !== entry.dueOn && !rights.move) {
+      throw new HttpError(403, 'Nimaš dovoljenja za premikanje datumov.');
+    }
+    if (action === 'edit' && !rights.edit) {
+      for (const [key, value] of Object.entries(fields)) {
+        const original = key === 'assigneeId' && req.household.members.some(person => person.id === entry.assigneeId && person.inactive)
+          ? null : entry[key] ?? { repeatDays: 0, rotate: false, reminderDays: 2, assigneeId: null }[key];
+        if (key !== 'dueOn' && value !== original) {
+          throw new HttpError(403, 'Dovoljenje velja samo za spremembo datuma.');
+        }
+      }
+    }
     if (action === 'edit' && fields.assigneeId !== entry.assigneeId) {
       fields.assignedAt = fields.assigneeId ? new Date() : null;
       fields.coverRequestedAt = null;
@@ -298,13 +373,15 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
     if (!idPattern.test(id) || !Object.hasOwn(changes, action)) throw new HttpError(404, 'Ta pot ne obstaja.');
     const task = { _id: new ObjectId(id), householdId: req.household._id, kind: 'task', archivedAt: null };
     const condition = {
-      ...task, completedAt: null, assigneeId: action === 'claim' ? null : req.member.id,
+      ...task, completedAt: null, assigneeId: action === 'claim'
+        ? { $in: [null, ...req.household.members.filter(member => member.inactive).map(member => member.id)] }
+        : req.member.id,
     };
     if (action === 'complete') {
       const current = await entries.findOne(condition, { projection: { voice: 0 } });
       if (!current) throw new HttpError(409, 'Stanje opravila se je spremenilo ali pa dejanje ni na voljo.');
       condition.version = current.version ?? null;
-      const next = current && nextOccurrence(current, req.household.members);
+      const next = nextOccurrence(current, req.household.members.filter(member => !member.inactive));
       if (next) changes.complete.nextOccurrence = next;
     }
     const result = await entries.updateOne(condition, { $set: changes[action], $inc: { version: 1 } });

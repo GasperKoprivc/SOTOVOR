@@ -8,6 +8,7 @@ import Notifications from './Notifications.jsx';
 import VoiceRecorder from './VoiceRecorder.jsx';
 import { Brand, ChooseHousehold, Landing } from './Account.jsx';
 import './landing.css';
+import FamilySettings from './FamilySettings.jsx';
 import { categories, dateKey, fullDate, request } from './data.js';
 
 const pages = {
@@ -34,46 +35,51 @@ function Dialog({ title, onClose, children }) {
   </dialog>;
 }
 
-function EntryDialog({ initialKind, entry, members, busy, error, onSave, onRemove, onClose }) {
+function EntryDialog({ initialKind, entry, permissions, members, busy, error, onSave, onRemove, onClose }) {
   const [kind, setKind] = useState(initialKind);
   const [repeatDays, setRepeatDays] = useState(String(entry?.repeatDays ?? 0));
   const [removing, setRemoving] = useState(false);
   const [voice, setVoice] = useState(null);
   const [recordingBusy, setRecordingBusy] = useState(false);
+  const editContent = !entry || permissions.edit;
+  const moveDate = !entry || permissions.move;
   return <Dialog title={entry ? 'Uredi vnos' : 'Nov vnos'} onClose={onClose}>
     <form onSubmit={event => {
       event.preventDefault();
       if (recordingBusy) return;
       const values = Object.fromEntries(new FormData(event.currentTarget));
       onSave({
-        ...values, kind, dueOn: values.dueOn || null, assigneeId: values.assigneeId || null,
-        repeatDays: Number(values.repeatDays || 0), rotate: values.rotate === 'on',
-        reminderDays: Number(values.reminderDays ?? 2), voice,
+        kind, dueOn: moveDate ? values.dueOn || null : entry.dueOn,
+        title: editContent ? values.title : entry.title, category: editContent ? values.category : entry.category,
+        assigneeId: editContent ? values.assigneeId || null : entry.assigneeId,
+        repeatDays: editContent ? Number(values.repeatDays || 0) : entry.repeatDays ?? 0,
+        rotate: editContent ? values.rotate === 'on' : entry.rotate ?? false,
+        reminderDays: editContent ? Number(values.reminderDays ?? 2) : entry.reminderDays ?? 2, voice,
       });
     }}>
       {!entry && <label>Vrsta<select name="kind" value={kind} onChange={event => setKind(event.target.value)}>
         <option value="task">Opravilo</option><option value="event">Dogodek</option>
       </select></label>}
-      <label>Naslov<input name="title" defaultValue={entry?.title} maxLength="160" required placeholder={kind === 'task' ? 'Npr. Prevzem iz šole' : 'Npr. Družinsko kosilo'} /></label>
+      <label>Naslov<input name="title" readOnly={!editContent} defaultValue={entry?.title} maxLength="160" required placeholder={kind === 'task' ? 'Npr. Prevzem iz šole' : 'Npr. Družinsko kosilo'} /></label>
       <div className="fields">
-        <label>{kind === 'event' ? 'Datum' : 'Rok'}<input type="date" name="dueOn" defaultValue={entry?.dueOn ?? ''} required={kind === 'event' || Number(repeatDays) > 0} /></label>
-        <label>Kategorija<select name="category" defaultValue={entry?.category ?? 'drugo'}>
+        <label>{kind === 'event' ? 'Datum' : 'Rok'}<input type="date" name="dueOn" readOnly={!moveDate} defaultValue={entry?.dueOn ?? ''} required={kind === 'event' || Number(repeatDays) > 0} /></label>
+        <label>Kategorija<select name="category" disabled={!editContent} defaultValue={entry?.category ?? 'drugo'}>
           {Object.entries(categories).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
         </select></label>
       </div>
-      {kind === 'task' && <label>Dodeli članu<select name="assigneeId" defaultValue={entry?.assigneeId ?? ''}>
+      {kind === 'task' && <label>Dodeli članu<select name="assigneeId" disabled={!editContent} defaultValue={entry?.assigneeId ?? ''}>
         <option value="">Na voljo za prevzem</option>
-        {members.map(member => <option key={member.id} value={member.id}>{member.name}</option>)}
+        {members.filter(member => !member.inactive).map(member => <option key={member.id} value={member.id}>{member.name}</option>)}
       </select></label>}
-      {kind === 'task' && <div className="fields">
+      {kind === 'task' && editContent && <div className="fields">
         <label>Ponovi čez dni<input name="repeatDays" type="number" min="0" max="3660" required value={repeatDays} onChange={event => setRepeatDays(event.target.value)} /></label>
         <label>Opomni dni pred rokom<input name="reminderDays" type="number" min="0" max="30" defaultValue={entry?.reminderDays ?? 2} required /></label>
       </div>}
-      {kind === 'task' && Number(repeatDays) > 0 && <label className="check-field"><input name="rotate" type="checkbox" defaultChecked={entry?.rotate} /> Naslednjič dodeli naslednjemu članu</label>}
+      {kind === 'task' && editContent && Number(repeatDays) > 0 && <label className="check-field"><input name="rotate" type="checkbox" defaultChecked={entry?.rotate} /> Naslednjič dodeli naslednjemu članu</label>}
       {!entry && <VoiceRecorder onChange={setVoice} busy={busy || recordingBusy} setBusy={setRecordingBusy} />}
       {error && <p className="error" role="alert">{error}</p>}
-      <button className="primary" disabled={busy || recordingBusy || removing}>{entry ? 'Shrani spremembe' : <><Plus size={19} />{kind === 'task' ? 'Dodaj opravilo' : 'Dodaj dogodek'}</>}</button>
-      {entry && (removing ? <div className="top-actions">
+      {(editContent || moveDate) && <button className="primary" disabled={busy || recordingBusy || removing}>{entry ? 'Shrani spremembe' : <><Plus size={19} />{kind === 'task' ? 'Dodaj opravilo' : 'Dodaj dogodek'}</>}</button>}
+      {entry && permissions.remove && (removing ? <div className="top-actions">
         <button type="button" className="soft-button" onClick={() => setRemoving(false)} disabled={busy}>Obdrži vnos</button>
         <button type="button" className="danger-button soft-button" onClick={onRemove} disabled={busy}>Potrdi odstranitev</button>
       </div> : <button type="button" className="danger-button text-button" onClick={() => setRemoving(true)} disabled={busy}>Odstrani vnos</button>)}
@@ -81,7 +87,7 @@ function EntryDialog({ initialKind, entry, members, busy, error, onSave, onRemov
   </Dialog>;
 }
 
-function InviteDialog({ code, onClose }) {
+function InviteDialog({ code, onClose, onRotate, busy, error }) {
   const [copied, setCopied] = useState(false);
   const input = useRef(null);
   return <Dialog title="Povabi družinskega člana" onClose={onClose}>
@@ -96,6 +102,8 @@ function InviteDialog({ code, onClose }) {
         input.current.select();
       }
     }}>{copied ? <Check size={18} /> : <Clipboard size={18} />} {copied ? 'Koda je kopirana' : 'Kopiraj kodo'}</button>
+    <button className="text-button rotate-code" disabled={busy} onClick={() => { setCopied(false); onRotate(); }}>Ustvari novo kodo</button>
+    {error && <p className="error" role="alert">{error}</p>}
   </Dialog>;
 }
 
@@ -225,12 +233,13 @@ export default function App() {
     setPage('overview');
   })} />;
 
-  const { household, memberId, members, entries } = data;
+  const { household, memberId, members, entries, permissions } = data;
   const member = members.find(member => member.id === memberId);
   const tasks = entries.filter(entry => entry.kind === 'task');
   const overview = page === 'overview';
-  const taskPanel = <Tasks {...{ tasks, members, memberId, today, filter, busy }} onFilter={setFilter} onEdit={edit}
-    onAdd={() => open('task')} onAction={(id, action) => run(async () => {
+  const canManage = permissions.edit || permissions.move || permissions.remove;
+  const taskPanel = <Tasks {...{ tasks, members, memberId, today, filter, busy }} onFilter={setFilter} onEdit={canManage ? edit : undefined}
+    onAdd={permissions.create ? () => open('task') : undefined} onAction={(id, action) => run(async () => {
       setData(await request(`/tasks/${id}/${action}`, {}));
       setNotice({ claim: 'Opravilo je prevzeto.', cover: 'Opravilo je spet na voljo za prevzem.', complete: 'Opravilo je zaključeno.' }[action]);
     })} />;
@@ -247,7 +256,7 @@ export default function App() {
       <header className="topbar"><span><House size={16} />{household.name}</span>
         <div className="top-actions">
           <Notifications key={memberId} {...{ tasks, memberId, today }} onView={next => go('tasks', next)} />
-          {data.whatsapp?.enabled && <button className="soft-button" onClick={() => open('whatsapp')}>WhatsApp</button>}
+          {data.admin && data.whatsapp?.enabled && <button className="soft-button" onClick={() => open('whatsapp')}>WhatsApp</button>}
           {data.admin && <button className="soft-button" onClick={() => open('invite')}><UserRoundPlus size={17} /> Povabi člana</button>}
         </div>
       </header>
@@ -257,7 +266,7 @@ export default function App() {
             <h1>{overview ? `Živjo, ${member.name}!` : pages[page][0]}</h1>
             {overview && <p>Tukaj je pregled vaših družinskih opravil in dogovorov.</p>}
           </div>
-          {page !== 'profile' && <button className="primary" onClick={() => open(page === 'calendar' ? 'event' : 'task')}><Plus size={20} /> Dodaj vnos</button>}
+          {page !== 'profile' && permissions.create && <button className="primary" onClick={() => open(page === 'calendar' ? 'event' : 'task')}><Plus size={20} /> Dodaj vnos</button>}
         </div>
         {error && !modal && <p className="error banner" role="alert">{error}</p>}
         {notice && <p className="notice banner" role="status">{notice}</p>}
@@ -269,9 +278,9 @@ export default function App() {
           </div></div>
         </>}
         {page === 'tasks' && taskPanel}
-        {page === 'calendar' && <Calendar {...{ entries, today }} onAdd={() => open('event')} onEdit={edit} />}
+        {page === 'calendar' && <Calendar {...{ entries, today }} onAdd={permissions.create ? () => open('event') : undefined} onEdit={canManage ? edit : undefined} />}
         {page === 'workload' && <Workload {...{ members, tasks, memberId }} />}
-        {page === 'profile' && <section className="panel account-card">
+        {page === 'profile' && <div className="profile-grid"><section className="panel account-card">
           <h2>{data.profile.firstName} {data.profile.lastName}</h2>
           <p>{data.profile.email}<br />{data.profile.phone}</p>
           <p><strong>{household.name}</strong> · {data.admin ? 'Skrbnik' : 'Član'}</p>
@@ -279,14 +288,31 @@ export default function App() {
             <button className="primary" onClick={() => go('overview')}>Odpri nadzorno ploščo</button>
             <button className="soft-button" onClick={logout} disabled={busy}>Odjava</button>
           </div>
-        </section>}
+          {!data.admin && (data.leaveRequested ? <p>Prošnja za izstop čaka na skrbnika.</p> :
+            <button className="text-button" onClick={() => run(async () => {
+              await request('/households/leave', {});
+              setData(await request('/dashboard'));
+            })} disabled={busy}>Zaprosi za izstop iz prostora</button>)}
+        </section>
+          {data.admin && <FamilySettings members={members} expectedMembers={household.expectedMembers} busy={busy} onInvite={() => open('invite')}
+            onChange={(id, action, fields = {}) => run(async () => {
+              await request(`/households/members/${id}/${action}`, fields);
+              setData(await request('/dashboard'));
+              setNotice('Sprememba je shranjena.');
+            })} />}
+        </div>}
       </div>
     </main>
-    {modal === 'invite' && <InviteDialog code={household.inviteCode} onClose={() => setModal(null)} />}
+    {modal === 'invite' && data.admin && <InviteDialog code={household.inviteCode} {...{ busy, error }}
+      onClose={() => { setModal(null); setError(''); }}
+      onRotate={() => run(async () => {
+        await request('/households/invite/rotate', {});
+        setData(await request('/dashboard'));
+      })} />}
     {modal === 'whatsapp' && <WhatsAppDialog linked={data.whatsapp.linked} onClose={() => setModal(null)}
       onUpdate={async () => setData(await request('/dashboard'))} />}
     {['task', 'event', 'edit'].includes(modal) && <EntryDialog initialKind={modal === 'edit' ? editing.kind : modal}
-      entry={modal === 'edit' ? editing : null} {...{ members, busy, error }}
+      entry={modal === 'edit' ? editing : null} {...{ permissions, members, busy, error }}
       onClose={() => { if (!pending.current) { setModal(null); setError(''); } }}
       onRemove={() => run(async () => {
         setData(await request(`/entries/${editing.id}/remove`, { version: editing.version ?? 0 }));
