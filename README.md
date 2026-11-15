@@ -29,7 +29,7 @@ Ustvari prostor, nato dodaj opravilo ali dogodek. Opravilo lahko dodeliš članu
 
 Na predstavitveni strani ustvari račun z imenom, priimkom, e-pošto, telefonom in geslom ali se prijavi. V profilu odpri nadzorno ploščo. Če računu še ni dodeljen prostor, ustvari svojega in določi načrtovano število članov ali se pridruži s kodo.
 
-Ustvarjalec prostora je skrbnik. V profilu lahko zamenja kodo povabila, ureja pravice dodajanja, urejanja, premikanja datumov in odstranjevanja vnosov ter odobri ali zavrne prošnjo za izstop. Račun ima lahko eno aktivno članstvo. Če imaš še sejo iz prejšnje različice, jo registracija z odprtim brskalniškim profilom poveže z novim računom.
+Ustvarjalec prostora je skrbnik. V profilu lahko ustvari dodatno družino, preklaplja med svojimi prostori, zamenja kodo povabila ter ureja pravice članov. Član druge družine lahko ustvari svoj prostor, ko skrbnik odobri njegov izstop. Če imaš še sejo iz prejšnje različice, jo registracija z odprtim brskalniškim profilom poveže z novim računom.
 
 Koledar ima mesečni in tedenski pogled. V mesečnem pogledu klikni dan za seznam vseh opravil in dogodkov.
 

@@ -71,10 +71,21 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
       if (session) {
         req.sessionId = sessionHash;
         req.account = await accounts.findOne({ _id: session.accountId });
-        const household = await households.findOne({ 'members.accountId': session.accountId });
-        if (household && req.account) {
-          req.household = household;
-          req.member = household.members.find(member => member.accountId?.equals(session.accountId));
+        const membership = { $or: [{ 'members.accountId': session.accountId }, { ownerAccountId: session.accountId }] };
+        const getMember = household => household.members.find(member =>
+          member.accountId?.equals(session.accountId) ||
+          (household.ownerAccountId?.equals(session.accountId) && member.id === household.ownerId));
+        if (req.account) {
+          const spaces = await households.find(membership).sort({ _id: 1 }).toArray();
+          const scope = req.get('x-sotovor-household') || (req.method === 'GET' ? req.query.household : undefined);
+          req.spaces = spaces.map(household => ({
+            id: String(household._id), name: household.name, admin: isAdmin(household, getMember(household)),
+          }));
+          const preferred = spaces.find(household => household.members.some(member => member.accountId?.equals(session.accountId))) ?? spaces[0];
+          const selected = scope ? spaces.find(household => String(household._id) === scope) : preferred;
+          if (scope && !selected) throw new HttpError(403, 'Ta družinski prostor ni dostopen tvojemu računu.');
+          req.household = selected;
+          req.member = selected && getMember(selected);
         }
       }
       const legacy = !session && await households.findOne({
@@ -88,9 +99,9 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
     next();
   });
 
-  async function dashboard(household, member, account) {
+  async function dashboard(household, member, account, spaces = []) {
     const profile = account ? publicProfile(account) : null;
-    if (!household) return profile ? { profile, household: null } : null;
+    if (!household) return profile ? { profile, household: null, spaces } : null;
     const admin = isAdmin(household, member);
     await materializeOccurrences(entries, household._id);
     const items = await entries.find({ householdId: household._id, archivedAt: null }, {
@@ -99,11 +110,12 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
     return {
       memberId: member.id,
       profile,
+      spaces,
       admin,
       permissions: access(household, member),
       leaveRequested: Boolean(member.leaveRequestedAt),
       whatsapp: { enabled: whatsappEnabled, linked: Boolean(household.whatsappSender) },
-      household: { name: household.name, expectedMembers: household.expectedMembers ?? null,
+      household: { id: String(household._id), name: household.name, expectedMembers: household.expectedMembers ?? null,
         ...(admin ? { inviteCode: household.inviteCode } : {}) },
       members: household.members.map(person => ({
         id: person.id, name: person.name, inactive: Boolean(person.inactive), admin: isAdmin(household, person),
@@ -117,7 +129,7 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
     };
   }
 
-  const currentDashboard = req => dashboard(req.household, req.member, req.account);
+  const currentDashboard = req => dashboard(req.household, req.member, req.account, req.spaces);
   router.get('/dashboard', async (req, res) => res.json(await currentDashboard(req)));
 
   router.post('/auth/register', async (req, res) => {
@@ -178,10 +190,13 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
   for (const joining of [false, true]) {
     router.post(joining ? '/households/join' : '/households', async (req, res) => {
       if (!req.account) throw new HttpError(401, 'Najprej se prijavi.');
-      if (req.member) throw new HttpError(409, 'Tvoj račun že pripada družinskemu prostoru.');
+      const hasSpace = req.spaces.length > 0;
+      if (hasSpace && (joining || req.spaces.some(space => !space.admin))) {
+        throw new HttpError(409, 'Tvoj račun že pripada družinskemu prostoru.');
+      }
       const member = {
         id: new ObjectId().toHexString(), name: `${req.account.firstName} ${req.account.lastName}`,
-        accountId: req.account._id,
+        ...(!hasSpace ? { accountId: req.account._id } : {}),
       };
       try {
       if (joining) {
@@ -197,10 +212,12 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
         if (!Number.isInteger(expectedMembers) || expectedMembers < 1 || expectedMembers > 100) {
           throw new HttpError(400, 'Vnesi število družinskih članov od 1 do 100.');
         }
-        await households.insertOne({
+        const result = await households.insertOne({
           name: requiredText(req.body.householdName, 80, 'Ime prostora'),
           inviteCode: randomBytes(16).toString('hex'), members: [member], ownerId: member.id, expectedMembers,
+          ownerAccountId: req.account._id,
         });
+        return res.status(201).json({ householdId: String(result.insertedId) });
       }
       } catch (error) {
         if (error.code === 11000) throw new HttpError(409, 'Tvoj račun že pripada družinskemu prostoru.');

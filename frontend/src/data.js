@@ -26,14 +26,25 @@ export const needsReminder = (task, today) => !task.completedAt && Boolean(task.
   task.dueOn <= dateKey(addDays(fromKey(today), task.reminderDays ?? 2));
 export const initials = name => name.trim().split(/\s+/).slice(0, 2).map(word => Array.from(word)[0]).join('').toUpperCase();
 
-export async function request(path, body, signal) {
-  const options = body === undefined ? { signal } : {
+let activeHousehold;
+
+export function selectHousehold(id) {
+  activeHousehold = id;
+}
+
+export function voiceUrl(id) {
+  return `/api/entries/${id}/voice${activeHousehold ? '?household=' + activeHousehold : ''}`;
+}
+
+export async function request(path, body, signal, household = activeHousehold) {
+  const headers = household ? { 'X-Sotovor-Household': household } : {};
+  const options = body === undefined ? { signal, headers } : {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   };
   const response = await fetch('/api' + path, options);
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error);
+  if (!response.ok) throw Object.assign(new Error(data.error), { status: response.status });
   return data;
 }

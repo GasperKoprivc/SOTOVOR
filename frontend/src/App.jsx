@@ -11,7 +11,7 @@ import Landing from './Landing.jsx';
 import './landing.css';
 import FamilySettings from './FamilySettings.jsx';
 import MonthCalendar from './MonthCalendar.jsx';
-import { categories, dateKey, fullDate, request } from './data.js';
+import { categories, dateKey, fullDate, request, selectHousehold } from './data.js';
 
 const pages = {
   overview: ['Pregled', LayoutGrid],
@@ -20,6 +20,11 @@ const pages = {
   workload: ['Razporeditev', UsersRound],
   profile: ['Profil', UserRound],
 };
+
+function updateWorkspace(data, setData) {
+  selectHousehold(data?.profile ? data.household?.id : undefined);
+  setData(data);
+}
 
 function Dialog({ title, onClose, children }) {
   const ref = useRef(null);
@@ -163,9 +168,12 @@ export default function App() {
       if (pending.current || (!initial && document.hidden)) return;
       const startedAt = revision.current;
       try {
-        const next = await request('/dashboard', undefined, controller.signal);
+        const next = await request('/dashboard', undefined, controller.signal).catch(error => {
+          if (error.status !== 403) throw error;
+          return request('/dashboard', undefined, controller.signal, null);
+        });
         if (!active || pending.current || revision.current !== startedAt) return;
-        setData(next);
+        updateWorkspace(next, setData);
       } catch (error) {
         if (active && initial) setError(error.message);
       }
@@ -220,8 +228,8 @@ export default function App() {
   </main>;
   function logout() {
     return run(async () => {
-      await request('/auth/logout', {});
-      setData(null);
+      await request('/auth/logout', {}, undefined, null);
+      updateWorkspace(null, setData);
       setInApp(false);
       setPage('profile');
       setModal(null);
@@ -230,15 +238,15 @@ export default function App() {
 
   if (!inApp || !data?.profile) return <Landing signedIn={Boolean(data?.profile)} legacy={Boolean(data?.household && !data.profile)}
     onEnter={() => { go('profile'); setInApp(true); }} busy={busy} error={error} onAuth={(mode, fields) => run(async () => {
-    await request('/auth/' + mode, fields);
-    setData(await request('/dashboard'));
+    await request('/auth/' + mode, fields, undefined, null);
+    updateWorkspace(await request('/dashboard', undefined, undefined, null), setData);
     go('profile');
     setInApp(true);
   })} />;
 
   if (!data.household) return <ChooseHousehold profile={data.profile} busy={busy} error={error} onLogout={logout} onSubmit={(joining, fields) => run(async () => {
-    await request(joining ? '/households/join' : '/households', fields);
-    setData(await request('/dashboard'));
+    const { householdId } = await request(joining ? '/households/join' : '/households', fields);
+    updateWorkspace(await request('/dashboard', undefined, undefined, householdId), setData);
     setPage('overview');
   })} />;
 
@@ -301,8 +309,20 @@ export default function App() {
           <h2>{data.profile.firstName} {data.profile.lastName}</h2>
           <p>{data.profile.email}<br />{data.profile.phone}</p>
           <p><strong>{household.name}</strong> · {data.admin ? 'Skrbnik' : 'Član'}</p>
+          {data.spaces?.length > 1 && <label className="family-switch">Družinski prostor
+            <select value={household.id} disabled={busy} onChange={event => {
+              const id = event.target.value;
+              run(async () => {
+                updateWorkspace(await request('/dashboard', undefined, undefined, id), setData);
+                setFilter('all');
+              });
+            }}>
+              {data.spaces.map(space => <option key={space.id} value={space.id}>{space.name}</option>)}
+            </select>
+          </label>}
           <div className="hero-actions">
             <button className="primary" onClick={() => go('overview')}>Odpri nadzorno ploščo</button>
+            {data.admin && <button className="soft-button" onClick={() => open('family')} disabled={busy}><Plus size={17} /> Nova družina</button>}
             <button className="soft-button" onClick={logout} disabled={busy}>Odjava</button>
           </div>
           {!data.admin && (data.leaveRequested ? <p>Prošnja za izstop čaka na skrbnika.</p> :
@@ -326,6 +346,25 @@ export default function App() {
         await request('/households/invite/rotate', {});
         setData(await request('/dashboard'));
       })} />}
+    {modal === 'family' && data.admin && <Dialog title="Ustvari novo družino" onClose={() => { if (!busy) setModal(null); }}>
+      <form onSubmit={event => {
+        event.preventDefault();
+        const fields = new FormData(event.currentTarget);
+        run(async () => {
+          const { householdId } = await request('/households', {
+            householdName: fields.get('householdName'), expectedMembers: Number(fields.get('expectedMembers')),
+          });
+          updateWorkspace(await request('/dashboard', undefined, undefined, householdId), setData);
+          setFilter('all');
+          setModal('invite');
+        });
+      }}>
+        <label>Ime družine<input name="householdName" required maxLength={80} /></label>
+        <label>Načrtovano število članov<input name="expectedMembers" type="number" min={1} max={100} defaultValue={4} required /></label>
+        {error && <p className="error" role="alert">{error}</p>}
+        <button className="primary" disabled={busy}>Ustvari družinski prostor</button>
+      </form>
+    </Dialog>}
     {modal === 'whatsapp' && <WhatsAppDialog linked={data.whatsapp.linked} onClose={() => setModal(null)}
       onUpdate={async () => setData(await request('/dashboard'))} />}
     {['task', 'event', 'edit'].includes(modal) && <EntryDialog initialKind={modal === 'edit' ? editing.kind : modal} initialDate={entryDate}

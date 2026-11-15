@@ -47,7 +47,7 @@ after(async () => {
   }
 }, { timeout: 30_000 });
 
-async function postJson(path, body, cookie) {
+async function postJson(path, body, cookie, household) {
   if (!cookie && ['/households', '/households/join'].includes(path)) {
     const registered = await postJson('/auth/register', {
       firstName: body.memberName, lastName: 'Test', email: `${randomUUID()}@test.invalid`,
@@ -61,6 +61,7 @@ async function postJson(path, body, cookie) {
     headers: {
       'content-type': 'application/json',
       ...(cookie ? { cookie } : {}),
+      ...(household ? { 'x-sotovor-household': household } : {}),
     },
     body: JSON.stringify(body),
   });
@@ -68,10 +69,31 @@ async function postJson(path, body, cookie) {
   return { response, data: await response.json() };
 }
 
-async function dashboard(cookie) {
-  const response = await fetch(`${apiUrl}/dashboard`, { headers: { cookie } });
+async function dashboard(cookie, household) {
+  const headers = { cookie, ...(household ? { 'x-sotovor-household': household } : {}) };
+  const response = await fetch(`${apiUrl}/dashboard`, { headers });
   return { response, data: await response.json() };
 }
+
+test('owners can create and switch between isolated family spaces', async () => {
+  const first = await postJson('/households', { householdName: 'Prvi dom', memberName: 'Ana' });
+  const owner = sessionCookie(first.response);
+  const second = await postJson('/households', { householdName: 'Drugi dom', expectedMembers: 3 }, owner);
+  assert.equal(second.response.status, 201);
+  const id = second.data.householdId;
+  const selected = (await dashboard(owner, id)).data;
+  assert.equal(selected.admin, true);
+  assert.equal(selected.spaces.length, 2);
+  assert.equal(selected.household.name, 'Drugi dom');
+  const joined = await postJson('/households/join', { memberName: 'Luka', inviteCode: selected.household.inviteCode });
+  const member = sessionCookie(joined.response);
+  assert.equal((await dashboard(member, first.data.householdId)).response.status, 403);
+  assert.equal((await postJson('/households', { householdName: 'Obvoz', expectedMembers: 1 }, member)).response.status, 409);
+  const added = await postJson('/entries', { kind: 'task', title: 'Samo v drugem domu' }, owner, id);
+  assert.equal(added.response.status, 201);
+  assert.equal((await dashboard(owner)).data.entries.length, 0);
+  assert.equal((await dashboard(member, id)).data.entries.length, 1);
+});
 
 function sessionCookie(response) {
   if (response.cookie) return response.cookie;
