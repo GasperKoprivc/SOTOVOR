@@ -62,6 +62,7 @@ export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAct
             <button className="icon-button" aria-label={`Zaključi ${task.title}`} title="Zaključi" disabled={busy} onClick={() => onAction(task.id, 'complete')}><Check size={19} /></button>
           </>}
         </div>
+        {task.voice && <audio className="task-audio" controls preload="none" src={`/api/entries/${task.id}/voice`} aria-label={`Glasovna beležka: ${task.title}`} />}
       </li>;
     })}</ul> : <div className="empty">
       <span className="empty-icon">{filter === 'done' ? <CircleCheckBig /> : <ListTodo />}</span>
@@ -98,6 +99,7 @@ export function Calendar({ entries, today, compact, onOpen, onAdd }) {
           {compact ? <span className={items.length ? 'day-dot' : 'day-dot empty-dot'} /> :
             <ul className="day-entries">{items.map(entry => <li key={entry.id} className={entry.kind}>
               <span>{entry.kind === 'event' ? 'Dogodek' : entry.completedAt ? 'Zaključeno' : 'Opravilo'}</span>{entry.title}
+              {entry.voice && <a className="voice-link" href={`/api/entries/${entry.id}/voice`} target="_blank" rel="noreferrer">Poslušaj</a>}
             </li>)}</ul>}
         </li>;
       })}

@@ -160,6 +160,11 @@ dialog > p { margin-bottom: .8rem; font-size: .9rem; line-height: 1.5; }
 dialog .fields { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
 dialog .check-field { display: flex; align-items: center; gap: .5rem; }
 .check-field input { width: auto; accent-color: var(--green); }
+.voice-field { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }
+.voice-field p { font-size: .83rem; }
+.voice-field audio { max-width: calc(100% - 3rem); }
+.task-audio { grid-column: 2 / -1; width: min(16rem, 100%); height: 2.25rem; }
+.voice-link { display: block; color: var(--green); margin-top: .3rem; }
 dialog .invite-label { margin-bottom: .8rem; }
 @media (max-width: 68rem) {
   .workspace { grid-template-columns: 12.25rem minmax(0, 1fr); }

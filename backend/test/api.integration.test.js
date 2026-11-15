@@ -129,3 +129,20 @@ test('completion creates exactly one recurring task and rotates its assignee', a
   assert.equal(next.assigneeId, nextMember);
   assert.equal(next.reminderDays, 3);
 });
+
+test('voice notes are stored and accessible only within their household', async () => {
+  const owner = sessionCookie((await postJson('/households', { householdName: 'Zvok', memberName: 'Ana' })).response);
+  const other = sessionCookie((await postJson('/households', { householdName: 'Drugi', memberName: 'Jan' })).response);
+  const bytes = Buffer.from('1a45dfa30000', 'hex');
+  const added = await postJson('/entries', {
+    kind: 'task', title: 'Glas', voice: { mime: 'audio/webm', data: bytes.toString('base64') },
+  }, owner);
+  assert.equal(added.response.status, 201);
+  const [task] = added.data.entries;
+  assert.deepEqual(task.voice, { mime: 'audio/webm' });
+  const url = `${apiUrl}/entries/${task.id}/voice`;
+  assert.equal((await fetch(url, { headers: { cookie: other } })).status, 404);
+  const audio = await fetch(url, { headers: { cookie: owner } });
+  assert.equal(audio.headers.get('content-type'), 'audio/webm');
+  assert.deepEqual(Buffer.from(await audio.arrayBuffer()), bytes);
+});

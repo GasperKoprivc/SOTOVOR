@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { Router } from 'express';
-import { ObjectId } from 'mongodb';
+import { Binary, ObjectId } from 'mongodb';
 import { materializeOccurrences, nextOccurrence } from './recurrence.js';
 
 const sessionSeconds = 90 * 24 * 60 * 60;
@@ -20,6 +20,24 @@ function requiredText(value, limit, label) {
     throw new HttpError(400, `${label} mora imeti od 1 do ${limit} znakov.`);
   }
   return value.trim();
+}
+
+function parseVoice(voice) {
+  if (voice == null) return null;
+  const signatures = new Map([
+    ['audio/webm', [0, '1a45dfa3']], ['audio/ogg', [0, '4f676753']], ['audio/mp4', [4, '66747970']],
+  ]);
+  const { mime, data } = voice;
+  const format = signatures.get(mime);
+  const limit = 2 * 1024 * 1024;
+  if (!format || typeof data !== 'string' || data.length > 4 * Math.ceil(limit / 3) ||
+      !/^[A-Za-z0-9+/]+={0,2}$/.test(data)) throw new HttpError(400, 'Posnetek ni podprt ali presega 2 MB.');
+  const bytes = Buffer.from(data, 'base64');
+  const [offset, signature] = format;
+  if (bytes.length > limit || bytes.subarray(offset, offset + 4).toString('hex') !== signature) {
+    throw new HttpError(400, 'Posnetek ni veljaven.');
+  }
+  return { mime, bytes: new Binary(bytes) };
 }
 
 export function createApi({ households, entries }) {
@@ -47,7 +65,7 @@ export function createApi({ households, entries }) {
     if (!household) return null;
     await materializeOccurrences(entries, household._id);
     const items = await entries.find({ householdId: household._id }, {
-      projection: { householdId: 0, nextOccurrence: 0 },
+      projection: { householdId: 0, nextOccurrence: 0, 'voice.bytes': 0 },
     }).sort({ createdAt: -1 }).toArray();
     return {
       memberId: member.id,
@@ -112,12 +130,24 @@ export function createApi({ households, entries }) {
     if (assigneeId !== null && !req.household.members.some(member => member.id === assigneeId)) {
       throw new HttpError(400, 'Izberi člana tega prostora.');
     }
+    const voice = parseVoice(req.body.voice);
     await entries.insertOne({
       householdId: req.household._id, kind, title, dueOn, category, assigneeId,
       assignedAt: assigneeId ? new Date() : null,
       completedAt: null, createdAt: new Date(), repeatDays, rotate, reminderDays,
+      ...(voice ? { voice } : {}),
     });
     res.status(201).json(await dashboard(req.household, req.member));
+  });
+
+  router.get('/entries/:id/voice', async (req, res) => {
+    const { id } = req.params;
+    if (!idPattern.test(id)) throw new HttpError(404, 'Posnetek ne obstaja.');
+    const entry = await entries.findOne({ _id: new ObjectId(id), householdId: req.household._id }, {
+      projection: { voice: 1 },
+    });
+    if (!entry?.voice) throw new HttpError(404, 'Posnetek ne obstaja.');
+    res.type(entry.voice.mime).send(Buffer.from(entry.voice.bytes.value()));
   });
 
   router.post('/tasks/:id/:action', async (req, res) => {

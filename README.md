@@ -33,6 +33,8 @@ Pri opravilu z rokom lahko določiš interval ponavljanja v dneh in vključiš r
 
 V meniju **Obvestila** so dodelitve, bližnji roki tvojih opravil in prošnje za zamenjavo. Obvestila delujejo v spletni aplikaciji in se osvežujejo skupaj s pregledom. Oznake prebranih obvestil se shranijo v trenutnem brskalniku.
 
+Opravilu ali dogodku lahko priložiš do 30 sekund dolg glasovni posnetek. Posnetek je v MongoDB in ga lahko predvajajo člani istega prostora. Snemanje zahteva dovoljenje za mikrofon ter naslov localhost ali HTTPS.
+
 ## Struktura projekta
 
 | Mapa | Vsebina |

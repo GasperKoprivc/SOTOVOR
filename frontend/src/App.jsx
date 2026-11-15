@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { Avatar, Calendar, Metrics, Tasks, Workload } from './Overview.jsx';
 import Notifications from './Notifications.jsx';
+import VoiceRecorder from './VoiceRecorder.jsx';
 import { categories, dateKey, fullDate, request } from './data.js';
 
 const pages = {
@@ -73,14 +74,17 @@ function Dialog({ title, onClose, children }) {
 function EntryDialog({ initialKind, members, busy, error, onSave, onClose }) {
   const [kind, setKind] = useState(initialKind);
   const [repeatDays, setRepeatDays] = useState('0');
+  const [voice, setVoice] = useState(null);
+  const [recordingBusy, setRecordingBusy] = useState(false);
   return <Dialog title="Nov vnos" onClose={onClose}>
     <form onSubmit={event => {
       event.preventDefault();
+      if (recordingBusy) return;
       const values = Object.fromEntries(new FormData(event.currentTarget));
       onSave({
         ...values, dueOn: values.dueOn || null, assigneeId: values.assigneeId || null,
         repeatDays: Number(values.repeatDays || 0), rotate: values.rotate === 'on',
-        reminderDays: Number(values.reminderDays ?? 2),
+        reminderDays: Number(values.reminderDays ?? 2), voice,
       });
     }}>
       <label>Vrsta<select name="kind" value={kind} onChange={event => setKind(event.target.value)}>
@@ -102,8 +106,9 @@ function EntryDialog({ initialKind, members, busy, error, onSave, onClose }) {
         <label>Opomni dni pred rokom<input name="reminderDays" type="number" min="0" max="30" defaultValue="2" required /></label>
       </div>}
       {kind === 'task' && Number(repeatDays) > 0 && <label className="check-field"><input name="rotate" type="checkbox" /> Naslednjič dodeli naslednjemu članu</label>}
+      <VoiceRecorder onChange={setVoice} busy={busy || recordingBusy} setBusy={setRecordingBusy} />
       {error && <p className="error" role="alert">{error}</p>}
-      <button className="primary" disabled={busy}><Plus size={19} />{kind === 'task' ? 'Dodaj opravilo' : 'Dodaj dogodek'}</button>
+      <button className="primary" disabled={busy || recordingBusy}><Plus size={19} />{kind === 'task' ? 'Dodaj opravilo' : 'Dodaj dogodek'}</button>
     </form>
   </Dialog>;
 }

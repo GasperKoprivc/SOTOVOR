@@ -11,9 +11,10 @@ const app = express();
 app.disable('x-powered-by');
 app.use((_req, res, next) => {
   res.set('X-Content-Type-Options', 'nosniff');
-  res.set('Content-Security-Policy', "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; style-src 'self' 'unsafe-inline'");
+  res.set('Content-Security-Policy', "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; style-src 'self' 'unsafe-inline'; media-src 'self' blob:");
   next();
 });
+app.post('/api/entries', express.json({ limit: '3mb' }));
 app.use('/api', express.json({ limit: '8kb' }), createApi(database));
 app.use(express.static(dist));
 app.use(handleError);
