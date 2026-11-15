@@ -4,6 +4,7 @@ import {
   ListTodo, Plus, UserRoundPlus, UsersRound, X,
 } from 'lucide-react';
 import { Avatar, Calendar, Metrics, Tasks, Workload } from './Overview.jsx';
+import Notifications from './Notifications.jsx';
 import { categories, dateKey, fullDate, request } from './data.js';
 
 const pages = {
@@ -218,7 +219,10 @@ export default function App() {
     </aside>
     <main className="main">
       <header className="topbar"><span><House size={16} />{household.name}</span>
-        <button className="soft-button" onClick={() => open('invite')}><UserRoundPlus size={17} /> Povabi člana</button>
+        <div className="top-actions">
+          <Notifications key={memberId} {...{ tasks, memberId, today }} onView={next => go('tasks', next)} />
+          <button className="soft-button" onClick={() => open('invite')}><UserRoundPlus size={17} /> Povabi člana</button>
+        </div>
       </header>
       <div className="content">
         <div className="page-heading">

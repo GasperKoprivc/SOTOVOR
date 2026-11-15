@@ -80,6 +80,16 @@ input::placeholder { color: #67716a; }
 .tone-3 { color: #743e34; background: #f4e0d9; }
 .topbar { min-height: 4.35rem; display: flex; justify-content: space-between; align-items: center; gap: .75rem; padding: .75rem clamp(1rem, 3vw, 2.5rem); background: var(--paper); border-bottom: 1px solid var(--line); }
 .topbar > span { display: inline-flex; align-items: center; gap: .5rem; font-weight: 650; font-size: .9rem; color: var(--muted); overflow-wrap: anywhere; }
+.top-actions { display: flex; justify-content: end; gap: .5rem; flex-wrap: wrap; }
+.notifications { position: relative; }
+.notifications summary { cursor: pointer; list-style: none; }
+.notifications summary::-webkit-details-marker { display: none; }
+.notifications summary span { padding: .05rem .35rem; background: var(--green); color: white; border-radius: .6rem; }
+.notification-panel { position: absolute; right: 0; top: calc(100% + .45rem); z-index: 2; width: min(20rem, calc(100vw - 2rem)); padding: .9rem; max-height: 22rem; overflow: auto; }
+.notification-panel p { margin-top: .5rem; font-size: .85rem; }
+.notification-panel li { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding-top: .45rem; }
+.notification-link { display: grid; text-align: left; border: 0; background: transparent; padding: .35rem; overflow-wrap: anywhere; min-width: 0; }
+.notification-link small { color: var(--muted); }
 .content { max-width: 85rem; margin: 0 auto; padding: 2.1rem clamp(1rem, 3vw, 2.5rem) 3rem; }
 .page-heading { display: flex; justify-content: space-between; align-items: end; gap: 1rem; margin-bottom: 1.4rem; }
 .page-heading h1 { margin: .55rem 0 .3rem; font-family: Georgia, serif; font-weight: 500; font-size: clamp(2.4rem, 4.5vw, 4.3rem); line-height: 1; letter-spacing: -.065em; overflow-wrap: anywhere; }
@@ -166,6 +176,9 @@ dialog .invite-label { margin-bottom: .8rem; }
   .topbar { min-height: 0; }
 }
 @media (max-width: 39rem) {
+  .topbar { flex-wrap: wrap; }
+  .top-actions { width: 100%; justify-content: start; }
+  .notification-panel { left: 0; right: auto; }
   .welcome { grid-template-columns: minmax(0, 1fr); padding: .6rem; }
   .welcome-copy { padding: 1.25rem; }
   .welcome-text { padding: 1.9rem 0 .25rem; }

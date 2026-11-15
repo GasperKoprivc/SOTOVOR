@@ -31,6 +31,8 @@ Ustvari prostor, nato dodaj opravilo ali dogodek. Opravilo lahko dodeliš članu
 
 Pri opravilu z rokom lahko določiš interval ponavljanja v dneh in vključiš rotacijo. Ko član zaključi opravilo, Sotovor ustvari naslednji vnos glede na prejšnji rok, pri rotaciji pa ga dodeli naslednjemu članu po vrstnem redu pridružitve. Nastavitev opomnika določa, koliko dni pred rokom se opravilo pojavi med opozorili.
 
+V meniju **Obvestila** so dodelitve, bližnji roki tvojih opravil in prošnje za zamenjavo. Obvestila delujejo v spletni aplikaciji in se osvežujejo skupaj s pregledom. Oznake prebranih obvestil se shranijo v trenutnem brskalniku.
+
 ## Struktura projekta
 
 | Mapa | Vsebina |

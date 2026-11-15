@@ -114,6 +114,7 @@ export function createApi({ households, entries }) {
     }
     await entries.insertOne({
       householdId: req.household._id, kind, title, dueOn, category, assigneeId,
+      assignedAt: assigneeId ? new Date() : null,
       completedAt: null, createdAt: new Date(), repeatDays, rotate, reminderDays,
     });
     res.status(201).json(await dashboard(req.household, req.member));
@@ -122,8 +123,8 @@ export function createApi({ households, entries }) {
   router.post('/tasks/:id/:action', async (req, res) => {
     const { id, action } = req.params;
     const changes = {
-      claim: { assigneeId: req.member.id },
-      cover: { assigneeId: null },
+      claim: { assigneeId: req.member.id, assignedAt: new Date(), coverRequestedAt: null },
+      cover: { assigneeId: null, assignedAt: null, coverRequestedAt: new Date() },
       complete: { completedAt: new Date() },
     };
     if (!idPattern.test(id) || !Object.hasOwn(changes, action)) throw new HttpError(404, 'Ta pot ne obstaja.');

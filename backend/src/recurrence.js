@@ -15,6 +15,7 @@ export function nextOccurrence(task, members) {
     category: task.category,
     dueOn: date.toISOString().slice(0, 10),
     assigneeId: rotate ? members[(current + 1) % members.length].id : task.assigneeId,
+    assignedAt: new Date(),
     repeatDays, rotate,
     reminderDays: task.reminderDays ?? 2,
     completedAt: null,
