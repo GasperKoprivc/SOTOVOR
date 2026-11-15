@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   CalendarDays, Check, Clipboard, House, LayoutGrid,
-  ListTodo, Plus, UserRound, UserRoundPlus, UsersRound, X,
+  ListTodo, LogOut, Plus, UserRound, UserRoundPlus, UsersRound, X,
 } from 'lucide-react';
 import { Avatar, Calendar, Metrics, Tasks, Workload } from './Overview.jsx';
 import Notifications from './Notifications.jsx';
@@ -275,9 +275,10 @@ export default function App() {
           <Notifications key={memberId} {...{ tasks, memberId, today }} onView={next => go('tasks', next)} />
           {data.admin && data.whatsapp?.enabled && <button className="soft-button" onClick={() => open('whatsapp')}>WhatsApp</button>}
           {data.admin && <button className="soft-button" onClick={() => open('invite')}><UserRoundPlus size={17} /> Povabi člana</button>}
+          <button className="soft-button" type="button" onClick={logout} disabled={busy}><LogOut size={17} /> Odjava</button>
         </div>
       </header>
-      <div className="content">
+      <div className="content" key={page + ':' + household.id}>
         <div className="page-heading">
           <div><p className="today-label"><CalendarDays size={16} /> {fullDate.format(new Date(today + 'T12:00:00'))}</p>
             <h1>{overview ? `Živjo, ${member.name}!` : pages[page][0]}</h1>
@@ -323,7 +324,6 @@ export default function App() {
           <div className="hero-actions">
             <button className="primary" onClick={() => go('overview')}>Odpri nadzorno ploščo</button>
             {data.admin && <button className="soft-button" onClick={() => open('family')} disabled={busy}><Plus size={17} /> Nova družina</button>}
-            <button className="soft-button" onClick={logout} disabled={busy}>Odjava</button>
           </div>
           {!data.admin && (data.leaveRequested ? <p>Prošnja za izstop čaka na skrbnika.</p> :
             <button className="text-button" onClick={() => run(async () => {

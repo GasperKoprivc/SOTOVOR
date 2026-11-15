@@ -8,15 +8,15 @@
 .profile-shell { display: grid; justify-items: center; gap: 1.5rem; padding: 2rem 1rem; }
 @keyframes enter { from { opacity: 0; transform: translateY(12px); } }
 
+html:has(.landing:not(.motion-paused)) { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html:has(.landing) { scroll-behavior: auto; }
+}
 .landing {
-  --landing-bg: #101d20;
-  --landing-text: #fff2e4;
-  --landing-muted: #bdc6c1;
-  --landing-line: #304144;
-  --accent: #f1b287;
-  --display-font: "Zalando Sans Expanded Variable", "Segoe UI", sans-serif;
-  --body-font: "Inter Variable", "Segoe UI", sans-serif;
-  --mono-font: "IBM Plex Mono", monospace;
+  --landing-bg: var(--background);
+  --landing-text: var(--ink);
+  --landing-muted: var(--muted);
+  --landing-line: var(--line);
   background: var(--landing-bg);
   color: var(--landing-text);
   font-family: var(--body-font);
