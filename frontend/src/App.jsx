@@ -9,6 +9,7 @@ import VoiceRecorder from './VoiceRecorder.jsx';
 import { Brand, ChooseHousehold, Landing } from './Account.jsx';
 import './landing.css';
 import FamilySettings from './FamilySettings.jsx';
+import MonthCalendar from './MonthCalendar.jsx';
 import { categories, dateKey, fullDate, request } from './data.js';
 
 const pages = {
@@ -35,7 +36,7 @@ function Dialog({ title, onClose, children }) {
   </dialog>;
 }
 
-function EntryDialog({ initialKind, entry, permissions, members, busy, error, onSave, onRemove, onClose }) {
+function EntryDialog({ initialKind, initialDate, entry, permissions, members, busy, error, onSave, onRemove, onClose }) {
   const [kind, setKind] = useState(initialKind);
   const [repeatDays, setRepeatDays] = useState(String(entry?.repeatDays ?? 0));
   const [removing, setRemoving] = useState(false);
@@ -62,7 +63,7 @@ function EntryDialog({ initialKind, entry, permissions, members, busy, error, on
       </select></label>}
       <label>Naslov<input name="title" readOnly={!editContent} defaultValue={entry?.title} maxLength="160" required placeholder={kind === 'task' ? 'Npr. Prevzem iz šole' : 'Npr. Družinsko kosilo'} /></label>
       <div className="fields">
-        <label>{kind === 'event' ? 'Datum' : 'Rok'}<input type="date" name="dueOn" readOnly={!moveDate} defaultValue={entry?.dueOn ?? ''} required={kind === 'event' || Number(repeatDays) > 0} /></label>
+        <label>{kind === 'event' ? 'Datum' : 'Rok'}<input type="date" name="dueOn" readOnly={!moveDate} defaultValue={entry?.dueOn ?? initialDate} required={kind === 'event' || Number(repeatDays) > 0} /></label>
         <label>Kategorija<select name="category" disabled={!editContent} defaultValue={entry?.category ?? 'drugo'}>
           {Object.entries(categories).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
         </select></label>
@@ -147,6 +148,8 @@ export default function App() {
   const [filter, setFilter] = useState('all');
   const [modal, setModal] = useState(null);
   const [editing, setEditing] = useState(null);
+  const [calendarView, setCalendarView] = useState('month');
+  const [entryDate, setEntryDate] = useState('');
   const [today, setToday] = useState(() => dateKey(new Date()));
   const pending = useRef(false);
   const revision = useRef(0);
@@ -198,8 +201,9 @@ export default function App() {
     window.scrollTo(0, 0);
   }
 
-  function open(kind) {
+  function open(kind, date = '') {
     setError('');
+    setEntryDate(date);
     setModal(kind);
   }
 
@@ -278,7 +282,15 @@ export default function App() {
           </div></div>
         </>}
         {page === 'tasks' && taskPanel}
-        {page === 'calendar' && <Calendar {...{ entries, today }} onAdd={permissions.create ? () => open('event') : undefined} onEdit={canManage ? edit : undefined} />}
+        {page === 'calendar' && <>
+          <div className="calendar-view" aria-label="Pogled koledarja">
+            <button className="soft-button" aria-pressed={calendarView === 'month'} onClick={() => setCalendarView('month')}>Mesec</button>
+            <button className="soft-button" aria-pressed={calendarView === 'week'} onClick={() => setCalendarView('week')}>Teden</button>
+          </div>
+          {calendarView === 'month' ? <MonthCalendar {...{ entries, members, today }}
+            onAdd={permissions.create ? date => open('event', date) : undefined} onEdit={canManage ? edit : undefined} /> :
+            <Calendar {...{ entries, today }} onAdd={permissions.create ? () => open('event') : undefined} onEdit={canManage ? edit : undefined} />}
+        </>}
         {page === 'workload' && <Workload {...{ members, tasks, memberId }} />}
         {page === 'profile' && <div className="profile-grid"><section className="panel account-card">
           <h2>{data.profile.firstName} {data.profile.lastName}</h2>
@@ -311,7 +323,7 @@ export default function App() {
       })} />}
     {modal === 'whatsapp' && <WhatsAppDialog linked={data.whatsapp.linked} onClose={() => setModal(null)}
       onUpdate={async () => setData(await request('/dashboard'))} />}
-    {['task', 'event', 'edit'].includes(modal) && <EntryDialog initialKind={modal === 'edit' ? editing.kind : modal}
+    {['task', 'event', 'edit'].includes(modal) && <EntryDialog initialKind={modal === 'edit' ? editing.kind : modal} initialDate={entryDate}
       entry={modal === 'edit' ? editing : null} {...{ permissions, members, busy, error }}
       onClose={() => { if (!pending.current) { setModal(null); setError(''); } }}
       onRemove={() => run(async () => {
