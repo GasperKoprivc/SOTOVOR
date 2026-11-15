@@ -28,6 +28,20 @@ Ustvari prostor, nato dodaj opravilo ali dogodek. Opravilo lahko dodeliš članu
 
 Za razvoj Reacta pusti `start.bat` zagnan in v drugem terminalu uporabi `npm run dev --workspace frontend`. Vite posreduje klice API-ja Expressu na vratih 3000 oziroma na `SOTOVOR_PORT`, če ga nastaviš tudi v terminalu za Vite. Če se spremenijo odvisnosti, v korenu projekta zaženi `npm ci`.
 
+## Preverjanja in CI
+
+GitHub Actions ob vsakem potisku in pull requestu namesti odvisnosti z `npm ci`, preveri sintakso datotek JavaScript v `backend/src` in zgradi frontend z `npm run build`. Projekt trenutno nima ločenih testnih ali lint ukazov, zato jih CI še ne izvaja.
+
+Preverjanja lahko lokalno zaženeš iz korenske mape. V Windows PowerShellu uporabi `npm.cmd`, če pravilnik izvajanja blokira skripto `npm.ps1`:
+
+```powershell
+npm.cmd ci
+node --check backend/src/api.js
+node --check backend/src/db.js
+node --check backend/src/server.js
+npm.cmd run build
+```
+
 ## Dostop s telefona
 
 Za preizkus spletne različice s telefonom v domačem omrežju ustavi prejšnji zagon in v PowerShellu zaženi:
