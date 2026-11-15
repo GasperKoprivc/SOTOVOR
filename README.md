@@ -10,6 +10,19 @@ Sotovor je družinski prostor za skupna opravila, koledar in pregled razporeditv
 
 Projektni MongoDB posluša na `127.0.0.1:27027` in hrani podatke v `data/mongodb`. Zaganjalnik poišče `mongod` v običajni namestitveni mapi ali v sistemski poti. Za drugo lokacijo nastavi `SOTOVOR_MONGOD` na absolutno pot do `mongod.exe`. Za druga vrata uporabi `SOTOVOR_PORT` in `SOTOVOR_MONGO_PORT`. Dnevnik baze je v `data/mongodb.log`.
 
+## Zagon z Docker Compose
+
+Za lokalni zagon aplikacije in MongoDB v Dockerju namesti Docker Desktop ter v korenski mapi projekta zaženi:
+
+```powershell
+Copy-Item .env.example .env
+docker compose up --build
+```
+
+Odpri [http://127.0.0.1:3000](http://127.0.0.1:3000). Compose MongoDB podatke hrani v imenovanem `mongodb-data` volume in bazo izpostavi samo na `127.0.0.1:27027`; `docker compose down` ustavi storitve, ne izbriše pa podatkov. Za ponovni zagon uporabi `docker compose up -d`. Aplikacija in baza sta lokalno dostopni, ne javno izpostavljeni. Če želiš zagnati aplikacijo neposredno z `.\start.bat` in lokalnim MongoDB, najprej ustavi Compose z `docker compose down`; običajni zagon ne potrebuje Dockerja.
+
+GitHub Actions ob potisku na `main` in oznakah `v*` objavi en aplikacijski image `gasperkoprivc/sotovor` na Docker Hubu. React in Express sta v istem imageu, ker Express že streže zgrajeni frontend; MongoDB uporablja uradni image `mongo:8.0` in se ne objavlja skupaj z aplikacijo. V GitHub nastavitvah repozitorija dodaj Actions secrets `DOCKERHUB_USERNAME` (uporabniško ime Docker Hub) in `DOCKERHUB_TOKEN` (Docker Hub access token z dovoljenjem za zapis v `gasperkoprivc/sotovor`). Ne uporabljaj gesla Docker Hub računa in tokena ne dodajaj v repozitorij, `.env` ali sporočilo. Gradnja in testiranje v CI uporabljata začasno MongoDB storitev brez poverilnic.
+
 ## Prvi preizkus
 
 Ustvari prostor, nato dodaj opravilo ali dogodek. Opravilo lahko dodeliš članu ali ga objaviš za prevzem. V meniju **Povabi člana** kopiraj kodo in jo preizkusi v zasebnem oknu ali drugem profilu brskalnika. Drugi član lahko opravilo prevzame, ponudi za zamenjavo ali zaključi. Opravila z datumom in dogodki se prikažejo v tedenskem koledarju. Spremembe drugih članov se osvežijo v nekaj sekundah.
@@ -22,6 +35,7 @@ Ustvari prostor, nato dodaj opravilo ali dogodek. Opravilo lahko dodeliš članu
 | --- | --- |
 | [backend](backend/) | Express API, seje in dostop do MongoDB |
 | [frontend](frontend/) | React strani, komponente in Vite |
+| [Docker](Dockerfile) | Aplikacijski image; [Compose](compose.yaml) za lokalno aplikacijo in MongoDB |
 | [apps/mobile](apps/mobile/) | Mapa za prihodnji projekt v Android Studiu |
 | [apps/desktop](apps/desktop/) | Mapa za prihodnji namizni odjemalec |
 | [scripts](scripts/) | Lokalni zagon MongoDB in API-ja |
