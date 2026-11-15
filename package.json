@@ -1,0 +1,11 @@
+{
+  "name": "sotovor",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "workspaces": ["backend", "frontend"],
+  "scripts": {
+    "build": "npm run build --workspace frontend",
+    "start": "node scripts/start.js"
+  }
+}

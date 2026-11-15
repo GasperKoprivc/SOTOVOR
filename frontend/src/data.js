@@ -1,0 +1,37 @@
+export const categories = {
+  dom: 'Dom',
+  druzina: 'Družina',
+  opravki: 'Opravki',
+  zdravje: 'Zdravje',
+  drugo: 'Drugo',
+};
+
+export const shortDate = new Intl.DateTimeFormat('sl-SI', { day: 'numeric', month: 'short' });
+export const fullDate = new Intl.DateTimeFormat('sl-SI', { day: 'numeric', month: 'long', weekday: 'long' });
+export const weekday = new Intl.DateTimeFormat('sl-SI', { weekday: 'short' });
+
+export function dateKey(date) {
+  const pad = value => String(value).padStart(2, '0');
+  return `${String(date.getFullYear()).padStart(4, '0')}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+export function addDays(date, days) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
+export const fromKey = key => new Date(key + 'T12:00:00');
+export const initials = name => name.trim().split(/\s+/).slice(0, 2).map(word => Array.from(word)[0]).join('').toUpperCase();
+
+export async function request(path, body, signal) {
+  const options = body === undefined ? { signal } : {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  };
+  const response = await fetch('/api' + path, options);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error);
+  return data;
+}
