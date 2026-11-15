@@ -35,7 +35,23 @@ Koledar ima mesečni in tedenski pogled. V mesečnem pogledu klikni dan za sezna
 
 ### Lokalna demo družina
 
-Med delovanjem Sotovora odpri drug terminal in zaženi `npm run seed:demo`. Za drug mesec uporabi na primer `npm run seed:demo -- 2026-11`. Ukaz doda ločeno demo družino s štirimi računi in sedmimi opravili na dan. Ponovni zagon ukaza ne podvoji vnosov. Skrbnica je `ana@demo.sotovor.test`, ostali računi pa so `matej@demo.sotovor.test`, `luka@demo.sotovor.test` in `ema@demo.sotovor.test`. Lokalno ustvarjeno skupno geslo najdeš v `data/demo-password.txt`.
+Zaženi `start.bat` in pusti Sotovor odprt. V drugem PowerShellu v korenski mapi projekta ustvari demo podatke za trenutni mesec:
+
+```powershell
+npm.cmd run seed:demo
+Get-Content .\data\demo-password.txt
+```
+
+Ukaz pripravi prostor **Družina Novak · Demo** s štirimi računi in **sedmimi opravili na dan**. Za določen mesec uporabi `npm.cmd run seed:demo -- 2026-11`, kar za november 2026 pripravi 210 opravil. Ponovitev ukaza za isti mesec vnosov ne podvoji.
+
+| Oseba | Vloga | E-pošta za prijavo |
+| --- | --- | --- |
+| Ana Novak | Skrbnica | `ana@demo.sotovor.test` |
+| Matej Novak | Član | `matej@demo.sotovor.test` |
+| Luka Novak | Član | `luka@demo.sotovor.test` |
+| Ema Novak | Članica | `ema@demo.sotovor.test` |
+
+Vsi štirje računi uporabljajo skupno geslo, ki se ustvari lokalno v `data/demo-password.txt`. Na [naslovnici](http://127.0.0.1:3000) izberi **Prijava**, nato v profilu odpri **Nadzorno ploščo**. V koledarju preklopi na **Mesec** in klikni dan za seznam opravil. Ana lahko v profilu upravlja povabila in pravice članov. Za preizkus članskega pogleda se odjavi in prijavi z enim od drugih računov.
 
 Pri opravilu z rokom lahko določiš interval ponavljanja v dneh in vključiš rotacijo. Ko član zaključi opravilo, Sotovor ustvari naslednji vnos glede na prejšnji rok, pri rotaciji pa ga dodeli naslednjemu članu po vrstnem redu pridružitve. Nastavitev opomnika določa, koliko dni pred rokom se opravilo pojavi med opozorili.
 
