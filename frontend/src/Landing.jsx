@@ -18,6 +18,49 @@ const satellites = [
   [Repeat2, 'blue'], [Mic, 'rose'], [UsersRound, 'mint'],
 ];
 
+const appPreviews = [
+  { title: 'Spletna aplikacija', status: 'Deluje', image: 'web-dashboard.png', width: 1424, height: 805,
+    alt: 'Nadzorna plošča družine Novak z opravili, tedenskim koledarjem in razporeditvijo dela',
+    text: 'V brskalniku ustvari družinski prostor, povabi člane in spremljaj, kdo je prevzel katero opravilo.' },
+  { title: 'Android aplikacija', status: 'Koncept', image: 'mobile-concept.jpg', width: 1536, height: 1024,
+    alt: 'Telefon s konceptom mobilnih družinskih opravil in datumskim trakom',
+    text: 'Dnevni pregled na poti, s hitrim dostopom do tvojih opravil in možnosti za prevzem.' },
+  { title: 'Namizna aplikacija', status: 'Koncept', image: 'desktop-concept.jpg', width: 1536, height: 1024,
+    alt: 'Namizni monitor s konceptom aplikacije Sotovor in mesečnim koledarjem',
+    text: 'Samostojno okno za načrtovanje tedna ali meseca, ko za računalnikom usklajuješ več obveznosti hkrati.' },
+];
+
+function ProductShowcase() {
+  return <section id="naprave" className="landing-section product-showcase" aria-labelledby="devices-title">
+    <div className="product-heading">
+      <h2 id="devices-title">En družinski prostor, več načinov uporabe.</h2>
+      <p>Spletna različica že deluje. Za telefon, namizje in domači zaslon si oglej, kako bi lahko Sotovor uporabljali v vsakdanjem življenju.</p>
+    </div>
+    <figure className="showcase-feature">
+      <img src="/showcase/kitchen-display.jpg" width="1536" height="1024" loading="lazy" decoding="async"
+        alt="Koncept tablice Sotovor na hladilniku v domači kuhinji z mesečnim družinskim koledarjem" />
+      <figcaption>
+        <span className="showcase-status">Koncept naprave</span>
+        <h3>Družinski zaslon za hladilnik ali steno.</h3>
+        <p>Ko greš mimo hladilnika, na hitro pogledaš, kdo danes pobere otroke, kaj je še treba urediti in kateri dogodek je naslednji. Zamisel je zaslon na dotik s skupnim koledarjem, dnevnimi opravili in opomniki na mestu, kjer jih vidi vsa družina.</p>
+      </figcaption>
+    </figure>
+    <div className="showcase-grid">
+      {appPreviews.map(({ title, status, image, alt, text, width, height }) => <figure key={title} className="showcase-card">
+        <a href={`/showcase/${image}`} target="_blank" rel="noreferrer" aria-label={`Odpri večjo sliko: ${title} (nov zavihek)`}>
+          <img src={`/showcase/${image}`} {...{ alt, width, height }} loading="lazy" decoding="async" />
+          <span aria-hidden="true"><ArrowUpRight size={19} /></span>
+        </a>
+        <figcaption>
+          <span className="showcase-status">{status}</span>
+          <h3>{title}</h3>
+          <p>{text}</p>
+        </figcaption>
+      </figure>)}
+    </div>
+  </section>;
+}
+
 function Mark({ size = 18 }) {
   return <span className="landing-mark" aria-hidden="true"><House size={size} strokeWidth={2.4} /></span>;
 }
@@ -72,7 +115,7 @@ export default function Landing({ signedIn, legacy, busy, error, onAuth, onEnter
   return <div className={`landing ${motion ? '' : 'motion-paused'}`}>
     <header className="landing-header">
       <a className="landing-brand" href="#domov"><Mark /> <span>SOTOVOR</span></a>
-      <nav aria-label="Predstavitev"><a href="#funkcije">Funkcije</a><a href="#zgodba">Zakaj Sotovor</a><a href="#zacetek">Kako začeti</a></nav>
+      <nav aria-label="Predstavitev"><a href="#funkcije">Funkcije</a><a href="#naprave">Aplikacije in naprava</a><a href="#zgodba">Zakaj Sotovor</a><a href="#zacetek">Kako začeti</a></nav>
       <button className="launch-button header-login" onClick={signedIn ? onEnter : () => setMode('login')}>
         {signedIn ? 'Odpri profil' : 'Prijava'} <ArrowUpRight size={16} />
       </button>
@@ -95,6 +138,7 @@ export default function Landing({ signedIn, legacy, busy, error, onAuth, onEnter
           <p>Skupni koledar, opravila in jasen pregled, kdo kaj prevzame. Za vse, ki si delite dom in obveznosti.</p>
           <div className="landing-actions">
             <a className="launch-button solid" href="#funkcije">Razišči funkcije <ArrowDown size={16} /></a>
+            <a className="launch-button outline" href="#naprave">Oglej si naprave <ArrowDown size={16} /></a>
           </div>
         </div>
         <div className="hero-bottom">
@@ -118,6 +162,7 @@ export default function Landing({ signedIn, legacy, busy, error, onAuth, onEnter
           </div>
         </div>
       </section>
+      <ProductShowcase />
       <section id="zgodba" className="landing-section landing-story" aria-labelledby="story-title">
         <div className="story-copy">
           <h2 id="story-title">Zakaj Sotovor?</h2>

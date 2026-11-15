@@ -146,6 +146,24 @@ html:has(.landing:not(.motion-paused)) { scroll-behavior: smooth; }
 .module-preview h3 { margin: .4rem 0 0; font-family: var(--display-font); font-size: clamp(1.15rem, 3vw, 2.1rem); letter-spacing: -.05em; }
 .module-preview li { display: flex; align-items: center; gap: .65rem; padding: .57rem; border-bottom: 1px solid var(--landing-line); font-size: .86rem; }
 .module-preview li svg { color: var(--tile); flex-shrink: 0; }
+.product-showcase { border-top: 1px solid var(--landing-line); }
+.product-showcase figure { margin: 0; background: var(--paper); border: 1px solid var(--landing-line); min-width: 0; }
+.showcase-feature { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: center; }
+.showcase-feature img, .showcase-card img { display: block; width: 100%; height: auto; }
+.showcase-feature figcaption { padding: clamp(1.15rem, 4vw, 2.5rem); }
+.showcase-status { color: var(--accent); font: 500 .7rem var(--mono-font); text-transform: uppercase; letter-spacing: .085em; }
+.product-showcase h3 { margin: .5rem 0 .65rem; font-family: var(--display-font); font-size: clamp(1.12rem, 2vw, 1.65rem); line-height: 1.15; letter-spacing: -.04em; }
+.product-showcase .showcase-feature h3 { font-size: clamp(1.35rem, 3.3vw, 2.65rem); }
+.showcase-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin-top: .75rem; }
+.showcase-card a { display: grid; place-items: center; position: relative; aspect-ratio: 3 / 2; background: var(--landing-bg); }
+.showcase-card img { max-height: 100%; object-fit: contain; }
+.showcase-card a span { position: absolute; top: .6rem; right: .6rem; display: grid; place-items: center; width: 2rem; height: 2rem; color: var(--on-accent); background: var(--accent); }
+.showcase-card a:hover span { background: #ffd1b0; }
+.showcase-card figcaption { padding: 1rem; }
+.showcase-card p { font-size: .89rem; }
+@media (max-width: 50rem) {
+  .showcase-feature, .showcase-grid { grid-template-columns: minmax(0, 1fr); }
+}
 .landing-story { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); align-items: center; gap: clamp(1.1rem, 5vw, 4rem); border-top: 1px solid var(--landing-line); }
 .story-copy p { margin-top: .95rem; max-width: 59ch; }
 .story-author { display: flex; align-items: center; gap: .95rem; min-width: 0; padding: clamp(.8rem, 3vw, 1.5rem); border: 1px solid var(--landing-line); background: radial-gradient(ellipse at 0 0, #2b4444, var(--paper) 80%); }
