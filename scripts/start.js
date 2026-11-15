@@ -30,11 +30,13 @@ function isPortFree() {
 function openBrowser(port) {
   if (stopping || process.platform !== 'win32' || process.env.SOTOVOR_NO_BROWSER === '1') return;
   if (!Number.isInteger(port) || port < 1 || port > 65535) return;
-  const browser = spawn('rundll32.exe', ['url.dll,FileProtocolHandler', `http://127.0.0.1:${port}/`], {
-    stdio: 'ignore', windowsHide: true,
-  });
-  browser.once('error', error => console.error(`Odpri naslov v brskalniku ročno. ${error.message}`));
-  browser.unref();
+  const url = `http://127.0.0.1:${port}/`;
+  const browser = spawn('powershell.exe', [
+    '-NoProfile', '-NonInteractive', '-Command', `Start-Process -FilePath '${url}' -ErrorAction Stop`,
+  ], { stdio: ['ignore', 'ignore', 'inherit'], windowsHide: true });
+  const fallback = () => console.error(`Brskalnika ni bilo mogoče odpreti. Odpri ${url} ročno.`);
+  browser.once('error', fallback);
+  browser.once('exit', code => { if (code !== 0) fallback(); });
 }
 
 async function runningApp(port) {
@@ -86,6 +88,7 @@ try {
   if (httpPort && await runningApp(httpPort)) {
     console.log(`Sotovor že teče na http://127.0.0.1:${httpPort}/`);
     openBrowser(httpPort);
+    if (process.platform === 'win32' && process.env.SOTOVOR_NO_BROWSER !== '1') process.exitCode = 10;
   } else {
     if (await isPortFree()) {
       mkdirSync(data, { recursive: true });

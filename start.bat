@@ -25,6 +25,11 @@ if exist ".env" (
     node scripts/start.js
 )
 set "SOTOVOR_EXIT=%ERRORLEVEL%"
+if "%SOTOVOR_EXIT%"=="10" (
+    echo Prvotni streznik se naprej tece. To okno lahko zapres.
+    pause
+    exit /b 0
+)
 if not "%SOTOVOR_EXIT%"=="0" pause
 exit /b %SOTOVOR_EXIT%
 
