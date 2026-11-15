@@ -27,6 +27,7 @@ export function Metrics({ tasks, memberId, today, onFilter }) {
 const filters = { all: 'Odprta', mine: 'Moja', available: 'Za prevzem', due: 'Rok blizu', done: 'Zaključena' };
 
 export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAction, busy, onAdd, onEdit }) {
+  const [pagination, setPagination] = useState({ filter, page: 1 });
   const names = new Map(members.map(member => [member.id, member.name]));
   const filtered = tasks.filter(task => {
     if (filter === 'done') return Boolean(task.completedAt);
@@ -36,14 +37,21 @@ export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAct
     if (filter === 'due') return needsReminder(task, today);
     return true;
   }).sort((a, b) => (a.dueOn || '9999').localeCompare(b.dueOn || '9999'));
+  const pageSize = 12;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const page = Math.min(pagination.filter === filter ? pagination.page : 1, totalPages);
+  const shown = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   return <section className="panel task-panel">
     <div className="panel-heading"><div><h2>Družinska opravila</h2><p>Dogovorite se, kdo kaj prevzame.</p></div><ListTodo aria-hidden="true" size={22} /></div>
     <div className="filters" aria-label="Filtri opravil">
       {Object.entries(filters).map(([key, label]) =>
-        <button type="button" key={key} aria-pressed={filter === key} onClick={() => onFilter(key)}>{label}</button>)}
+        <button type="button" key={key} aria-pressed={filter === key} onClick={() => {
+          setPagination({ filter: key, page: 1 });
+          onFilter(key);
+        }}>{label}</button>)}
     </div>
-    {filtered.length ? <ul className="task-list">{filtered.map(task => {
+    {filtered.length ? <ul className="task-list">{shown.map(task => {
       const due = task.dueOn && shortDate.format(fromKey(task.dueOn));
       const overdue = !task.completedAt && task.dueOn && task.dueOn < today;
       return <li key={task.id} className="task-row">
@@ -71,6 +79,11 @@ export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAct
       <p>{tasks.length ? 'Izberi drug filter za več opravil.' : 'Dodaj nekaj, kar bi radi uredili skupaj.'}</p>
       {!tasks.length && onAdd && <button className="soft-button" onClick={onAdd}><Plus size={17} /> Dodaj opravilo</button>}
     </div>}
+    {totalPages > 1 && <nav className="task-pagination" aria-label="Strani opravil">
+      <button className="icon-button" disabled={page === 1} aria-label="Prejšnja stran opravil" onClick={() => setPagination({ filter, page: page - 1 })}><ChevronLeft size={17} /></button>
+      <span aria-live="polite">{(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)} od {filtered.length}</span>
+      <button className="icon-button" disabled={page === totalPages} aria-label="Naslednja stran opravil" onClick={() => setPagination({ filter, page: page + 1 })}><ChevronRight size={17} /></button>
+    </nav>}
   </section>;
 }
 

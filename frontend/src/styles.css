@@ -178,6 +178,7 @@ dialog .fields { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
 .member-settings form { margin: .65rem 0 0; }
 .rights-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
 .rotate-code { margin-left: .7rem; }
+.task-pagination { display: flex; justify-content: end; align-items: center; gap: .55rem; margin-top: .6rem; color: var(--muted); font-size: .79rem; }
 .calendar-view { display: flex; gap: .35rem; margin-bottom: .75rem; }
 .calendar-view [aria-pressed=true] { background: var(--green); color: white; }
 .month-calendar .panel-heading h2, .month-agenda h2 { text-transform: capitalize; }
