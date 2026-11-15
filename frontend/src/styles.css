@@ -151,6 +151,8 @@ input::placeholder { color: #67716a; }
 .load-bar span:first-child { background: #537c5a; }
 .load-bar span:last-child { background: #9ab49b; }
 .workload > .text-button { margin-top: .5rem; }
+.workload-filter { max-width: 16rem; margin-bottom: 1.1rem; }
+.workload-unassigned { margin-top: 1rem; padding-top: .65rem; border-top: 1px solid var(--line); font-size: .83rem; }
 .error { color: #8d3226; }
 .banner { border-radius: .6rem; padding: .65rem .8rem; margin-bottom: .8rem; background: #e5efe2; font-size: .87rem; }
 .banner.error { background: #fae7df; }

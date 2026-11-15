@@ -58,7 +58,7 @@ export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAct
         <div className="row-actions">
           {!task.completedAt && !task.assigneeId && <button className="soft-button" disabled={busy} onClick={() => onAction(task.id, 'claim')}>Prevzemi</button>}
           {!task.completedAt && task.assigneeId === memberId && <>
-            <button className="soft-button" disabled={busy} onClick={() => onAction(task.id, 'cover')}>Zamenjava</button>
+            <button className="soft-button" disabled={busy} onClick={() => onAction(task.id, 'cover')}>Prosi za zamenjavo</button>
             <button className="icon-button" aria-label={`Zaključi ${task.title}`} title="Zaključi" disabled={busy} onClick={() => onAction(task.id, 'complete')}><Check size={19} /></button>
           </>}
         </div>
@@ -111,14 +111,21 @@ export function Calendar({ entries, today, compact, onOpen, onAdd }) {
 }
 
 export function Workload({ members, tasks, memberId, compact, onOpen }) {
+  const [days, setDays] = useState('30');
+  const since = days === 'all' || compact ? 0 : +addDays(new Date(), -Number(days));
   const rows = members.map((member, index) => {
     const assigned = tasks.filter(task => task.assigneeId === member.id);
-    const done = assigned.filter(task => task.completedAt).length;
-    return { ...member, index, done, open: assigned.length - done };
+    const done = assigned.filter(task => task.completedAt && Date.parse(task.completedAt) >= since).length;
+    return { ...member, index, done, open: assigned.filter(task => !task.completedAt).length };
   });
   const max = Math.max(1, ...rows.map(row => row.open + row.done));
   return <section className="panel workload">
     <div className="panel-heading"><div><h2>Razporeditev dela</h2><p>Opravila po družinskih članih</p></div><UsersRound size={22} aria-hidden="true" /></div>
+    {!compact && <label className="workload-filter">Obdobje za zaključena opravila
+      <select value={days} onChange={event => setDays(event.target.value)}>
+        <option value="7">Zadnjih 7 dni</option><option value="30">Zadnjih 30 dni</option><option value="all">Vse od začetka</option>
+      </select>
+    </label>}
     <ul className="load-list">{rows.map(row => <li key={row.id}>
       <Avatar name={row.name} index={row.index} />
       <div><strong>{row.name}{row.id === memberId && <span> · ti</span>}</strong>
@@ -126,6 +133,7 @@ export function Workload({ members, tasks, memberId, compact, onOpen }) {
         <p>{row.open} odprtih · {row.done} zaključenih</p>
       </div>
     </li>)}</ul>
+    {!compact && <p className="muted workload-unassigned">Brez odgovornega člana: {tasks.filter(task => !task.assigneeId && !task.completedAt).length}</p>}
     {compact && <button className="text-button" onClick={onOpen}>Poglej razporeditev <ArrowRight size={16} /></button>}
   </section>;
 }
