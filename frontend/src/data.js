@@ -22,6 +22,8 @@ export function addDays(date, days) {
 }
 
 export const fromKey = key => new Date(key + 'T12:00:00');
+export const needsReminder = (task, today) => !task.completedAt && Boolean(task.dueOn) &&
+  task.dueOn <= dateKey(addDays(fromKey(today), task.reminderDays ?? 2));
 export const initials = name => name.trim().split(/\s+/).slice(0, 2).map(word => Array.from(word)[0]).join('').toUpperCase();
 
 export async function request(path, body, signal) {

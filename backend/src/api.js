@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { Router } from 'express';
 import { ObjectId } from 'mongodb';
+import { materializeOccurrences, nextOccurrence } from './recurrence.js';
 
 const sessionSeconds = 90 * 24 * 60 * 60;
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -44,8 +45,9 @@ export function createApi({ households, entries }) {
 
   async function dashboard(household, member) {
     if (!household) return null;
+    await materializeOccurrences(entries, household._id);
     const items = await entries.find({ householdId: household._id }, {
-      projection: { householdId: 0 },
+      projection: { householdId: 0, nextOccurrence: 0 },
     }).sort({ createdAt: -1 }).toArray();
     return {
       memberId: member.id,
@@ -87,7 +89,7 @@ export function createApi({ households, entries }) {
   });
 
   router.post('/entries', async (req, res) => {
-    const { kind, dueOn = null, category = 'drugo' } = req.body;
+    const { kind, dueOn = null, category = 'drugo', repeatDays = 0, rotate = false, reminderDays = 2 } = req.body;
     if (kind !== 'task' && kind !== 'event') throw new HttpError(400, 'Izberi opravilo ali dogodek.');
     const title = requiredText(req.body.title, 160, 'Naslov');
     if (!categories.has(category)) throw new HttpError(400, 'Izberi veljavno kategorijo.');
@@ -98,13 +100,21 @@ export function createApi({ households, entries }) {
       }
     }
     if (kind === 'event' && !dueOn) throw new HttpError(400, 'Dogodek potrebuje datum.');
+    if (!Number.isInteger(repeatDays) || repeatDays < 0 || repeatDays > 3660 ||
+        (repeatDays > 0 && (kind !== 'task' || !dueOn)) || typeof rotate !== 'boolean' ||
+        (rotate && !repeatDays)) {
+      throw new HttpError(400, 'Za ponavljanje opravila izberi rok in veljaven interval.');
+    }
+    if (!Number.isInteger(reminderDays) || reminderDays < 0 || reminderDays > 30) {
+      throw new HttpError(400, 'Opomnik nastavi od 0 do 30 dni pred rokom.');
+    }
     const assigneeId = kind === 'task' ? req.body.assigneeId ?? null : null;
     if (assigneeId !== null && !req.household.members.some(member => member.id === assigneeId)) {
       throw new HttpError(400, 'Izberi člana tega prostora.');
     }
     await entries.insertOne({
       householdId: req.household._id, kind, title, dueOn, category, assigneeId,
-      completedAt: null, createdAt: new Date(),
+      completedAt: null, createdAt: new Date(), repeatDays, rotate, reminderDays,
     });
     res.status(201).json(await dashboard(req.household, req.member));
   });
@@ -118,9 +128,15 @@ export function createApi({ households, entries }) {
     };
     if (!idPattern.test(id) || !Object.hasOwn(changes, action)) throw new HttpError(404, 'Ta pot ne obstaja.');
     const task = { _id: new ObjectId(id), householdId: req.household._id, kind: 'task' };
-    const result = await entries.updateOne({
+    const condition = {
       ...task, completedAt: null, assigneeId: action === 'claim' ? null : req.member.id,
-    }, { $set: changes[action] });
+    };
+    if (action === 'complete') {
+      const current = await entries.findOne(condition);
+      const next = current && nextOccurrence(current, req.household.members);
+      if (next) changes.complete.nextOccurrence = next;
+    }
+    const result = await entries.updateOne(condition, { $set: changes[action] });
     if (!result.matchedCount) {
       if (!await entries.findOne(task)) throw new HttpError(404, 'Opravilo ne obstaja.');
       throw new HttpError(409, 'Stanje opravila se je spremenilo ali pa dejanje ni na voljo.');

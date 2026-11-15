@@ -148,6 +148,8 @@ dialog { width: min(28rem, calc(100% - 2rem)); padding: 1.25rem; max-height: cal
 dialog::backdrop { background: #152e24a0; }
 dialog > p { margin-bottom: .8rem; font-size: .9rem; line-height: 1.5; }
 dialog .fields { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
+dialog .check-field { display: flex; align-items: center; gap: .5rem; }
+.check-field input { width: auto; accent-color: var(--green); }
 dialog .invite-label { margin-bottom: .8rem; }
 @media (max-width: 68rem) {
   .workspace { grid-template-columns: 12.25rem minmax(0, 1fr); }

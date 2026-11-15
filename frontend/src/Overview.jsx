@@ -3,7 +3,7 @@ import {
   ArrowRight, CalendarDays, Check, ChevronLeft, ChevronRight, CircleCheckBig,
   Clock3, Hand, ListTodo, Plus, UsersRound,
 } from 'lucide-react';
-import { addDays, categories, dateKey, fromKey, initials, shortDate, weekday } from './data.js';
+import { addDays, categories, dateKey, fromKey, initials, needsReminder, shortDate, weekday } from './data.js';
 
 export function Avatar({ name, index = 0 }) {
   return <span aria-hidden="true" className={`avatar tone-${index % 4}`}>{initials(name)}</span>;
@@ -11,11 +11,10 @@ export function Avatar({ name, index = 0 }) {
 
 export function Metrics({ tasks, memberId, today, onFilter }) {
   const open = tasks.filter(task => !task.completedAt);
-  const soon = dateKey(addDays(fromKey(today), 2));
   const metrics = [
     ['Moja odprta opravila', open.filter(task => task.assigneeId === memberId).length, ListTodo, 'mine'],
     ['Na voljo za prevzem', open.filter(task => !task.assigneeId).length, Hand, 'available'],
-    ['Rok do ' + shortDate.format(fromKey(soon)), open.filter(task => task.dueOn && task.dueOn <= soon).length, Clock3, 'due'],
+    ['Opomniki za roke', open.filter(task => needsReminder(task, today)).length, Clock3, 'due'],
   ];
   return <div className="metrics">{metrics.map(([label, count, Icon, filter]) =>
     <button type="button" className="metric panel" key={filter} onClick={() => onFilter(filter)}>
@@ -29,13 +28,12 @@ const filters = { all: 'Odprta', mine: 'Moja', available: 'Za prevzem', due: 'Ro
 
 export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAction, busy, onAdd }) {
   const names = new Map(members.map(member => [member.id, member.name]));
-  const soon = dateKey(addDays(fromKey(today), 2));
   const filtered = tasks.filter(task => {
     if (filter === 'done') return Boolean(task.completedAt);
     if (task.completedAt) return false;
     if (filter === 'mine') return task.assigneeId === memberId;
     if (filter === 'available') return !task.assigneeId;
-    if (filter === 'due') return task.dueOn && task.dueOn <= soon;
+    if (filter === 'due') return needsReminder(task, today);
     return true;
   }).sort((a, b) => (a.dueOn || '9999').localeCompare(b.dueOn || '9999'));
 
@@ -54,7 +52,7 @@ export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAct
         </span>
         <div className="task-info">
           <strong>{task.title}</strong>
-          <p>{names.get(task.assigneeId) || 'Na voljo za prevzem'}{due && <span className={overdue ? 'overdue' : ''}> · {overdue ? 'V zamudi, ' : ''}{due}</span>}</p>
+          <p>{names.get(task.assigneeId) || 'Na voljo za prevzem'}{due && <span className={needsReminder(task, today) ? 'overdue' : ''}> · {overdue ? 'V zamudi, ' : ''}{due}</span>}{task.repeatDays > 0 && <span> · Vsakih {task.repeatDays} dni{task.rotate ? ' · Rotacija' : ''}</span>}</p>
         </div>
         <span className="tag">{categories[task.category]}</span>
         <div className="row-actions">

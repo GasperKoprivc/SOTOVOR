@@ -29,6 +29,8 @@ Ustvari prostor, nato dodaj opravilo ali dogodek. Opravilo lahko dodeliš članu
 
 Članstvo je vezano na sejo brskalnika. Brisanje piškotka, potek seje ali prehod na drug naslov strežnika zahteva nov vstop s kodo, ki ustvari novega člana.
 
+Pri opravilu z rokom lahko določiš interval ponavljanja v dneh in vključiš rotacijo. Ko član zaključi opravilo, Sotovor ustvari naslednji vnos glede na prejšnji rok, pri rotaciji pa ga dodeli naslednjemu članu po vrstnem redu pridružitve. Nastavitev opomnika določa, koliko dni pred rokom se opravilo pojavi med opozorili.
+
 ## Struktura projekta
 
 | Mapa | Vsebina |

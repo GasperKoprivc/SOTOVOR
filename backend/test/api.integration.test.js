@@ -105,3 +105,27 @@ test('a household member can claim an unassigned task through the API', { timeou
   const competingClaim = await postJson(`/tasks/${task.id}/claim`, {}, ownerCookie);
   assert.equal(competingClaim.response.status, 409);
 });
+
+test('completion creates exactly one recurring task and rotates its assignee', async () => {
+  const created = await postJson('/households', { householdName: 'Rotacija', memberName: 'Ana' });
+  const owner = sessionCookie(created.response);
+  const initial = (await dashboard(owner)).data;
+  const joined = await postJson('/households/join', {
+    inviteCode: initial.household.inviteCode, memberName: 'Boris',
+  });
+  const nextMember = (await dashboard(sessionCookie(joined.response))).data.memberId;
+  const added = await postJson('/entries', {
+    kind: 'task', title: 'Prevzem', dueOn: '2026-12-29',
+    assigneeId: initial.memberId, repeatDays: 7, rotate: true, reminderDays: 3,
+  }, owner);
+  assert.equal(added.response.status, 201);
+  const path = `/tasks/${added.data.entries[0].id}/complete`;
+  const results = await Promise.all([postJson(path, {}, owner), postJson(path, {}, owner)]);
+  assert.deepEqual(results.map(result => result.response.status).sort(), [200, 409]);
+  const { entries } = (await dashboard(owner)).data;
+  assert.equal(entries.length, 2);
+  const next = entries.find(entry => !entry.completedAt);
+  assert.equal(next.dueOn, '2027-01-05');
+  assert.equal(next.assigneeId, nextMember);
+  assert.equal(next.reminderDays, 3);
+});

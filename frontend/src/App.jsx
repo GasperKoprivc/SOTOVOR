@@ -71,18 +71,23 @@ function Dialog({ title, onClose, children }) {
 
 function EntryDialog({ initialKind, members, busy, error, onSave, onClose }) {
   const [kind, setKind] = useState(initialKind);
+  const [repeatDays, setRepeatDays] = useState('0');
   return <Dialog title="Nov vnos" onClose={onClose}>
     <form onSubmit={event => {
       event.preventDefault();
       const values = Object.fromEntries(new FormData(event.currentTarget));
-      onSave({ ...values, dueOn: values.dueOn || null, assigneeId: values.assigneeId || null });
+      onSave({
+        ...values, dueOn: values.dueOn || null, assigneeId: values.assigneeId || null,
+        repeatDays: Number(values.repeatDays || 0), rotate: values.rotate === 'on',
+        reminderDays: Number(values.reminderDays ?? 2),
+      });
     }}>
       <label>Vrsta<select name="kind" value={kind} onChange={event => setKind(event.target.value)}>
         <option value="task">Opravilo</option><option value="event">Dogodek</option>
       </select></label>
       <label>Naslov<input name="title" maxLength="160" required placeholder={kind === 'task' ? 'Npr. Prevzem iz šole' : 'Npr. Družinsko kosilo'} /></label>
       <div className="fields">
-        <label>{kind === 'event' ? 'Datum' : 'Rok (neobvezno)'}<input type="date" name="dueOn" required={kind === 'event'} /></label>
+        <label>{kind === 'event' ? 'Datum' : 'Rok'}<input type="date" name="dueOn" required={kind === 'event' || Number(repeatDays) > 0} /></label>
         <label>Kategorija<select name="category" defaultValue="drugo">
           {Object.entries(categories).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
         </select></label>
@@ -91,6 +96,11 @@ function EntryDialog({ initialKind, members, busy, error, onSave, onClose }) {
         <option value="">Na voljo za prevzem</option>
         {members.map(member => <option key={member.id} value={member.id}>{member.name}</option>)}
       </select></label>}
+      {kind === 'task' && <div className="fields">
+        <label>Ponovi čez dni<input name="repeatDays" type="number" min="0" max="3660" required value={repeatDays} onChange={event => setRepeatDays(event.target.value)} /></label>
+        <label>Opomni dni pred rokom<input name="reminderDays" type="number" min="0" max="30" defaultValue="2" required /></label>
+      </div>}
+      {kind === 'task' && Number(repeatDays) > 0 && <label className="check-field"><input name="rotate" type="checkbox" /> Naslednjič dodeli naslednjemu članu</label>}
       {error && <p className="error" role="alert">{error}</p>}
       <button className="primary" disabled={busy}><Plus size={19} />{kind === 'task' ? 'Dodaj opravilo' : 'Dodaj dogodek'}</button>
     </form>
