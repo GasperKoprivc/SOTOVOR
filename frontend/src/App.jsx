@@ -6,7 +6,8 @@ import {
 import { Avatar, Calendar, Metrics, Tasks, Workload } from './Overview.jsx';
 import Notifications from './Notifications.jsx';
 import VoiceRecorder from './VoiceRecorder.jsx';
-import { Brand, ChooseHousehold, Landing } from './Account.jsx';
+import { Brand, ChooseHousehold } from './Account.jsx';
+import Landing from './Landing.jsx';
 import './landing.css';
 import FamilySettings from './FamilySettings.jsx';
 import MonthCalendar from './MonthCalendar.jsx';
