@@ -180,7 +180,7 @@ dialog .invite-label { margin-bottom: .8rem; }
 @media (max-width: 54rem) {
   .workspace { grid-template-columns: minmax(0, 1fr); }
   .sidebar { position: static; height: auto; display: flex; padding: .8rem 1rem; gap: .65rem; border-right: 0; border-bottom: 1px solid var(--line); }
-  .sidebar nav { grid-template-columns: repeat(4, 1fr); gap: .15rem; }
+  .sidebar nav { grid-template-columns: repeat(5, 1fr); gap: .15rem; }
   .sidebar nav button { justify-content: center; flex-direction: column; gap: .25rem; font-size: .71rem; padding: .4rem .15rem; }
   .sidebar .household, .sidebar-profile { display: none; }
   .topbar { min-height: 0; }

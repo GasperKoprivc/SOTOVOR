@@ -48,6 +48,14 @@ after(async () => {
 }, { timeout: 30_000 });
 
 async function postJson(path, body, cookie) {
+  if (!cookie && ['/households', '/households/join'].includes(path)) {
+    const registered = await postJson('/auth/register', {
+      firstName: body.memberName, lastName: 'Test', email: `${randomUUID()}@test.invalid`,
+      phone: '+38640000111', password: 'integration-test',
+    });
+    cookie = sessionCookie(registered.response);
+    body = { expectedMembers: 4, ...body };
+  }
   const response = await fetch(`${apiUrl}${path}`, {
     method: 'POST',
     headers: {
@@ -56,6 +64,7 @@ async function postJson(path, body, cookie) {
     },
     body: JSON.stringify(body),
   });
+  response.cookie = cookie;
   return { response, data: await response.json() };
 }
 
@@ -65,6 +74,7 @@ async function dashboard(cookie) {
 }
 
 function sessionCookie(response) {
+  if (response.cookie) return response.cookie;
   const cookie = response.headers.getSetCookie()
     .find(value => value.startsWith('sotovor_session='))
     ?.split(';', 1)[0];

@@ -8,14 +8,19 @@ export async function connect() {
     const db = client.db(process.env.SOTOVOR_DB || 'sotovor');
     const households = db.collection('households');
     const entries = db.collection('entries');
+    const accounts = db.collection('accounts');
+    const sessions = db.collection('sessions');
     await Promise.all([
       households.createIndex({ inviteCode: 1 }, { unique: true }),
       households.createIndex({ 'members.sessionHash': 1 }),
+      households.createIndex({ 'members.accountId': 1 }, { unique: true, sparse: true }),
+      accounts.createIndex({ email: 1 }, { unique: true }),
+      sessions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
       households.createIndex({ whatsappSender: 1 }, { unique: true, sparse: true }),
       entries.createIndex({ whatsappMessageId: 1 }, { unique: true, sparse: true }),
       entries.createIndex({ householdId: 1, dueOn: 1 }),
     ]);
-    return { client, households, entries };
+    return { client, households, entries, accounts, sessions };
   } catch (error) {
     await client.close();
     throw error;

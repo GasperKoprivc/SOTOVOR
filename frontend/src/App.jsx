@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  ArrowRight, CalendarDays, Check, Clipboard, House, LayoutGrid,
-  ListTodo, Plus, UserRoundPlus, UsersRound, X,
+  CalendarDays, Check, Clipboard, House, LayoutGrid,
+  ListTodo, Plus, UserRound, UserRoundPlus, UsersRound, X,
 } from 'lucide-react';
 import { Avatar, Calendar, Metrics, Tasks, Workload } from './Overview.jsx';
 import Notifications from './Notifications.jsx';
 import VoiceRecorder from './VoiceRecorder.jsx';
+import { Brand, ChooseHousehold, Landing } from './Account.jsx';
+import './landing.css';
 import { categories, dateKey, fullDate, request } from './data.js';
 
 const pages = {
@@ -13,47 +15,8 @@ const pages = {
   tasks: ['Opravila', ListTodo],
   calendar: ['Koledar', CalendarDays],
   workload: ['Razporeditev', UsersRound],
+  profile: ['Profil', UserRound],
 };
-
-function Brand() {
-  return <span className="brand"><span className="brand-icon"><House size={21} strokeWidth={2.3} /></span>Sotovor<span className="brand-dot">.</span></span>;
-}
-
-function Welcome({ onSubmit, busy, error }) {
-  const [joining, setJoining] = useState(false);
-  return <main className="welcome">
-    <div className="welcome-copy">
-      <Brand />
-      <div className="welcome-text">
-        <h1>Manj skrbi.<br /><em>Več skupaj.</em></h1>
-        <p>En prostor za družinska opravila, dogovore in pregled nad tem, kdo kaj prevzame.</p>
-        <ul>
-          <li><span><ListTodo size={19} /></span> Opravila, ki jih lahko prevzame vsak član</li>
-          <li><span><CalendarDays size={19} /></span> Skupni tedenski koledar</li>
-          <li><span><UsersRound size={19} /></span> Razporeditev dela po članih</li>
-        </ul>
-      </div>
-    </div>
-    <section className="welcome-right">
-      <div className="panel welcome-form">
-        <h2>{joining ? 'Pridruži se prostoru' : 'Ustvari družinski prostor'}</h2>
-        <p>{joining ? 'Uporabi kodo, ki ti jo je poslal družinski član.' : 'Vnesi ime prostora in dodaj sebe kot prvega člana.'}</p>
-        <form key={joining} onSubmit={event => {
-          event.preventDefault();
-          onSubmit(joining, Object.fromEntries(new FormData(event.currentTarget)));
-        }}>
-          {joining
-            ? <label>Koda povabila<input name="inviteCode" maxLength="32" required autoCapitalize="none" spellCheck={false} placeholder="Koda iz povabila" /></label>
-            : <label>Ime prostora<input name="householdName" maxLength="80" required placeholder="Npr. Naš dom" /></label>}
-          <label>Tvoje ime<input name="memberName" maxLength="60" required autoComplete="given-name" placeholder="Npr. Ana" /></label>
-          {error && <p className="error" role="alert">{error}</p>}
-          <button className="primary" disabled={busy}>{joining ? 'Pridruži se' : 'Ustvari prostor'} <ArrowRight size={18} /></button>
-        </form>
-        <button className="text-button" onClick={() => setJoining(!joining)}>{joining ? 'Ustvari svoj prostor' : 'Že imaš povabilo?'} <ArrowRight size={16} /></button>
-      </div>
-    </section>
-  </main>;
-}
 
 function Dialog({ title, onClose, children }) {
   const ref = useRef(null);
@@ -172,7 +135,7 @@ export default function App() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
-  const [page, setPage] = useState('overview');
+  const [page, setPage] = useState('profile');
   const [filter, setFilter] = useState('all');
   const [modal, setModal] = useState(null);
   const [editing, setEditing] = useState(null);
@@ -241,9 +204,25 @@ export default function App() {
     <Brand />
     {error ? <><p role="alert">{error}</p><button className="primary" onClick={() => location.reload()}>Poskusi znova</button></> : <p role="status">Odpiram družinski prostor …</p>}
   </main>;
-  if (!data) return <Welcome busy={busy} error={error} onSubmit={(joining, fields) => run(async () => {
+  function logout() {
+    return run(async () => {
+      await request('/auth/logout', {});
+      setData(null);
+      setPage('profile');
+      setModal(null);
+    });
+  }
+
+  if (!data?.profile) return <Landing legacy={Boolean(data?.household)} busy={busy} error={error} onAuth={(mode, fields) => run(async () => {
+    await request('/auth/' + mode, fields);
+    setPage('profile');
+    setData(await request('/dashboard'));
+  })} />;
+
+  if (!data.household) return <ChooseHousehold profile={data.profile} busy={busy} error={error} onLogout={logout} onSubmit={(joining, fields) => run(async () => {
     await request(joining ? '/households/join' : '/households', fields);
     setData(await request('/dashboard'));
+    setPage('overview');
   })} />;
 
   const { household, memberId, members, entries } = data;
@@ -269,7 +248,7 @@ export default function App() {
         <div className="top-actions">
           <Notifications key={memberId} {...{ tasks, memberId, today }} onView={next => go('tasks', next)} />
           {data.whatsapp?.enabled && <button className="soft-button" onClick={() => open('whatsapp')}>WhatsApp</button>}
-          <button className="soft-button" onClick={() => open('invite')}><UserRoundPlus size={17} /> Povabi člana</button>
+          {data.admin && <button className="soft-button" onClick={() => open('invite')}><UserRoundPlus size={17} /> Povabi člana</button>}
         </div>
       </header>
       <div className="content">
@@ -278,7 +257,7 @@ export default function App() {
             <h1>{overview ? `Živjo, ${member.name}!` : pages[page][0]}</h1>
             {overview && <p>Tukaj je pregled vaših družinskih opravil in dogovorov.</p>}
           </div>
-          <button className="primary" onClick={() => open(page === 'calendar' ? 'event' : 'task')}><Plus size={20} /> Dodaj vnos</button>
+          {page !== 'profile' && <button className="primary" onClick={() => open(page === 'calendar' ? 'event' : 'task')}><Plus size={20} /> Dodaj vnos</button>}
         </div>
         {error && !modal && <p className="error banner" role="alert">{error}</p>}
         {notice && <p className="notice banner" role="status">{notice}</p>}
@@ -292,6 +271,15 @@ export default function App() {
         {page === 'tasks' && taskPanel}
         {page === 'calendar' && <Calendar {...{ entries, today }} onAdd={() => open('event')} onEdit={edit} />}
         {page === 'workload' && <Workload {...{ members, tasks, memberId }} />}
+        {page === 'profile' && <section className="panel account-card">
+          <h2>{data.profile.firstName} {data.profile.lastName}</h2>
+          <p>{data.profile.email}<br />{data.profile.phone}</p>
+          <p><strong>{household.name}</strong> · {data.admin ? 'Skrbnik' : 'Član'}</p>
+          <div className="hero-actions">
+            <button className="primary" onClick={() => go('overview')}>Odpri nadzorno ploščo</button>
+            <button className="soft-button" onClick={logout} disabled={busy}>Odjava</button>
+          </div>
+        </section>}
       </div>
     </main>
     {modal === 'invite' && <InviteDialog code={household.inviteCode} onClose={() => setModal(null)} />}
