@@ -8,6 +8,18 @@ permissions:
   contents: read
 
 jobs:
+  windows-startup-smoke:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Test Windows startup from a clean checkout
+        run: node --test scripts/start.windows.test.js
+
   build:
     runs-on: ubuntu-latest
     services:
@@ -38,6 +50,7 @@ jobs:
           node --check backend/src/recurrence.js
           node --check backend/src/whatsapp.js
           node --check scripts/start.js
+          node --check scripts/start.windows.test.js
       - name: Test API with MongoDB
         run: npm test
         env:
