@@ -72,7 +72,7 @@ export default function Landing({ signedIn, legacy, busy, error, onAuth, onEnter
   return <div className={`landing ${motion ? '' : 'motion-paused'}`}>
     <header className="landing-header">
       <a className="landing-brand" href="#domov"><Mark /> <span>SOTOVOR</span></a>
-      <nav aria-label="Predstavitev"><a href="#funkcije">Funkcije</a><a href="#zacetek">Kako začeti</a></nav>
+      <nav aria-label="Predstavitev"><a href="#funkcije">Funkcije</a><a href="#zgodba">Zakaj Sotovor</a><a href="#zacetek">Kako začeti</a></nav>
       <button className="launch-button header-login" onClick={signedIn ? onEnter : () => setMode('login')}>
         {signedIn ? 'Odpri profil' : 'Prijava'} <ArrowUpRight size={16} />
       </button>
@@ -98,7 +98,7 @@ export default function Landing({ signedIn, legacy, busy, error, onAuth, onEnter
           </div>
         </div>
         <div className="hero-bottom">
-          <a href="#funkcije">Spoznaj Sotovor <ArrowDown size={14} /></a>
+          <a href="#zgodba">Spoznaj Sotovor <ArrowDown size={14} /></a>
           <button className="motion-toggle" aria-pressed={!motion} onClick={() => setMotion(!motion)}>{motion ? 'Ustavi animacije' : 'Zaženi animacije'}</button>
         </div>
       </section>
@@ -118,8 +118,26 @@ export default function Landing({ signedIn, legacy, busy, error, onAuth, onEnter
           </div>
         </div>
       </section>
-      <section id="zacetek" className="landing-section landing-start">
-        <div><h2>Začnite z enim opravilom.</h2><p>Ustvari prostor, s kodo povabi domače in dodaj prvo skupno opravilo.</p></div>
+      <section id="zgodba" className="landing-section landing-story" aria-labelledby="story-title">
+        <div className="story-copy">
+          <h2 id="story-title">Zakaj Sotovor?</h2>
+          <p>Gašper Koprivc je pred Sotovorjem doma pozabljal na opravila in družinske dogovore. Pozna tisti trenutek, ko te doma vprašajo, ali si kaj uredil, ti pa se šele takrat spomniš, da si to obljubil.</p>
+          <p>Zato je ustvaril skupni prostor, kjer vsi vidijo, kaj je treba narediti, kdo je to prevzel in do kdaj. Ko je treba zamenjati načrt, lahko drugi član prevzame opravilo, ne da bi moral nekdo posebej poklicati vse domače.</p>
+        </div>
+        <aside className="story-author" aria-label="Avtor Sotovora">
+          <span className="story-monogram" aria-hidden="true">GK</span>
+          <div><strong>Gašper Koprivc</strong><p>Avtor Sotovora</p></div>
+        </aside>
+      </section>
+      <section id="zacetek" className="landing-section landing-start" aria-labelledby="start-title">
+        <div>
+          <h2 id="start-title">Začni z enim opravilom.</h2>
+          <ol className="start-steps">
+            <li>Ustvari družinski prostor.</li>
+            <li>S kodo povabi domače.</li>
+            <li>Dodaj prvo opravilo in se dogovorite, kdo ga prevzame.</li>
+          </ol>
+        </div>
         <button className="launch-button solid" onClick={signedIn ? onEnter : () => setMode('register')}>
           {signedIn ? 'Odpri profil' : 'Ustvari račun'} <ArrowRight size={19} />
         </button>
