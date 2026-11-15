@@ -65,7 +65,7 @@ export function createApi({ households, entries }, { whatsappEnabled = false } =
   async function dashboard(household, member) {
     if (!household) return null;
     await materializeOccurrences(entries, household._id);
-    const items = await entries.find({ householdId: household._id }, {
+    const items = await entries.find({ householdId: household._id, archivedAt: null }, {
       projection: { householdId: 0, nextOccurrence: 0, whatsappMessageId: 0, 'voice.bytes': 0 },
     }).sort({ createdAt: -1 }).toArray();
     return {
@@ -123,7 +123,7 @@ export function createApi({ households, entries }, { whatsappEnabled = false } =
     res.json({ ok: true });
   });
 
-  router.post('/entries', async (req, res) => {
+  function entryFields(req) {
     const { kind, dueOn = null, category = 'drugo', repeatDays = 0, rotate = false, reminderDays = 2 } = req.body;
     if (kind !== 'task' && kind !== 'event') throw new HttpError(400, 'Izberi opravilo ali dogodek.');
     const title = requiredText(req.body.title, 160, 'Naslov');
@@ -147,20 +147,48 @@ export function createApi({ households, entries }, { whatsappEnabled = false } =
     if (assigneeId !== null && !req.household.members.some(member => member.id === assigneeId)) {
       throw new HttpError(400, 'Izberi člana tega prostora.');
     }
+    return { kind, title, dueOn, category, assigneeId, repeatDays, rotate, reminderDays };
+  }
+
+  router.post('/entries', async (req, res) => {
+    const fields = entryFields(req);
     const voice = parseVoice(req.body.voice);
     await entries.insertOne({
-      householdId: req.household._id, kind, title, dueOn, category, assigneeId,
-      assignedAt: assigneeId ? new Date() : null,
-      completedAt: null, createdAt: new Date(), repeatDays, rotate, reminderDays,
+      ...fields, householdId: req.household._id,
+      assignedAt: fields.assigneeId ? new Date() : null,
+      completedAt: null, createdAt: new Date(),
       ...(voice ? { voice } : {}),
     });
     res.status(201).json(await dashboard(req.household, req.member));
   });
 
+  router.post('/entries/:id/:action', async (req, res) => {
+    const { id, action } = req.params;
+    if (!idPattern.test(id) || !['edit', 'remove'].includes(action)) throw new HttpError(404, 'Ta pot ne obstaja.');
+    const condition = { _id: new ObjectId(id), householdId: req.household._id, archivedAt: null };
+    const entry = await entries.findOne(condition, { projection: { voice: 0 } });
+    if (!entry) throw new HttpError(404, 'Vnos ne obstaja.');
+    if (entry.completedAt) throw new HttpError(409, 'Zaključeno opravilo ostane v zgodovini.');
+    if (req.body.version !== (entry.version ?? 0)) {
+      throw new HttpError(409, 'Vnos se je spremenil. Zapri obrazec in ga znova odpri.');
+    }
+    const fields = action === 'remove' ? { archivedAt: new Date() } : entryFields(req);
+    if (action === 'edit' && fields.kind !== entry.kind) throw new HttpError(400, 'Vrste vnosa ni mogoče spremeniti.');
+    if (action === 'edit' && fields.assigneeId !== entry.assigneeId) {
+      fields.assignedAt = fields.assigneeId ? new Date() : null;
+      fields.coverRequestedAt = null;
+    }
+    const result = await entries.updateOne({
+      ...condition, completedAt: null, assigneeId: entry.assigneeId, version: entry.version ?? null,
+    }, { $set: fields, $inc: { version: 1 } });
+    if (!result.matchedCount) throw new HttpError(409, 'Vnos se je spremenil. Zapri obrazec in ga znova odpri.');
+    res.json(await dashboard(req.household, req.member));
+  });
+
   router.get('/entries/:id/voice', async (req, res) => {
     const { id } = req.params;
     if (!idPattern.test(id)) throw new HttpError(404, 'Posnetek ne obstaja.');
-    const entry = await entries.findOne({ _id: new ObjectId(id), householdId: req.household._id }, {
+    const entry = await entries.findOne({ _id: new ObjectId(id), householdId: req.household._id, archivedAt: null }, {
       projection: { voice: 1 },
     });
     if (!entry?.voice) throw new HttpError(404, 'Posnetek ne obstaja.');
@@ -175,16 +203,18 @@ export function createApi({ households, entries }, { whatsappEnabled = false } =
       complete: { completedAt: new Date() },
     };
     if (!idPattern.test(id) || !Object.hasOwn(changes, action)) throw new HttpError(404, 'Ta pot ne obstaja.');
-    const task = { _id: new ObjectId(id), householdId: req.household._id, kind: 'task' };
+    const task = { _id: new ObjectId(id), householdId: req.household._id, kind: 'task', archivedAt: null };
     const condition = {
       ...task, completedAt: null, assigneeId: action === 'claim' ? null : req.member.id,
     };
     if (action === 'complete') {
-      const current = await entries.findOne(condition);
+      const current = await entries.findOne(condition, { projection: { voice: 0 } });
+      if (!current) throw new HttpError(409, 'Stanje opravila se je spremenilo ali pa dejanje ni na voljo.');
+      condition.version = current.version ?? null;
       const next = current && nextOccurrence(current, req.household.members);
       if (next) changes.complete.nextOccurrence = next;
     }
-    const result = await entries.updateOne(condition, { $set: changes[action] });
+    const result = await entries.updateOne(condition, { $set: changes[action], $inc: { version: 1 } });
     if (!result.matchedCount) {
       if (!await entries.findOne(task)) throw new HttpError(404, 'Opravilo ne obstaja.');
       throw new HttpError(409, 'Stanje opravila se je spremenilo ali pa dejanje ni na voljo.');

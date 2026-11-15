@@ -71,44 +71,49 @@ function Dialog({ title, onClose, children }) {
   </dialog>;
 }
 
-function EntryDialog({ initialKind, members, busy, error, onSave, onClose }) {
+function EntryDialog({ initialKind, entry, members, busy, error, onSave, onRemove, onClose }) {
   const [kind, setKind] = useState(initialKind);
-  const [repeatDays, setRepeatDays] = useState('0');
+  const [repeatDays, setRepeatDays] = useState(String(entry?.repeatDays ?? 0));
+  const [removing, setRemoving] = useState(false);
   const [voice, setVoice] = useState(null);
   const [recordingBusy, setRecordingBusy] = useState(false);
-  return <Dialog title="Nov vnos" onClose={onClose}>
+  return <Dialog title={entry ? 'Uredi vnos' : 'Nov vnos'} onClose={onClose}>
     <form onSubmit={event => {
       event.preventDefault();
       if (recordingBusy) return;
       const values = Object.fromEntries(new FormData(event.currentTarget));
       onSave({
-        ...values, dueOn: values.dueOn || null, assigneeId: values.assigneeId || null,
+        ...values, kind, dueOn: values.dueOn || null, assigneeId: values.assigneeId || null,
         repeatDays: Number(values.repeatDays || 0), rotate: values.rotate === 'on',
         reminderDays: Number(values.reminderDays ?? 2), voice,
       });
     }}>
-      <label>Vrsta<select name="kind" value={kind} onChange={event => setKind(event.target.value)}>
+      {!entry && <label>Vrsta<select name="kind" value={kind} onChange={event => setKind(event.target.value)}>
         <option value="task">Opravilo</option><option value="event">Dogodek</option>
-      </select></label>
-      <label>Naslov<input name="title" maxLength="160" required placeholder={kind === 'task' ? 'Npr. Prevzem iz šole' : 'Npr. Družinsko kosilo'} /></label>
+      </select></label>}
+      <label>Naslov<input name="title" defaultValue={entry?.title} maxLength="160" required placeholder={kind === 'task' ? 'Npr. Prevzem iz šole' : 'Npr. Družinsko kosilo'} /></label>
       <div className="fields">
-        <label>{kind === 'event' ? 'Datum' : 'Rok'}<input type="date" name="dueOn" required={kind === 'event' || Number(repeatDays) > 0} /></label>
-        <label>Kategorija<select name="category" defaultValue="drugo">
+        <label>{kind === 'event' ? 'Datum' : 'Rok'}<input type="date" name="dueOn" defaultValue={entry?.dueOn ?? ''} required={kind === 'event' || Number(repeatDays) > 0} /></label>
+        <label>Kategorija<select name="category" defaultValue={entry?.category ?? 'drugo'}>
           {Object.entries(categories).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
         </select></label>
       </div>
-      {kind === 'task' && <label>Dodeli članu<select name="assigneeId">
+      {kind === 'task' && <label>Dodeli članu<select name="assigneeId" defaultValue={entry?.assigneeId ?? ''}>
         <option value="">Na voljo za prevzem</option>
         {members.map(member => <option key={member.id} value={member.id}>{member.name}</option>)}
       </select></label>}
       {kind === 'task' && <div className="fields">
         <label>Ponovi čez dni<input name="repeatDays" type="number" min="0" max="3660" required value={repeatDays} onChange={event => setRepeatDays(event.target.value)} /></label>
-        <label>Opomni dni pred rokom<input name="reminderDays" type="number" min="0" max="30" defaultValue="2" required /></label>
+        <label>Opomni dni pred rokom<input name="reminderDays" type="number" min="0" max="30" defaultValue={entry?.reminderDays ?? 2} required /></label>
       </div>}
-      {kind === 'task' && Number(repeatDays) > 0 && <label className="check-field"><input name="rotate" type="checkbox" /> Naslednjič dodeli naslednjemu članu</label>}
-      <VoiceRecorder onChange={setVoice} busy={busy || recordingBusy} setBusy={setRecordingBusy} />
+      {kind === 'task' && Number(repeatDays) > 0 && <label className="check-field"><input name="rotate" type="checkbox" defaultChecked={entry?.rotate} /> Naslednjič dodeli naslednjemu članu</label>}
+      {!entry && <VoiceRecorder onChange={setVoice} busy={busy || recordingBusy} setBusy={setRecordingBusy} />}
       {error && <p className="error" role="alert">{error}</p>}
-      <button className="primary" disabled={busy || recordingBusy}><Plus size={19} />{kind === 'task' ? 'Dodaj opravilo' : 'Dodaj dogodek'}</button>
+      <button className="primary" disabled={busy || recordingBusy || removing}>{entry ? 'Shrani spremembe' : <><Plus size={19} />{kind === 'task' ? 'Dodaj opravilo' : 'Dodaj dogodek'}</>}</button>
+      {entry && (removing ? <div className="top-actions">
+        <button type="button" className="soft-button" onClick={() => setRemoving(false)} disabled={busy}>Obdrži vnos</button>
+        <button type="button" className="danger-button soft-button" onClick={onRemove} disabled={busy}>Potrdi odstranitev</button>
+      </div> : <button type="button" className="danger-button text-button" onClick={() => setRemoving(true)} disabled={busy}>Odstrani vnos</button>)}
     </form>
   </Dialog>;
 }
@@ -170,6 +175,7 @@ export default function App() {
   const [page, setPage] = useState('overview');
   const [filter, setFilter] = useState('all');
   const [modal, setModal] = useState(null);
+  const [editing, setEditing] = useState(null);
   const [today, setToday] = useState(() => dateKey(new Date()));
   const pending = useRef(false);
   const revision = useRef(0);
@@ -226,6 +232,11 @@ export default function App() {
     setModal(kind);
   }
 
+  function edit(entry) {
+    setEditing(entry);
+    open('edit');
+  }
+
   if (data === undefined) return <main className="loading">
     <Brand />
     {error ? <><p role="alert">{error}</p><button className="primary" onClick={() => location.reload()}>Poskusi znova</button></> : <p role="status">Odpiram družinski prostor …</p>}
@@ -239,7 +250,7 @@ export default function App() {
   const member = members.find(member => member.id === memberId);
   const tasks = entries.filter(entry => entry.kind === 'task');
   const overview = page === 'overview';
-  const taskPanel = <Tasks {...{ tasks, members, memberId, today, filter, busy }} onFilter={setFilter}
+  const taskPanel = <Tasks {...{ tasks, members, memberId, today, filter, busy }} onFilter={setFilter} onEdit={edit}
     onAdd={() => open('task')} onAction={(id, action) => run(async () => {
       setData(await request(`/tasks/${id}/${action}`, {}));
       setNotice({ claim: 'Opravilo je prevzeto.', cover: 'Opravilo je spet na voljo za prevzem.', complete: 'Opravilo je zaključeno.' }[action]);
@@ -279,19 +290,26 @@ export default function App() {
           </div></div>
         </>}
         {page === 'tasks' && taskPanel}
-        {page === 'calendar' && <Calendar {...{ entries, today }} onAdd={() => open('event')} />}
+        {page === 'calendar' && <Calendar {...{ entries, today }} onAdd={() => open('event')} onEdit={edit} />}
         {page === 'workload' && <Workload {...{ members, tasks, memberId }} />}
       </div>
     </main>
     {modal === 'invite' && <InviteDialog code={household.inviteCode} onClose={() => setModal(null)} />}
     {modal === 'whatsapp' && <WhatsAppDialog linked={data.whatsapp.linked} onClose={() => setModal(null)}
       onUpdate={async () => setData(await request('/dashboard'))} />}
-    {(modal === 'task' || modal === 'event') && <EntryDialog initialKind={modal} {...{ members, busy, error }}
-      onClose={() => { if (!pending.current) setModal(null); }}
-      onSave={fields => run(async () => {
-        setData(await request('/entries', fields));
+    {['task', 'event', 'edit'].includes(modal) && <EntryDialog initialKind={modal === 'edit' ? editing.kind : modal}
+      entry={modal === 'edit' ? editing : null} {...{ members, busy, error }}
+      onClose={() => { if (!pending.current) { setModal(null); setError(''); } }}
+      onRemove={() => run(async () => {
+        setData(await request(`/entries/${editing.id}/remove`, { version: editing.version ?? 0 }));
         setModal(null);
-        setNotice(fields.kind === 'event' ? 'Dogodek je dodan.' : 'Opravilo je dodano.');
+        setNotice('Vnos je odstranjen.');
+      })}
+      onSave={fields => run(async () => {
+        setData(await request(modal === 'edit' ? `/entries/${editing.id}/edit` : '/entries',
+          modal === 'edit' ? { ...fields, version: editing.version ?? 0 } : fields));
+        setModal(null);
+        setNotice(modal === 'edit' ? 'Spremembe so shranjene.' : fields.kind === 'event' ? 'Dogodek je dodan.' : 'Opravilo je dodano.');
       })} />}
   </div>;
 }

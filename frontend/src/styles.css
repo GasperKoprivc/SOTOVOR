@@ -167,6 +167,9 @@ dialog .check-field { display: flex; align-items: center; gap: .5rem; }
 .voice-field audio { max-width: calc(100% - 3rem); }
 .task-audio { grid-column: 2 / -1; width: min(16rem, 100%); height: 2.25rem; }
 .voice-link { display: block; color: var(--green); margin-top: .3rem; }
+.danger-button { color: #8d3226; }
+.calendar-edit { background: transparent; border: 0; text-align: left; padding: 0; font-weight: 650; overflow-wrap: anywhere; max-width: 100%; }
+.calendar-edit:hover { text-decoration: underline; }
 dialog .invite-label { margin-bottom: .8rem; }
 @media (max-width: 68rem) {
   .workspace { grid-template-columns: 12.25rem minmax(0, 1fr); }

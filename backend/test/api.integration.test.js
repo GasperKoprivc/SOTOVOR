@@ -187,3 +187,17 @@ test('signed WhatsApp webhooks pair a sender and import each message once', asyn
   assert.equal(await send('after-unlink', 'Opravilo'), 200);
   assert.equal((await dashboard(owner)).data.entries.length, 1);
 });
+
+test('entries can be edited and removed with stale-write protection', async () => {
+  const owner = sessionCookie((await postJson('/households', { householdName: 'Urejanje', memberName: 'Ana' })).response);
+  const fields = { kind: 'event', title: 'Kosilo', dueOn: '2027-02-10' };
+  const { data } = await postJson('/entries', fields, owner);
+  const path = '/entries/' + data.entries[0].id;
+  const edited = await postJson(path + '/edit', { ...fields, title: 'Večerja', version: 0 }, owner);
+  assert.equal(edited.response.status, 200);
+  assert.equal(edited.data.entries[0].title, 'Večerja');
+  assert.equal((await postJson(path + '/remove', { version: 0 }, owner)).response.status, 409);
+  const removed = await postJson(path + '/remove', { version: 1 }, owner);
+  assert.equal(removed.response.status, 200);
+  assert.deepEqual(removed.data.entries, []);
+});

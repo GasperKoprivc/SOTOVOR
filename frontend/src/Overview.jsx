@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   ArrowRight, CalendarDays, Check, ChevronLeft, ChevronRight, CircleCheckBig,
-  Clock3, Hand, ListTodo, Plus, UsersRound,
+  Clock3, Hand, ListTodo, Pencil, Plus, UsersRound,
 } from 'lucide-react';
 import { addDays, categories, dateKey, fromKey, initials, needsReminder, shortDate, weekday } from './data.js';
 
@@ -26,7 +26,7 @@ export function Metrics({ tasks, memberId, today, onFilter }) {
 
 const filters = { all: 'Odprta', mine: 'Moja', available: 'Za prevzem', due: 'Rok blizu', done: 'Zaključena' };
 
-export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAction, busy, onAdd }) {
+export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAction, busy, onAdd, onEdit }) {
   const names = new Map(members.map(member => [member.id, member.name]));
   const filtered = tasks.filter(task => {
     if (filter === 'done') return Boolean(task.completedAt);
@@ -56,6 +56,7 @@ export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAct
         </div>
         <span className="tag">{categories[task.category]}</span>
         <div className="row-actions">
+          {!task.completedAt && <button className="icon-button" aria-label={`Uredi ${task.title}`} onClick={() => onEdit(task)}><Pencil size={16} /></button>}
           {!task.completedAt && !task.assigneeId && <button className="soft-button" disabled={busy} onClick={() => onAction(task.id, 'claim')}>Prevzemi</button>}
           {!task.completedAt && task.assigneeId === memberId && <>
             <button className="soft-button" disabled={busy} onClick={() => onAction(task.id, 'cover')}>Prosi za zamenjavo</button>
@@ -73,7 +74,7 @@ export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAct
   </section>;
 }
 
-export function Calendar({ entries, today, compact, onOpen, onAdd }) {
+export function Calendar({ entries, today, compact, onOpen, onAdd, onEdit }) {
   const [offset, setOffset] = useState(0);
   const now = fromKey(today);
   const monday = addDays(now, -((now.getDay() + 6) % 7) + offset * 7);
@@ -98,7 +99,8 @@ export function Calendar({ entries, today, compact, onOpen, onAdd }) {
           <span>{weekday.format(day)}</span><strong>{day.getDate()}</strong>
           {compact ? <span className={items.length ? 'day-dot' : 'day-dot empty-dot'} /> :
             <ul className="day-entries">{items.map(entry => <li key={entry.id} className={entry.kind}>
-              <span>{entry.kind === 'event' ? 'Dogodek' : entry.completedAt ? 'Zaključeno' : 'Opravilo'}</span>{entry.title}
+              <span>{entry.kind === 'event' ? 'Dogodek' : entry.completedAt ? 'Zaključeno' : 'Opravilo'}</span>
+              {entry.completedAt ? entry.title : <button className="calendar-edit" onClick={() => onEdit(entry)} aria-label={`Uredi ${entry.title}`}>{entry.title}</button>}
               {entry.voice && <a className="voice-link" href={`/api/entries/${entry.id}/voice`} target="_blank" rel="noreferrer">Poslušaj</a>}
             </li>)}</ul>}
         </li>;
