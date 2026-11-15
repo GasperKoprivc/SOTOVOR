@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { Router } from 'express';
 import { Binary, ObjectId } from 'mongodb';
 import { materializeOccurrences, nextOccurrence } from './recurrence.js';
+import { codeHash } from './whatsapp.js';
 
 const sessionSeconds = 90 * 24 * 60 * 60;
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -40,7 +41,7 @@ function parseVoice(voice) {
   return { mime, bytes: new Binary(bytes) };
 }
 
-export function createApi({ households, entries }) {
+export function createApi({ households, entries }, { whatsappEnabled = false } = {}) {
   const router = Router();
   router.use(async (req, res, next) => {
     res.set('Cache-Control', 'no-store');
@@ -65,10 +66,11 @@ export function createApi({ households, entries }) {
     if (!household) return null;
     await materializeOccurrences(entries, household._id);
     const items = await entries.find({ householdId: household._id }, {
-      projection: { householdId: 0, nextOccurrence: 0, 'voice.bytes': 0 },
+      projection: { householdId: 0, nextOccurrence: 0, whatsappMessageId: 0, 'voice.bytes': 0 },
     }).sort({ createdAt: -1 }).toArray();
     return {
       memberId: member.id,
+      whatsapp: { enabled: whatsappEnabled, linked: Boolean(household.whatsappSender) },
       household: { name: household.name, inviteCode: household.inviteCode },
       members: household.members.map(({ id, name }) => ({ id, name })),
       entries: items.map(({ _id, ...item }) => ({ id: String(_id), ...item })),
@@ -104,6 +106,21 @@ export function createApi({ households, entries }) {
   router.use((req, res, next) => {
     if (!req.member) throw new HttpError(401, 'Najprej se pridruži družinskemu prostoru.');
     next();
+  });
+
+  router.post('/whatsapp/pair', async (req, res) => {
+    if (!whatsappEnabled) throw new HttpError(404, 'WhatsApp še ni nastavljen.');
+    const code = randomBytes(12).toString('hex');
+    await households.updateOne({ _id: req.household._id }, { $set: {
+      whatsappPairing: { hash: codeHash(code), expiresAt: new Date(Date.now() + 10 * 60 * 1000) },
+    } });
+    res.json({ code });
+  });
+
+  router.post('/whatsapp/unlink', async (req, res) => {
+    if (!whatsappEnabled) throw new HttpError(404, 'WhatsApp še ni nastavljen.');
+    await households.updateOne({ _id: req.household._id }, { $unset: { whatsappSender: '', whatsappPairing: '' } });
+    res.json({ ok: true });
   });
 
   router.post('/entries', async (req, res) => {

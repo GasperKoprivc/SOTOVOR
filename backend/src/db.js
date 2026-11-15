@@ -11,6 +11,8 @@ export async function connect() {
     await Promise.all([
       households.createIndex({ inviteCode: 1 }, { unique: true }),
       households.createIndex({ 'members.sessionHash': 1 }),
+      households.createIndex({ whatsappSender: 1 }, { unique: true, sparse: true }),
+      entries.createIndex({ whatsappMessageId: 1 }, { unique: true, sparse: true }),
       entries.createIndex({ householdId: 1, dueOn: 1 }),
     ]);
     return { client, households, entries };

@@ -131,6 +131,37 @@ function InviteDialog({ code, onClose }) {
   </Dialog>;
 }
 
+function WhatsAppDialog({ linked, onClose, onUpdate }) {
+  const [code, setCode] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function change(action) {
+    setBusy(true);
+    setError('');
+    try {
+      const result = await request('/whatsapp/' + action, {});
+      setCode(result.code || '');
+      await onUpdate();
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <Dialog title="Vnos prek WhatsAppa" onClose={onClose}>
+    <p>{linked ? 'Povezana številka lahko pošlje naslov opravila ali sporočilo »dogodek LLLL-MM-DD Naslov«.' :
+      'Ustvari kodo in jo z izbrane številke pošlji na poslovno številko Sotovora.'}</p>
+    {code && <label className="invite-label">Sporočilo za povezavo (velja 10 minut)<input readOnly value={'poveži ' + code} onFocus={event => event.target.select()} /></label>}
+    {error && <p className="error" role="alert">{error}</p>}
+    <div className="top-actions">
+      <button className="primary" disabled={busy} onClick={() => change('pair')}>Ustvari kodo</button>
+      {linked && <button className="soft-button" disabled={busy} onClick={() => change('unlink')}>Prekini povezavo</button>}
+    </div>
+  </Dialog>;
+}
+
 export default function App() {
   const [data, setData] = useState(undefined);
   const [error, setError] = useState('');
@@ -226,6 +257,7 @@ export default function App() {
       <header className="topbar"><span><House size={16} />{household.name}</span>
         <div className="top-actions">
           <Notifications key={memberId} {...{ tasks, memberId, today }} onView={next => go('tasks', next)} />
+          {data.whatsapp?.enabled && <button className="soft-button" onClick={() => open('whatsapp')}>WhatsApp</button>}
           <button className="soft-button" onClick={() => open('invite')}><UserRoundPlus size={17} /> Povabi člana</button>
         </div>
       </header>
@@ -252,6 +284,8 @@ export default function App() {
       </div>
     </main>
     {modal === 'invite' && <InviteDialog code={household.inviteCode} onClose={() => setModal(null)} />}
+    {modal === 'whatsapp' && <WhatsAppDialog linked={data.whatsapp.linked} onClose={() => setModal(null)}
+      onUpdate={async () => setData(await request('/dashboard'))} />}
     {(modal === 'task' || modal === 'event') && <EntryDialog initialKind={modal} {...{ members, busy, error }}
       onClose={() => { if (!pending.current) setModal(null); }}
       onSave={fields => run(async () => {

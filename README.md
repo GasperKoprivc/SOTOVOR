@@ -35,6 +35,12 @@ V meniju **Obvestila** so dodelitve, bližnji roki tvojih opravil in prošnje za
 
 Opravilu ali dogodku lahko priložiš do 30 sekund dolg glasovni posnetek. Posnetek je v MongoDB in ga lahko predvajajo člani istega prostora. Snemanje zahteva dovoljenje za mikrofon ter naslov localhost ali HTTPS.
 
+### Neobvezni vnos prek WhatsAppa
+
+V lokalni `.env` nastavi `SOTOVOR_WHATSAPP_APP_SECRET` (Meta App Secret), `SOTOVOR_WHATSAPP_VERIFY_TOKEN` (izbrana naključna vrednost) in `SOTOVOR_WHATSAPP_PHONE_ID` (ID poslovne številke). V Meta WhatsApp Cloud API naroči dogodek `messages` in registriraj javno dostopen HTTPS naslov z javno potjo `/webhooks/whatsapp`. Posredniški strežnik naj na internet izpostavi samo to pot. Običajen lokalni zagon deluje tudi brez te povezave.
+
+V družinskem prostoru odpri **WhatsApp** in ustvari kodo. Iz izbrane številke pošlji prikazano sporočilo na poslovno številko. Prosto besedilo nato ustvari nedodeljeno opravilo, besedilo `dogodek 2027-02-10 Družinsko kosilo` pa koledarski dogodek. Na prostor je lahko povezana ena številka. Prek istega menija jo lahko odklopiš.
+
 ## Struktura projekta
 
 | Mapa | Vsebina |

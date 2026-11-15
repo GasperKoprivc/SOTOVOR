@@ -2,6 +2,7 @@ import express from 'express';
 import { fileURLToPath } from 'node:url';
 import { connect } from './db.js';
 import { createApi, handleError } from './api.js';
+import { createWhatsApp, whatsappConfig } from './whatsapp.js';
 
 const host = process.env.SOTOVOR_HOST || '127.0.0.1';
 const port = Number(process.env.SOTOVOR_PORT || 3000);
@@ -14,8 +15,10 @@ app.use((_req, res, next) => {
   res.set('Content-Security-Policy', "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; style-src 'self' 'unsafe-inline'; media-src 'self' blob:");
   next();
 });
+const whatsapp = whatsappConfig();
+if (whatsapp) app.use('/webhooks/whatsapp', createWhatsApp(database, whatsapp));
 app.post('/api/entries', express.json({ limit: '3mb' }));
-app.use('/api', express.json({ limit: '8kb' }), createApi(database));
+app.use('/api', express.json({ limit: '8kb' }), createApi(database, { whatsappEnabled: Boolean(whatsapp) }));
 app.use(express.static(dist));
 app.use(handleError);
 

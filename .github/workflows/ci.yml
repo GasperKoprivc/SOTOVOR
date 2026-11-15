@@ -36,6 +36,7 @@ jobs:
           node --check backend/src/db.js
           node --check backend/src/server.js
           node --check backend/src/recurrence.js
+          node --check backend/src/whatsapp.js
           node --check scripts/start.js
       - name: Test API with MongoDB
         run: npm test

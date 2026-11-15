@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { after, before, test } from 'node:test';
 import express from 'express';
 import { connect } from '../src/db.js';
 import { createApi, handleError } from '../src/api.js';
+import { createWhatsApp } from '../src/whatsapp.js';
+
+const whatsapp = { secret: 'test-secret', verify: 'test-verify', phoneId: '123' };
 
 const databaseName = `sotovor_test_${randomUUID().replaceAll('-', '')}`;
 let database;
@@ -17,8 +20,9 @@ before(async () => {
   database = await connect();
 
   const app = express();
+  app.use('/webhooks/whatsapp', createWhatsApp(database, whatsapp));
   app.use(express.json({ limit: '8kb' }));
-  app.use('/api', createApi(database));
+  app.use('/api', createApi(database, { whatsappEnabled: true }));
   app.use(handleError);
   server = app.listen(0, '127.0.0.1');
   await once(server, 'listening');
@@ -145,4 +149,41 @@ test('voice notes are stored and accessible only within their household', async 
   const audio = await fetch(url, { headers: { cookie: owner } });
   assert.equal(audio.headers.get('content-type'), 'audio/webm');
   assert.deepEqual(Buffer.from(await audio.arrayBuffer()), bytes);
+});
+
+test('signed WhatsApp webhooks pair a sender and import each message once', async () => {
+  const owner = sessionCookie((await postJson('/households', { householdName: 'WhatsApp', memberName: 'Ana' })).response);
+  const { data: { code } } = await postJson('/whatsapp/pair', {}, owner);
+  const url = new URL('/webhooks/whatsapp', apiUrl);
+  assert.equal(await (await fetch(url + '?hub.mode=subscribe&hub.verify_token=test-verify&hub.challenge=42')).text(), '42');
+
+  async function send(id, body, secret = whatsapp.secret) {
+    const json = JSON.stringify({
+      object: 'whatsapp_business_account', entry: [{ changes: [{
+        field: 'messages', value: {
+          metadata: { phone_number_id: whatsapp.phoneId },
+          messages: [{ id, type: 'text', from: '38640123456', text: { body } }],
+        },
+      }] }],
+    });
+    const signature = createHmac('sha256', secret).update(json).digest('hex');
+    return (await fetch(url, {
+      method: 'POST', body: json,
+      headers: { 'content-type': 'application/json', 'x-hub-signature-256': 'sha256=' + signature },
+    })).status;
+  }
+
+  assert.equal(await send('pair', 'poveži ' + code, 'wrong'), 403);
+  assert.equal(await send('pair', 'poveži ' + code), 200);
+  const event = 'dogodek 2027-02-10 Kosilo';
+  assert.equal(await send('event', event), 200);
+  assert.equal(await send('event', event), 200);
+  const result = (await dashboard(owner)).data;
+  assert.equal(result.whatsapp.linked, true);
+  assert.equal(result.entries.length, 1);
+  assert.equal(result.entries[0].title, 'Kosilo');
+  assert.equal(result.entries[0].dueOn, '2027-02-10');
+  assert.equal((await postJson('/whatsapp/unlink', {}, owner)).response.status, 200);
+  assert.equal(await send('after-unlink', 'Opravilo'), 200);
+  assert.equal((await dashboard(owner)).data.entries.length, 1);
 });
