@@ -27,7 +27,15 @@ GitHub Actions ob potisku na `main` in oznakah `v*` objavi en aplikacijski image
 
 Ustvari prostor, nato dodaj opravilo ali dogodek. Opravilo lahko dodeliš članu ali ga objaviš za prevzem. V meniju **Povabi člana** kopiraj kodo in jo preizkusi v zasebnem oknu ali drugem profilu brskalnika. Drugi član lahko opravilo prevzame, ponudi za zamenjavo ali zaključi. Opravila z datumom in dogodki se prikažejo v tedenskem koledarju. Spremembe drugih članov se osvežijo v nekaj sekundah.
 
-Članstvo je vezano na sejo brskalnika. Brisanje piškotka, potek seje ali prehod na drug naslov strežnika zahteva nov vstop s kodo, ki ustvari novega člana.
+Na predstavitveni strani ustvari račun z imenom, priimkom, e-pošto, telefonom in geslom ali se prijavi. V profilu odpri nadzorno ploščo. Če računu še ni dodeljen prostor, ustvari svojega in določi načrtovano število članov ali se pridruži s kodo.
+
+Ustvarjalec prostora je skrbnik. V profilu lahko zamenja kodo povabila, ureja pravice dodajanja, urejanja, premikanja datumov in odstranjevanja vnosov ter odobri ali zavrne prošnjo za izstop. Račun ima lahko eno aktivno članstvo. Če imaš še sejo iz prejšnje različice, jo registracija z odprtim brskalniškim profilom poveže z novim računom.
+
+Koledar ima mesečni in tedenski pogled. V mesečnem pogledu klikni dan za seznam vseh opravil in dogodkov.
+
+### Lokalna demo družina
+
+Med delovanjem Sotovora odpri drug terminal in zaženi `npm run seed:demo`. Za drug mesec uporabi na primer `npm run seed:demo -- 2026-11`. Ukaz doda ločeno demo družino s štirimi računi in sedmimi opravili na dan. Ponovni zagon ukaza ne podvoji vnosov. Skrbnica je `ana@demo.sotovor.test`, ostali računi pa so `matej@demo.sotovor.test`, `luka@demo.sotovor.test` in `ema@demo.sotovor.test`. Lokalno ustvarjeno skupno geslo najdeš v `data/demo-password.txt`.
 
 Pri opravilu z rokom lahko določiš interval ponavljanja v dneh in vključiš rotacijo. Ko član zaključi opravilo, Sotovor ustvari naslednji vnos glede na prejšnji rok, pri rotaciji pa ga dodeli naslednjemu članu po vrstnem redu pridružitve. Nastavitev opomnika določa, koliko dni pred rokom se opravilo pojavi med opozorili.
 

@@ -1,7 +1,8 @@
 import { MongoClient } from 'mongodb';
 
 export async function connect() {
-  const client = new MongoClient(process.env.SOTOVOR_MONGO_URI || 'mongodb://127.0.0.1:27027', {
+  const client = new MongoClient(process.env.SOTOVOR_MONGO_URI ||
+    `mongodb://127.0.0.1:${process.env.SOTOVOR_MONGO_PORT || 27027}`, {
     serverSelectionTimeoutMS: 5000,
   });
   try {
