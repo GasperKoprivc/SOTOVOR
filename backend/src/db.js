@@ -21,6 +21,11 @@ export async function connect() {
       households.createIndex({ whatsappSender: 1 }, { unique: true, sparse: true }),
       entries.createIndex({ whatsappMessageId: 1 }, { unique: true, sparse: true }),
       entries.createIndex({ householdId: 1, dueOn: 1 }),
+      entries.createIndex({ householdId: 1, archivedAt: 1, createdAt: -1 }),
+      entries.createIndex({ householdId: 1 }, {
+        name: 'pending_occurrences',
+        partialFilterExpression: { nextOccurrence: { $exists: true } },
+      }),
     ]);
     return { client, households, entries, accounts, sessions };
   } catch (error) {

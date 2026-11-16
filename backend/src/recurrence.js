@@ -26,7 +26,9 @@ export function nextOccurrence(task, members) {
 // Completion and its successor are recorded together, even on standalone MongoDB.
 // A later dashboard request can resume materialization after an interrupted write.
 export async function materializeOccurrences(entries, householdId) {
-  for await (const task of entries.find({ householdId, nextOccurrence: { $exists: true } })) {
+  for await (const task of entries.find({ householdId, nextOccurrence: { $exists: true } }, {
+    projection: { nextOccurrence: 1 },
+  })) {
     const { _id, ...fields } = task.nextOccurrence;
     await entries.updateOne({ _id }, { $setOnInsert: fields }, { upsert: true });
     await entries.updateOne({ _id: task._id }, { $unset: { nextOccurrence: '' } });

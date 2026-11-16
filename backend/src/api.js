@@ -103,6 +103,7 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
     const profile = account ? publicProfile(account) : null;
     if (!household) return profile ? { profile, household: null, spaces } : null;
     const admin = isAdmin(household, member);
+    const inactiveMemberIds = new Set(household.members.filter(person => person.inactive).map(person => person.id));
     await materializeOccurrences(entries, household._id);
     const items = await entries.find({ householdId: household._id, archivedAt: null }, {
       projection: { householdId: 0, nextOccurrence: 0, whatsappMessageId: 0, 'voice.bytes': 0 },
@@ -123,7 +124,7 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
       })),
       entries: items.map(({ _id, ...item }) => ({
         id: String(_id), ...item,
-        assigneeId: !item.completedAt && household.members.some(person => person.id === item.assigneeId && person.inactive)
+        assigneeId: !item.completedAt && inactiveMemberIds.has(item.assigneeId)
           ? null : item.assigneeId,
       })),
     };
