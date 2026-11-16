@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { House } from 'lucide-react';
+
+export function BrandMark({ className }) {
+  return <img className={className} src="/sotovor-mark.svg" alt="" width={64} height={64} />;
+}
 
 export function Brand() {
-  return <span className="brand"><span className="brand-icon"><House size={21} strokeWidth={2.3} /></span>Sotovor<span className="brand-dot">.</span></span>;
+  return <span className="brand"><BrandMark className="brand-icon" />Sotovor<span className="brand-dot">.</span></span>;
 }
 
 export function ChooseHousehold({ profile, busy, error, onSubmit, onLogout }) {
