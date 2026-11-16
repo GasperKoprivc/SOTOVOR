@@ -14,6 +14,8 @@ Projektni MongoDB posluša na `127.0.0.1:27027` in hrani podatke v `data/mongodb
 
 Zaženi [start.bat](start.bat). Na Windows z nameščenim Rustom zgradi tudi namizni Sotovor v Tauri + React in ga odpre, ko je strežnik pripravljen. Za namizno okno brez spletnega zavihka uporabi `start-desktop.bat`. Če želiš samo spletni zagon, nastavi `SOTOVOR_WEB_ONLY=1`. Obe aplikaciji uporabljata isti strežnik in MongoDB. Prijavo ali registracijo za namizno okno opraviš v privzetem brskalniku in potrdiš prikazano kodo. Zahteve za Windows in nastavitev naslova za objavo so v [navodilih za namizno aplikacijo](apps/desktop/README.md).
 
+GitHub Actions namiznega opravila **Windows desktop build** ob uspešni gradnji shrani izvršljivo datoteko Windows `sotovor.exe` kot artefakt `sotovor-windows-x86_64-exe`. Najdeš jo v uspešnem zagonu opravila, v razdelku **Artifacts**. Gre za izvršljivo datoteko, ne za namestitveni paket.
+
 ## Zagon z Docker Compose
 
 Za lokalni zagon aplikacije in MongoDB v Dockerju namesti Docker Desktop ter v korenski mapi projekta zaženi:
