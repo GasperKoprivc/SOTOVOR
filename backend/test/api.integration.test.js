@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createHmac, randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { after, before, test } from 'node:test';
 import express from 'express';
@@ -74,6 +74,29 @@ async function dashboard(cookie, household) {
   const response = await fetch(`${apiUrl}/dashboard`, { headers });
   return { response, data: await response.json() };
 }
+
+test('desktop linking requires browser approval and the original verifier, and can be redeemed once', async () => {
+  const { response } = await postJson('/households', { householdName: 'Namizni dom', memberName: 'Ana' });
+  const webCookie = sessionCookie(response);
+  const verifier = randomBytes(32).toString('hex');
+  const challenge = createHash('sha256').update(verifier).digest('hex');
+  const started = await postJson('/desktop/start', { challenge });
+  assert.equal(started.response.status, 201);
+  const { id } = started.data;
+  assert.equal((await postJson('/desktop/exchange', { id, verifier })).response.status, 202);
+  assert.equal((await postJson('/desktop/approve', { id })).response.status, 401);
+  assert.equal((await postJson('/desktop/approve', { id }, webCookie)).response.status, 200);
+  assert.equal((await postJson('/desktop/exchange', { id, verifier: '0'.repeat(64) })).response.status, 410);
+  const exchanges = await Promise.all([postJson('/desktop/exchange', { id, verifier }), postJson('/desktop/exchange', { id, verifier })]);
+  assert.deepEqual(exchanges.map(result => result.response.status).sort(), [200, 410]);
+  const success = exchanges.find(result => result.response.ok);
+  const electronCookie = 'sotovor_session=' + success.data.token;
+  assert.notEqual(electronCookie, webCookie);
+  assert.equal((await dashboard(electronCookie)).data.household.name, 'Namizni dom');
+  await postJson('/auth/logout', {}, electronCookie);
+  assert.equal((await dashboard(electronCookie)).data, null);
+  assert.equal((await dashboard(webCookie)).data.household.name, 'Namizni dom');
+});
 
 test('owners can create and switch between isolated family spaces', async () => {
   const first = await postJson('/households', { householdName: 'Prvi dom', memberName: 'Ana' });

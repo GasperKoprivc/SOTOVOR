@@ -16,7 +16,7 @@ app.use((_req, res, next) => {
   next();
 });
 const whatsapp = whatsappConfig();
-app.get('/api/health', (_req, res) => res.json({ service: 'sotovor' }));
+app.get('/api/health', (_req, res) => res.json({ service: 'sotovor', desktopAuth: true }));
 if (whatsapp) app.use('/webhooks/whatsapp', createWhatsApp(database, whatsapp));
 app.post('/api/entries', express.json({ limit: '3mb' }));
 app.use('/api', express.json({ limit: '8kb' }), createApi(database, { whatsappEnabled: Boolean(whatsapp) }));

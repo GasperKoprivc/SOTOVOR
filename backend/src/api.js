@@ -4,6 +4,7 @@ import { Binary, ObjectId } from 'mongodb';
 import { materializeOccurrences, nextOccurrence } from './recurrence.js';
 import { codeHash } from './whatsapp.js';
 import { emailPattern, passwordHash, publicProfile, sessionSeconds, verifyPassword } from './accounts.js';
+import { registerDesktopAuth } from './desktop-auth.js';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const idPattern = /^[0-9a-f]{24}$/;
@@ -46,15 +47,19 @@ function parseVoice(voice) {
   return { mime, bytes: new Binary(bytes) };
 }
 
-export function createApi({ households, entries, accounts, sessions }, { whatsappEnabled = false } = {}) {
+export function createApi({ households, entries, accounts, sessions, desktopLinks }, { whatsappEnabled = false } = {}) {
   const router = Router();
   const cookieOptions = { httpOnly: true, sameSite: 'strict', path: '/' };
 
-  async function startSession(req, res, account) {
+  async function issueSession(accountId) {
     const token = randomBytes(32).toString('hex');
-    await sessions.insertOne({
-      _id: hash(token), accountId: account._id, expiresAt: new Date(Date.now() + sessionSeconds * 1000),
-    });
+    const expiresAt = new Date(Date.now() + sessionSeconds * 1000);
+    await sessions.insertOne({ _id: hash(token), accountId, expiresAt });
+    return { token, expiresAt };
+  }
+
+  async function startSession(req, res, account) {
+    const { token } = await issueSession(account._id);
     if (req.sessionId) await sessions.deleteOne({ _id: req.sessionId });
     res.cookie('sotovor_session', token, { ...cookieOptions, secure: req.secure, maxAge: sessionSeconds * 1000 });
   }
@@ -98,6 +103,8 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
     }
     next();
   });
+
+  registerDesktopAuth(router, { desktopLinks, issueSession, hash });
 
   async function dashboard(household, member, account, spaces = []) {
     const profile = account ? publicProfile(account) : null;
