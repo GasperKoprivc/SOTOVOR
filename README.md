@@ -10,6 +10,10 @@ Sotovor je družinski prostor za skupna opravila, koledar in pregled razporeditv
 
 Projektni MongoDB posluša na `127.0.0.1:27027` in hrani podatke v `data/mongodb`. Zaganjalnik poišče `mongod` v običajni namestitveni mapi ali v sistemski poti. Za drugo lokacijo nastavi `SOTOVOR_MONGOD` na absolutno pot do `mongod.exe`. Za druga vrata uporabi `SOTOVOR_PORT` in `SOTOVOR_MONGO_PORT`. Dnevnik baze je v `data/mongodb.log`.
 
+## Namizna aplikacija
+
+Zaženi [start-desktop.bat](start-desktop.bat). Namizna aplikacija uporablja isti strežnik in MongoDB kot spletna. Prijavo ali registracijo opraviš v privzetem brskalniku in potrdiš prikazano kodo. Za izdelavo prenosnega `Sotovor.exe` ali povezavo z objavljenim HTTPS strežnikom glej [navodila za namizno aplikacijo](apps/desktop/README.md).
+
 ## Zagon z Docker Compose
 
 Za lokalni zagon aplikacije in MongoDB v Dockerju namesti Docker Desktop ter v korenski mapi projekta zaženi:
@@ -73,7 +77,7 @@ V družinskem prostoru odpri **WhatsApp** in ustvari kodo. Iz izbrane številke 
 | [frontend](frontend/) | React strani, komponente in Vite |
 | [Docker](Dockerfile) | Aplikacijski image; [Compose](compose.yaml) za lokalno aplikacijo in MongoDB |
 | [apps/mobile](apps/mobile/) | Mapa za prihodnji projekt v Android Studiu |
-| [apps/desktop](apps/desktop/) | Mapa za prihodnji namizni odjemalec |
+| [apps/desktop](apps/desktop/) | Namizna aplikacija Electron, ločene odvisnosti in navodila za prenosni paket |
 | [scripts](scripts/) | Lokalni zagon MongoDB in API-ja |
 
 Za razvoj Reacta pusti `start.bat` zagnan in v drugem terminalu uporabi `npm run dev --workspace frontend`. Vite posreduje klice API-ja Expressu na vratih 3000 oziroma na `SOTOVOR_PORT`, če ga nastaviš tudi v terminalu za Vite. Če se spremenijo odvisnosti, v korenu projekta zaženi `npm ci`.
