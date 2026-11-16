@@ -65,7 +65,7 @@ function Mark({ size = 18 }) {
   return <span className="landing-mark" aria-hidden="true"><House size={size} strokeWidth={2.4} /></span>;
 }
 
-function AuthDialog({ mode, legacy, busy, error, onAuth, onMode }) {
+export function AuthDialog({ mode, legacy, busy, error, onAuth, onMode }) {
   const ref = useRef(null);
   const register = mode === 'register';
   useEffect(() => {

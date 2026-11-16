@@ -169,6 +169,12 @@ dialog .fields { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
 .rotate-code { margin-left: .7rem; }
 .family-switch { margin-top: .9rem; }
 .workspace .content { animation: workspace-enter .25s ease both; }
+.desktop-access { align-content: center; min-height: 100vh; }
+.desktop-access .account-card > svg { color: var(--accent); margin-bottom: .55rem; }
+.desktop-code { font: 650 1.1rem var(--mono-font); letter-spacing: .2em; color: var(--accent); }
+.desktop-workspace .sidebar { border-right-color: #496062; }
+.desktop-workspace .topbar { min-height: 3.5rem; }
+.desktop-workspace .content { padding-top: 1.65rem; }
 @keyframes workspace-enter { from { opacity: .65; transform: translateY(5px); } }
 @media (prefers-reduced-motion: reduce) { .workspace .content { animation: none; } }
 .task-pagination { display: flex; justify-content: end; align-items: center; gap: .55rem; margin-top: .6rem; color: var(--muted); font-size: .79rem; }

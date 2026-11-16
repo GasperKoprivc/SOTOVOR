@@ -11,6 +11,7 @@ import Landing from './Landing.jsx';
 import './landing.css';
 import FamilySettings from './FamilySettings.jsx';
 import MonthCalendar from './MonthCalendar.jsx';
+import { DesktopApproval, DesktopSignIn, desktopBridge, desktopLink } from './DesktopAccess.jsx';
 import { categories, dateKey, fullDate, request, selectHousehold } from './data.js';
 
 const pages = {
@@ -146,12 +147,12 @@ function WhatsAppDialog({ linked, onClose, onUpdate }) {
 }
 
 export default function App() {
-  const [inApp, setInApp] = useState(false);
+  const [inApp, setInApp] = useState(Boolean(desktopBridge));
   const [data, setData] = useState(undefined);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
-  const [page, setPage] = useState('profile');
+  const [page, setPage] = useState(desktopBridge ? 'overview' : 'profile');
   const [filter, setFilter] = useState('all');
   const [modal, setModal] = useState(null);
   const [editing, setEditing] = useState(null);
@@ -234,19 +235,23 @@ export default function App() {
     return run(async () => {
       await request('/auth/logout', {}, undefined, null);
       updateWorkspace(null, setData);
-      setInApp(false);
+      setInApp(Boolean(desktopBridge));
       setPage('profile');
       setModal(null);
     });
   }
 
-  if (!inApp || !data?.profile) return <Landing signedIn={Boolean(data?.profile)} legacy={Boolean(data?.household && !data.profile)}
-    onEnter={() => { go('profile'); setInApp(true); }} busy={busy} error={error} onAuth={(mode, fields) => run(async () => {
+  const legacy = Boolean(data?.household && !data.profile);
+  const onAuth = (mode, fields) => run(async () => {
     await request('/auth/' + mode, fields, undefined, null);
     updateWorkspace(await request('/dashboard', undefined, undefined, null), setData);
     go('profile');
     setInApp(true);
-  })} />;
+  });
+  if (desktopLink && !desktopBridge) return <DesktopApproval profile={data?.profile} {...{ legacy, busy, error, onAuth }} onLogout={logout} />;
+  if (desktopBridge && !data?.profile) return <DesktopSignIn />;
+  if (!inApp || !data?.profile) return <Landing signedIn={Boolean(data?.profile)} {...{ legacy, busy, error, onAuth }}
+    onEnter={() => { go('profile'); setInApp(true); }} />;
 
   if (!data.household) return <ChooseHousehold profile={data.profile} busy={busy} error={error} onLogout={logout} onSubmit={(joining, fields) => run(async () => {
     const { householdId } = await request(joining ? '/households/join' : '/households', fields);
@@ -265,7 +270,7 @@ export default function App() {
       setNotice({ claim: 'Opravilo je prevzeto.', cover: 'Opravilo je spet na voljo za prevzem.', complete: 'Opravilo je zaključeno.' }[action]);
     })} />;
 
-  return <div className="workspace">
+  return <div className={`workspace${desktopBridge ? ' desktop-workspace' : ''}`}>
     <aside className="sidebar">
       <button className="brand-button" onClick={() => go('overview')} aria-label="Sotovor, pregled"><Brand /></button>
       <div className="household"><span><House size={17} /></span><div><strong>{household.name}</strong><small>Družinski prostor</small></div></div>
