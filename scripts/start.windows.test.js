@@ -1,14 +1,24 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { spawn } from 'node:child_process';
+import { cpSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
+import { basename, dirname, join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
 import { test } from 'node:test';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const excludedNames = new Set(['.git', '.env', 'data', 'dist', 'node_modules']);
 
-test('Windows launcher installs and builds, then reuses a running app', { timeout: 120_000 }, async () => {
+test('Windows launcher installs and builds from a fresh copy without node_modules', { timeout: 120_000 }, async () => {
+  const copy = mkdtempSync(join(tmpdir(), 'sotovor-windows-start-'));
+  cpSync(root, copy, {
+    recursive: true,
+    filter: source => !excludedNames.has(basename(source)),
+  });
+  assert.equal(existsSync(join(copy, 'node_modules')), false);
+
   let healthRequests = 0;
   const server = createServer((request, response) => {
     if (request.url === '/api/health') {
@@ -27,7 +37,7 @@ test('Windows launcher installs and builds, then reuses a running app', { timeou
   let child;
   try {
     child = spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/c', 'start.bat'], {
-      cwd: root,
+      cwd: copy,
       env: {
         ...process.env,
         SOTOVOR_NO_BROWSER: '1',
@@ -47,5 +57,6 @@ test('Windows launcher installs and builds, then reuses a running app', { timeou
     await new Promise((resolveClose, reject) => {
       server.close(error => error ? reject(error) : resolveClose());
     });
+    rmSync(copy, { recursive: true, force: true });
   }
 });

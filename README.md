@@ -66,7 +66,7 @@ Za razvoj Reacta pusti `start.bat` zagnan in v drugem terminalu uporabi `npm run
 
 ## Preverjanja in CI
 
-GitHub Actions ob vsakem potisku in pull requestu zažene Windows preizkus `start.bat` iz čistega checkouta (brez `node_modules`) z lokalnim nadomestnim odgovorom `/api/health`; ta preveri namestitev odvisnosti, gradnjo in zaznavo že delujoče aplikacije brez brskalnika. Ločeno Linux CI namesti odvisnosti z `npm ci`, preveri sintakso JavaScript, izvede API integracijski preizkus z MongoDB ter zgradi frontend z `npm run build`. Projekt nima ločenega lint ukaza.
+GitHub Actions ob vsakem potisku in pull requestu zažene Windows preizkus `start.bat` iz začasne sveže kopije brez `node_modules` z lokalnim nadomestnim odgovorom `/api/health`; ta preveri namestitev odvisnosti, gradnjo in zaznavo že delujoče aplikacije brez brskalnika. Ločeno Linux CI namesti odvisnosti z `npm ci`, preveri sintakso JavaScript, izvede API integracijski preizkus z MongoDB ter zgradi frontend z `npm run build`. Projekt nima ločenega lint ukaza.
 
 Preverjanja lahko lokalno zaženeš iz korenske mape. MongoDB mora biti dosegljiv na `127.0.0.1:27027`, lahko pa povezavo nastaviš z `SOTOVOR_MONGO_URI`. V Windows PowerShellu uporabi `npm.cmd`, če pravilnik izvajanja blokira skripto `npm.ps1`:
 
