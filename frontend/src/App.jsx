@@ -163,9 +163,11 @@ export default function App() {
 
   useEffect(() => {
     let active = true;
+    let refreshing = false;
     const controller = new AbortController();
     async function refresh(initial = false) {
-      if (pending.current || (!initial && document.hidden)) return;
+      if (refreshing || pending.current || (!initial && document.hidden)) return;
+      refreshing = true;
       const startedAt = revision.current;
       try {
         const next = await request('/dashboard', undefined, controller.signal).catch(error => {
@@ -176,6 +178,8 @@ export default function App() {
         updateWorkspace(next, setData);
       } catch (error) {
         if (active && initial) setError(error.message);
+      } finally {
+        refreshing = false;
       }
     }
     void refresh(true);
