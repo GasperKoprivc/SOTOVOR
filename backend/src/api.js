@@ -4,6 +4,7 @@ import { Binary, ObjectId } from 'mongodb';
 import { materializeOccurrences, nextOccurrence } from './recurrence.js';
 import { codeHash } from './whatsapp.js';
 import { emailPattern, passwordHash, publicProfile, sessionSeconds, verifyPassword } from './accounts.js';
+import { registerDesktopAuth } from './desktop-auth.js';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const idPattern = /^[0-9a-f]{24}$/;
@@ -46,15 +47,14 @@ function parseVoice(voice) {
   return { mime, bytes: new Binary(bytes) };
 }
 
-export function createApi({ households, entries, accounts, sessions }, { whatsappEnabled = false } = {}) {
+export function createApi({ households, entries, accounts, sessions, desktopLinks }, { whatsappEnabled = false } = {}) {
   const router = Router();
   const cookieOptions = { httpOnly: true, sameSite: 'strict', path: '/' };
 
-  async function startSession(req, res, account) {
+  async function startSession(req, res, accountId) {
     const token = randomBytes(32).toString('hex');
-    await sessions.insertOne({
-      _id: hash(token), accountId: account._id, expiresAt: new Date(Date.now() + sessionSeconds * 1000),
-    });
+    const expiresAt = new Date(Date.now() + sessionSeconds * 1000);
+    await sessions.insertOne({ _id: hash(token), accountId, expiresAt });
     if (req.sessionId) await sessions.deleteOne({ _id: req.sessionId });
     res.cookie('sotovor_session', token, { ...cookieOptions, secure: req.secure, maxAge: sessionSeconds * 1000 });
   }
@@ -97,6 +97,11 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
       }
     }
     next();
+  });
+
+  registerDesktopAuth(router, {
+    desktopLinks, hash,
+    setDesktopSession: startSession,
   });
 
   async function dashboard(household, member, account, spaces = []) {
@@ -166,7 +171,7 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
         throw new HttpError(409, 'Članstvo se je medtem spremenilo. Osveži stran.');
       }
     }
-    await startSession(req, res, account);
+    await startSession(req, res, account._id);
     res.status(201).json({ ok: true });
   });
 
@@ -178,7 +183,7 @@ export function createApi({ households, entries, accounts, sessions }, { whatsap
     const account = await accounts.findOne({ email });
     const matched = await verifyPassword(password, account?.passwordHash ?? await dummyPassword);
     if (!matched || !account) throw new HttpError(401, 'E-pošta ali geslo ni pravilno.');
-    await startSession(req, res, account);
+    await startSession(req, res, account._id);
     res.json({ ok: true });
   });
 

@@ -11,6 +11,7 @@ export async function connect() {
     const entries = db.collection('entries');
     const accounts = db.collection('accounts');
     const sessions = db.collection('sessions');
+    const desktopLinks = db.collection('desktopLinks');
     await Promise.all([
       households.createIndex({ inviteCode: 1 }, { unique: true }),
       households.createIndex({ 'members.sessionHash': 1 }),
@@ -18,6 +19,7 @@ export async function connect() {
       households.createIndex({ ownerAccountId: 1 }, { sparse: true }),
       accounts.createIndex({ email: 1 }, { unique: true }),
       sessions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+      desktopLinks.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
       households.createIndex({ whatsappSender: 1 }, { unique: true, sparse: true }),
       entries.createIndex({ whatsappMessageId: 1 }, { unique: true, sparse: true }),
       entries.createIndex({ householdId: 1, dueOn: 1 }),
@@ -27,7 +29,7 @@ export async function connect() {
         partialFilterExpression: { nextOccurrence: { $exists: true } },
       }),
     ]);
-    return { client, households, entries, accounts, sessions };
+    return { client, households, entries, accounts, sessions, desktopLinks };
   } catch (error) {
     await client.close();
     throw error;

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowDown, ArrowRight, ArrowUpRight, Bell, CalendarDays, Check, ClipboardList,
-  House, Mic, Repeat2, UsersRound, X,
+  Mic, Repeat2, UsersRound, X,
 } from 'lucide-react';
+import { BrandMark } from './Account.jsx';
 import '@fontsource-variable/zalando-sans-expanded/wght.css';
 import '@fontsource-variable/inter/wght.css';
 import '@fontsource/ibm-plex-mono/latin-500.css';
@@ -25,16 +26,16 @@ const appPreviews = [
   { title: 'Android aplikacija', status: 'Koncept', image: 'mobile-concept.jpg', width: 1536, height: 1024,
     alt: 'Telefon s konceptom mobilnih družinskih opravil in datumskim trakom',
     text: 'Dnevni pregled na poti, s hitrim dostopom do tvojih opravil in možnosti za prevzem.' },
-  { title: 'Namizna aplikacija', status: 'Koncept', image: 'desktop-concept.jpg', width: 1536, height: 1024,
-    alt: 'Namizni monitor s konceptom aplikacije Sotovor in mesečnim koledarjem',
-    text: 'Samostojno okno za načrtovanje tedna ali meseca, ko za računalnikom usklajuješ več obveznosti hkrati.' },
+  { title: 'Namizna aplikacija', status: 'Deluje na Windows', image: 'desktop-dashboard.png', width: 1280, height: 850,
+    alt: 'Mesečni koledar demo družine Novak v namizni aplikaciji Sotovor',
+    text: 'Samostojno okno za Windows s skupnim koledarjem in opravili. Prijavo potrdiš v brskalniku.' },
 ];
 
 function ProductShowcase() {
   return <section id="naprave" className="landing-section product-showcase" aria-labelledby="devices-title">
     <div className="product-heading">
       <h2 id="devices-title">En družinski prostor, več načinov uporabe.</h2>
-      <p>Spletna različica že deluje. Za telefon, namizje in domači zaslon si oglej, kako bi lahko Sotovor uporabljali v vsakdanjem življenju.</p>
+      <p>Spletna in namizna različica že delujeta. Mobilna aplikacija in domači zaslon sta prikazana kot koncepta.</p>
     </div>
     <figure className="showcase-feature">
       <img src="/showcase/kitchen-display.jpg" width="1536" height="1024" loading="lazy" decoding="async"
@@ -61,11 +62,11 @@ function ProductShowcase() {
   </section>;
 }
 
-function Mark({ size = 18 }) {
-  return <span className="landing-mark" aria-hidden="true"><House size={size} strokeWidth={2.4} /></span>;
+function Mark() {
+  return <BrandMark className="landing-mark" />;
 }
 
-function AuthDialog({ mode, legacy, busy, error, onAuth, onMode }) {
+export function AuthDialog({ mode, legacy, busy, error, onAuth, onMode }) {
   const ref = useRef(null);
   const register = mode === 'register';
   useEffect(() => {

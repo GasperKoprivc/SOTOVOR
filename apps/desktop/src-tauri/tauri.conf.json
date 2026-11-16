@@ -1,0 +1,13 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Sotovor",
+  "version": "0.1.0",
+  "identifier": "si.sotovor.desktop",
+  "build": { "frontendDist": "ui" },
+  "app": {
+    "windows": [],
+    "withGlobalTauri": false,
+    "security": { "csp": "default-src 'none'; style-src 'unsafe-inline'" }
+  },
+  "bundle": { "active": true, "targets": ["nsis"], "icon": ["icons/icon.ico"] }
+}
