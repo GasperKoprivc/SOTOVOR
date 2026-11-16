@@ -42,10 +42,22 @@ function openBrowser(port) {
 async function runningApp(port) {
   try {
     const result = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(1000) });
-    return result.ok && (await result.json()).service === 'sotovor';
+    const health = result.ok && await result.json();
+    return health?.service === 'sotovor' ? health : null;
   } catch {
     return false;
   }
+}
+
+function openDesktop(port) {
+  if (stopping || process.platform !== 'win32' || process.env.SOTOVOR_DESKTOP !== '1') return;
+  const executable = resolve('apps/desktop/src-tauri/target/release/sotovor.exe');
+  const desktop = spawn(executable, [], {
+    detached: true, stdio: 'ignore',
+    env: { ...process.env, SOTOVOR_URL: process.env.SOTOVOR_URL || `http://127.0.0.1:${port}` },
+  });
+  desktop.once('error', error => console.error(`Namiznega Sotovora ni bilo mogoče odpreti. ${error.message}`));
+  desktop.unref();
 }
 
 async function checkExistingMongo() {
@@ -85,10 +97,16 @@ process.once('SIGTERM', stop);
 try {
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Neveljavna vrata MongoDB.');
   const httpPort = Number(process.env.SOTOVOR_PORT || 3000);
-  if (httpPort && await runningApp(httpPort)) {
+  const running = httpPort && await runningApp(httpPort);
+  if (running) {
     console.log(`Sotovor že teče na http://127.0.0.1:${httpPort}/`);
     openBrowser(httpPort);
-    if (process.platform === 'win32' && process.env.SOTOVOR_NO_BROWSER !== '1') process.exitCode = 10;
+    if (running.desktopCookie) openDesktop(httpPort);
+    else if (process.env.SOTOVOR_DESKTOP === '1') {
+      console.error('Strežnik je starejše različice. Ustavi ga in ponovno zaženi start.bat.');
+      process.exitCode = 1;
+    }
+    if (!process.exitCode && process.platform === 'win32' && process.env.SOTOVOR_NO_BROWSER !== '1') process.exitCode = 10;
   } else {
     if (await isPortFree()) {
       mkdirSync(data, { recursive: true });
@@ -125,7 +143,10 @@ try {
         env: { ...process.env, SOTOVOR_MONGO_URI: uri },
       });
       api.once('message', ({ ready, port }) => {
-        if (ready) openBrowser(port);
+        if (ready) {
+          openBrowser(port);
+          openDesktop(port);
+        }
       });
       api.once('exit', code => {
         if (!stopping) process.exitCode = code ?? 1;

@@ -1,10 +1,12 @@
 # Sotovor za računalnik
 
-Namizna aplikacija uporablja Electron in isti React vmesnik, Express API ter bazo MongoDB kot spletna aplikacija. Electron skrbi za namizno okno, meni in prijavo. Družinski podatki se shranjujejo na izbranem strežniku.
+Namizna aplikacija uporablja Tauri 2, Windows WebView2 in isti React vmesnik, Express API ter MongoDB kot spletna aplikacija. Družinski podatki se shranjujejo na izbranem strežniku. Namizni Rust projekt je v mapi `src-tauri`.
 
 ## Lokalni zagon na Windows
 
-V korenu projekta dvoklikni [start-desktop.bat](../../start-desktop.bat). Zahteva Node.js 24 in lokalni MongoDB Community Server. Skripta namesti namizne odvisnosti in po potrebi v ločenem oknu zažene lokalni strežnik. Če imaš odprt starejši Sotovor, ga zapri in zaženi znova.
+V korenu projekta dvoklikni [start.bat](../../start.bat). Zgradi React in Tauri, po potrebi zažene Express ter MongoDB in odpre obe aplikaciji. Za namizno okno brez spletnega zavihka uporabi `start-desktop.bat`. Če imaš odprt starejši strežnik Sotovora, ga najprej ustavi.
+
+Za razvoj potrebuješ Node.js 24, MongoDB Community Server, stabilni Rust za `x86_64-pc-windows-msvc`, Microsoft C++ Build Tools in WebView2. Prva gradnja prenese in prevede Rust odvisnosti.
 
 1. V namiznem oknu izberi **Prijava v brskalniku** ali **Registracija**.
 2. V brskalniku se prijavi ali ustvari račun. Preveri, da se prikazana koda ujema s kodo v namiznem oknu, in klikni **Potrdi povezavo**.
@@ -12,16 +14,15 @@ V korenu projekta dvoklikni [start-desktop.bat](../../start-desktop.bat). Zahtev
 
 Namizna prijava se ohrani med zagoni aplikacije. Odjava v namiznem oknu zaključi namizno sejo. Brskalnik ima svojo sejo.
 
-## Prenosni paket Windows x64
+## Izvršljiva datoteka in namestitveni paket
 
-Iz te mape zaženi:
+Po gradnji je izvršljiva datoteka v `src-tauri/target/release/sotovor.exe`. Za lokalno uporabo naj `start.bat` najprej zažene strežnik. Za izdelavo namestitvenega paketa Windows iz mape `src-tauri` uporabi:
 
 ```powershell
-npm.cmd ci
-npm.cmd run build
+npx.cmd --yes @tauri-apps/cli@2 build --bundles nsis
 ```
 
-Paket ustvari `dist/Sotovor-win32-x64/Sotovor.exe`. Za prenos kopiraj celo mapo `Sotovor-win32-x64`. Za lokalno uporabo paketa naj `start.bat` najprej zažene strežnik. Prenosni paket je razvojni in nepodpisan.
+Paket NSIS je v `src-tauri/target/release/bundle/nsis`. Za distribucijo namestitveni paket ustrezno podpiši.
 
 ## Objava
 
@@ -29,7 +30,7 @@ Spletni in namizni odjemalec naj kažeta na isti Sotovor Express strežnik. Ta p
 
 ```powershell
 $env:SOTOVOR_URL = 'https://sotovor.example.com'
-.\dist\Sotovor-win32-x64\Sotovor.exe
+.\src-tauri\target\release\sotovor.exe
 ```
 
 Lokalni privzeti naslov je `http://127.0.0.1:3000`. Za druga lokalna vrata najprej zaženi strežnik, nato nastavi `SOTOVOR_URL` na njegov naslov. Družine, opravila in koledar so skupni vsem odjemalcem, ki uporabljajo isti strežnik in račun. Prenosnega paketa in lokalnih datotek MongoDB ne dodajaj v Git.

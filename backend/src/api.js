@@ -51,15 +51,10 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
   const router = Router();
   const cookieOptions = { httpOnly: true, sameSite: 'strict', path: '/' };
 
-  async function issueSession(accountId) {
+  async function startSession(req, res, accountId) {
     const token = randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + sessionSeconds * 1000);
     await sessions.insertOne({ _id: hash(token), accountId, expiresAt });
-    return { token, expiresAt };
-  }
-
-  async function startSession(req, res, account) {
-    const { token } = await issueSession(account._id);
     if (req.sessionId) await sessions.deleteOne({ _id: req.sessionId });
     res.cookie('sotovor_session', token, { ...cookieOptions, secure: req.secure, maxAge: sessionSeconds * 1000 });
   }
@@ -104,7 +99,10 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
     next();
   });
 
-  registerDesktopAuth(router, { desktopLinks, issueSession, hash });
+  registerDesktopAuth(router, {
+    desktopLinks, hash,
+    setDesktopSession: startSession,
+  });
 
   async function dashboard(household, member, account, spaces = []) {
     const profile = account ? publicProfile(account) : null;
@@ -173,7 +171,7 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
         throw new HttpError(409, 'Članstvo se je medtem spremenilo. Osveži stran.');
       }
     }
-    await startSession(req, res, account);
+    await startSession(req, res, account._id);
     res.status(201).json({ ok: true });
   });
 
@@ -185,7 +183,7 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
     const account = await accounts.findOne({ email });
     const matched = await verifyPassword(password, account?.passwordHash ?? await dummyPassword);
     if (!matched || !account) throw new HttpError(401, 'E-pošta ali geslo ni pravilno.');
-    await startSession(req, res, account);
+    await startSession(req, res, account._id);
     res.json({ ok: true });
   });
 

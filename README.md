@@ -12,7 +12,7 @@ Projektni MongoDB posluša na `127.0.0.1:27027` in hrani podatke v `data/mongodb
 
 ## Namizna aplikacija
 
-Zaženi [start-desktop.bat](start-desktop.bat). Namizna aplikacija uporablja isti strežnik in MongoDB kot spletna. Prijavo ali registracijo opraviš v privzetem brskalniku in potrdiš prikazano kodo. Za izdelavo prenosnega `Sotovor.exe` ali povezavo z objavljenim HTTPS strežnikom glej [navodila za namizno aplikacijo](apps/desktop/README.md).
+Zaženi [start.bat](start.bat). Na Windows z nameščenim Rustom zgradi tudi namizni Sotovor v Tauri + React in ga odpre, ko je strežnik pripravljen. Za namizno okno brez spletnega zavihka uporabi `start-desktop.bat`. Če želiš samo spletni zagon, nastavi `SOTOVOR_WEB_ONLY=1`. Obe aplikaciji uporabljata isti strežnik in MongoDB. Prijavo ali registracijo za namizno okno opraviš v privzetem brskalniku in potrdiš prikazano kodo. Zahteve za Windows in nastavitev naslova za objavo so v [navodilih za namizno aplikacijo](apps/desktop/README.md).
 
 ## Zagon z Docker Compose
 
@@ -77,7 +77,7 @@ V družinskem prostoru odpri **WhatsApp** in ustvari kodo. Iz izbrane številke 
 | [frontend](frontend/) | React strani, komponente in Vite |
 | [Docker](Dockerfile) | Aplikacijski image; [Compose](compose.yaml) za lokalno aplikacijo in MongoDB |
 | [apps/mobile](apps/mobile/) | Mapa za prihodnji projekt v Android Studiu |
-| [apps/desktop](apps/desktop/) | Namizna aplikacija Electron, ločene odvisnosti in navodila za prenosni paket |
+| [apps/desktop](apps/desktop/) | Namizni projekt Tauri in navodila za Windows paket |
 | [scripts](scripts/) | Lokalni zagon MongoDB in API-ja |
 
 Za razvoj Reacta pusti `start.bat` zagnan in v drugem terminalu uporabi `npm run dev --workspace frontend`. Vite posreduje klice API-ja Expressu na vratih 3000 oziroma na `SOTOVOR_PORT`, če ga nastaviš tudi v terminalu za Vite. Če se spremenijo odvisnosti, v korenu projekta zaženi `npm ci`.

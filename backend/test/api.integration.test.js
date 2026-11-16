@@ -90,11 +90,13 @@ test('desktop linking requires browser approval and the original verifier, and c
   const exchanges = await Promise.all([postJson('/desktop/exchange', { id, verifier }), postJson('/desktop/exchange', { id, verifier })]);
   assert.deepEqual(exchanges.map(result => result.response.status).sort(), [200, 410]);
   const success = exchanges.find(result => result.response.ok);
-  const electronCookie = 'sotovor_session=' + success.data.token;
-  assert.notEqual(electronCookie, webCookie);
-  assert.equal((await dashboard(electronCookie)).data.household.name, 'Namizni dom');
-  await postJson('/auth/logout', {}, electronCookie);
-  assert.equal((await dashboard(electronCookie)).data, null);
+  const desktopCookie = sessionCookie(success.response);
+  assert.deepEqual(success.data, { ok: true });
+  assert.match(success.response.headers.get('set-cookie'), /HttpOnly/i);
+  assert.notEqual(desktopCookie, webCookie);
+  assert.equal((await dashboard(desktopCookie)).data.household.name, 'Namizni dom');
+  await postJson('/auth/logout', {}, desktopCookie);
+  assert.equal((await dashboard(desktopCookie)).data, null);
   assert.equal((await dashboard(webCookie)).data.household.name, 'Namizni dom');
 });
 

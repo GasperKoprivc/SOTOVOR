@@ -114,7 +114,9 @@ export function Calendar({ entries, today, compact, onOpen, onAdd, onEdit }) {
             <ul className="day-entries">{items.map(entry => <li key={entry.id} className={entry.kind}>
               <span>{entry.kind === 'event' ? 'Dogodek' : entry.completedAt ? 'Zaključeno' : 'Opravilo'}</span>
               {entry.completedAt || !onEdit ? entry.title : <button className="calendar-edit" onClick={() => onEdit(entry)} aria-label={`Uredi ${entry.title}`}>{entry.title}</button>}
-              {entry.voice && <a className="voice-link" href={voiceUrl(entry.id)} target="_blank" rel="noreferrer">Poslušaj</a>}
+              {entry.voice && (window.sotovorDesktop
+                ? <audio className="voice-link desktop-audio" controls preload="none" src={voiceUrl(entry.id)} aria-label={`Glasovna beležka: ${entry.title}`} />
+                : <a className="voice-link" href={voiceUrl(entry.id)} target="_blank" rel="noreferrer">Poslušaj</a>)}
             </li>)}</ul>}
         </li>;
       })}

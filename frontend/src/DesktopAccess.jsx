@@ -22,7 +22,7 @@ export function DesktopSignIn() {
       await desktopBridge.finish();
       window.location.reload();
     } catch (problem) {
-      setError(problem.message.replace(/^Error invoking remote method '[^']+': Error: /, ''));
+      setError(problem.message);
       setCode('');
       setWaiting(false);
     }
@@ -34,7 +34,10 @@ export function DesktopSignIn() {
       <Monitor size={22} aria-hidden="true" />
       <h1>Sotovor za računalnik</h1>
       <p>Prijava se odpre v privzetem brskalniku. Po potrditvi se družinski prostor odpre v tem oknu.</p>
-      {waiting ? <p role="status">{code ? <>V brskalniku potrdi kodo <strong className="desktop-code">{code}</strong>.</> : 'Odpiram brskalnik …'}</p> :
+      {waiting ? <>
+        <p role="status">{code ? <>V brskalniku potrdi kodo <strong className="desktop-code">{code}</strong>.</> : 'Odpiram brskalnik …'}</p>
+        <button className="text-button" onClick={() => window.location.reload()}>Prekliči povezovanje</button>
+      </> :
         <div className="hero-actions">
           <button className="primary" onClick={() => signIn('login')}>Prijava v brskalniku <ArrowUpRight size={17} /></button>
           <button className="soft-button" onClick={() => signIn('register')}>Registracija <ArrowUpRight size={17} /></button>

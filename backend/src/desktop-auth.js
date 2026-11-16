@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 const linkLifetimeMs = 5 * 60 * 1000;
 const hex = (value, size) => typeof value === 'string' && value.length === size && /^[0-9a-f]+$/.test(value);
 
-export function registerDesktopAuth(router, { desktopLinks, issueSession, hash }) {
+export function registerDesktopAuth(router, { desktopLinks, setDesktopSession, hash }) {
   router.post('/desktop/start', async (req, res) => {
     const { challenge } = req.body;
     if (!hex(challenge, 64)) return res.status(400).json({ error: 'Neveljavna zahteva za povezavo.' });
@@ -30,7 +30,10 @@ export function registerDesktopAuth(router, { desktopLinks, issueSession, hash }
     }
     const condition = { _id: id, challenge: hash(verifier), expiresAt: { $gt: new Date() } };
     const approved = await desktopLinks.findOneAndDelete({ ...condition, accountId: { $exists: true } });
-    if (approved) return res.json(await issueSession(approved.accountId));
+    if (approved) {
+      await setDesktopSession(req, res, approved.accountId);
+      return res.json({ ok: true });
+    }
     if (await desktopLinks.findOne(condition, { projection: { _id: 1 } })) return res.status(202).json({ pending: true });
     res.status(410).json({ error: 'Povezava je potekla ali je že uporabljena.' });
   });

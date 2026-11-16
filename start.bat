@@ -27,6 +27,23 @@ if errorlevel 1 goto failed
 :build
 call npm run build
 if errorlevel 1 goto failed
+if "%SOTOVOR_WEB_ONLY%"=="1" (
+    set "SOTOVOR_DESKTOP=0"
+    goto server
+)
+if "%SOTOVOR_NO_BROWSER%"=="1" if not "%SOTOVOR_DESKTOP%"=="1" goto server
+set "SOTOVOR_DESKTOP=1"
+if exist "%USERPROFILE%\.cargo\bin\cargo.exe" set "PATH=%USERPROFILE%\.cargo\bin;%PATH%"
+where cargo >nul 2>nul
+if errorlevel 1 (
+    echo Za namizni Sotovor namesti Rust. Nadaljujem s spletno aplikacijo.
+    set "SOTOVOR_DESKTOP=0"
+    goto server
+)
+cargo build --release --locked --manifest-path apps/desktop/src-tauri/Cargo.toml --target-dir apps/desktop/src-tauri/target
+if errorlevel 1 goto failed
+
+:server
 if exist ".env" (
     node --env-file=.env scripts/start.js
 ) else (
