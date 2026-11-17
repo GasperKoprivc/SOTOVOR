@@ -16,6 +16,18 @@ class MobileAuthenticatorTest {
     @Test fun rotatesBothCredentialsAndRetriesTheOriginalRequest() = exercise(200)
     @Test fun clearsRevokedSessions() = exercise(401)
 
+    @Test fun staleEditIsReportedAsConflictWithoutRetrying() {
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setResponseCode(409).setBody("""{"error":{"code":"conflict","message":"Vnos se je spremenil."}}"""))
+            val body = """{"title":"Task","kind":"task","version":1}"""
+            val request = Request.Builder().url(server.url("/api/v1/entries/one/edit"))
+                .post(okhttp3.RequestBody.create("application/json".toMediaType(), body)).build()
+            OkHttpClient().newCall(request).execute().use { assertEquals(409, it.code) }
+            assertEquals(1, server.requestCount)
+            assertEquals(body, server.takeRequest().body.readUtf8())
+        }
+    }
+
     private fun exercise(refreshStatus: Int) {
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setResponseCode(401))

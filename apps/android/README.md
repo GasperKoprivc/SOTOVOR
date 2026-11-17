@@ -24,4 +24,6 @@ cd apps/android
 
 On macOS and Linux use `./gradlew`. CI uploads the debug APK as `sotovor-android-debug`. An unsigned release build exercises R8.
 
+With the emulator running, use `./gradlew connectedDebugAndroidTest` (or `gradlew.bat` on Windows) for the Compose UI tests. In the app, the workspace tabs open the dashboard, filtered task pages, calendar, workload, notifications and profile. Profile can revoke a device or export the account as a JSON file.
+
 The app builds without Firebase. To enable the Android Firebase SDK, add the matching `google-services.json` as `app/google-services.json`. See the [firebase and App Links setup](../../docs/HUMAN_TASKS.md#android-app-links-and-firebase).

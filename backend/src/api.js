@@ -5,6 +5,8 @@ import { bearerSession, hash, registerMobileAuth, validId } from './mobile-auth.
 import { pageOf } from './paging.js';
 import { registerNotificationRoutes } from './notifications.js';
 import { registerPasswordReset } from './password-reset.js';
+import { registerAccountData } from './account-data.js';
+import { taskFilters } from './task-filters.js';
 import { Router } from 'express';
 import { Binary, ObjectId } from 'mongodb';
 import { materializeOccurrences, nextOccurrence } from './recurrence.js';
@@ -100,6 +102,9 @@ export function createApi(database, {
       }
     }
     if (req.account) {
+      if (req.account.deletionFamilyIds && !(req.method === 'DELETE' && req.path === '/me')) {
+        throw new HttpError(409, 'Izbris računa še ni končan.');
+      }
       const accountId = req.account._id;
       const getMember = household => household.members.find(member =>
         member.accountId?.equals(accountId) || member.guestAccountId?.equals(accountId) ||
@@ -128,6 +133,7 @@ export function createApi(database, {
   if (versioned) {
     registerMobileAuth(router, database, { ...mobileOptions, verificationEnabled: Boolean(verificationMail) });
     registerNotificationRoutes(router, database);
+    registerAccountData(router, database);
   }
 
   const entryProjection = { householdId: 0, nextOccurrence: 0, whatsappMessageId: 0, 'voice.bytes': 0 };
@@ -425,7 +431,8 @@ export function createApi(database, {
     for (const [path, kind] of [['tasks', 'task'], ['events', 'event']]) {
       router.get('/' + path, async (req, res) => {
         await materializeOccurrences(entries, req.household._id);
-        res.json(await pageOf(entries, { householdId: req.household._id, archivedAt: null, kind }, req.query, {
+        const filter = kind === 'task' ? taskFilters(req.query, req.household, req.member) : {};
+        res.json(await pageOf(entries, { householdId: req.household._id, archivedAt: null, kind, ...filter }, req.query, {
           projection: entryProjection, map: item => publicEntry(item, req.household),
         }));
       });

@@ -155,11 +155,31 @@ test('v1 scopes task pages to the selected household and preserves legacy error 
   assert.equal(typeof (await legacy.json()).error, 'string');
   const invalid = await v1('/events?limit=0', { access: a.accessToken });
   assert.equal(invalid.body.error.code, 'invalid_request');
+  const filtered = await v1('/tasks?state=available&search=B&assignee=unassigned', { access: a.accessToken });
+  assert.deepEqual(filtered.body.items.map(item => item.title), ['B']);
+  const due = await v1('/tasks?state=due', { access: a.accessToken });
+  assert.equal(due.status, 200);
+  assert.equal(due.body.items.length, 0);
   const publicUrl = apiUrl.replace(/\/api$/, '');
   const webFallback = await fetch(publicUrl + '/join/' + 'a'.repeat(32), { redirect: 'manual' });
   assert.equal(webFallback.headers.get('location'), '/?invite=' + 'a'.repeat(32));
   const links = await (await fetch(publicUrl + '/.well-known/assetlinks.json')).json();
   assert.equal(links[0].target.package_name, 'si.sotovor.app');
+});
+
+test('account export omits credentials and deletion revokes access and requires owned-space confirmation', async () => {
+  const user = await nativeUser();
+  const access = user.accessToken;
+  const space = await mobilePost('/households', { householdName: 'Delete me', expectedMembers: 2 }, access);
+  assert.equal(space.status, 201);
+  const exported = await v1('/me/export', { access });
+  assert.equal(exported.body.profile.email, user.email);
+  assert.equal(JSON.stringify(exported.body).includes('passwordHash'), false);
+  const body = { password: 'integration-test-password' };
+  assert.equal((await v1('/me', { method: 'DELETE', body, access })).body.error.code, 'owned_families');
+  assert.equal((await v1('/me', { method: 'DELETE', body: { ...body, deleteOwnedFamilies: true }, access })).status, 200);
+  assert.equal((await v1('/dashboard', { access })).status, 401);
+  assert.equal((await mobilePost('/mobile/auth/refresh', { refreshToken: user.refreshToken })).status, 401);
 });
 
 test('password reset is single use and revokes native sessions', async () => {
