@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Sotovor</string>
+    <string name="welcome_copy">Skupni prostor za družino, opravila in dogovore.</string>
+    <string name="sign_in">Prijava</string>
+    <string name="register">Registracija</string>
+    <string name="retry">Poskusi znova</string>
+    <string name="first_name">Ime</string>
+    <string name="last_name">Priimek</string>
+    <string name="phone">Telefonska številka</string>
+    <string name="email">E-pošta</string>
+    <string name="password">Geslo</string>
+    <string name="forgot_password">Pozabljeno geslo</string>
+    <string name="browser_unavailable">Brskalnik ni dosegljiv.</string>
+    <string name="back">Nazaj</string>
+    <string name="greeting">Živjo, %1$s!</string>
+    <string name="verify_email">Preveri pošto in potrdi e-poštni naslov.</string>
+    <string name="resend_email">Ponovno pošlji povezavo</string>
+    <string name="verification_sent">Povezava je poslana.</string>
+    <string name="switch_family">Zamenjaj družinski prostor</string>
+    <string name="new_family">Ustvari družino</string>
+    <string name="join_family">Pridruži se s povabilom</string>
+    <string name="family_name">Ime družine</string>
+    <string name="family_size">Število družinskih članov</string>
+    <string name="invite_code">Koda povabila</string>
+    <string name="sign_out">Odjava</string>
+    <string name="offline">Brez povezave. Preveri naslov strežnika in poskusi znova.</string>
+    <string name="error_generic">Prišlo je do napake. Poskusi znova.</string>
+</resources>

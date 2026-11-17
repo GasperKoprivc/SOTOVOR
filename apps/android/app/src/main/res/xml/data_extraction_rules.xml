@@ -1,0 +1,4 @@
+<data-extraction-rules>
+    <cloud-backup><exclude domain="file" path="native-session" /></cloud-backup>
+    <device-transfer><exclude domain="file" path="native-session" /></device-transfer>
+</data-extraction-rules>
