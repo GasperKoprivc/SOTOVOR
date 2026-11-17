@@ -1,3 +1,5 @@
+import { localizedDate } from './i18n.js';
+
 export const categories = {
   dom: 'Dom',
   druzina: 'Družina',
@@ -9,9 +11,9 @@ export const categories = {
 export const familyRoles = { father: 'Oče', mother: 'Mati', guardian: 'Skrbnik otroka', child: 'Otrok', other: 'Drugo' };
 export const availabilityStates = { available: 'Na voljo', sick: 'Bolan/a', unavailable: 'Odsoten/na' };
 
-export const shortDate = new Intl.DateTimeFormat('sl-SI', { day: 'numeric', month: 'short' });
-export const fullDate = new Intl.DateTimeFormat('sl-SI', { day: 'numeric', month: 'long', weekday: 'long' });
-export const weekday = new Intl.DateTimeFormat('sl-SI', { weekday: 'short' });
+export const shortDate = localizedDate({ day: 'numeric', month: 'short' });
+export const fullDate = localizedDate({ day: 'numeric', month: 'long', weekday: 'long' });
+export const weekday = localizedDate({ weekday: 'short' });
 
 export function dateKey(date) {
   const pad = value => String(value).padStart(2, '0');

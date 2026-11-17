@@ -1,3 +1,4 @@
+import { t, errorText } from './i18n.js';
 import { useEffect, useRef, useState } from 'react';
 import { Mic, Square, Trash2 } from 'lucide-react';
 
@@ -76,11 +77,11 @@ export default function VoiceRecorder({ onChange, busy, setBusy }) {
   }
 
   return <div className="voice-field">
-    {recording ? <button type="button" className="soft-button" onClick={() => control.current?.stop()}><Square size={16} /> Ustavi snemanje</button> :
-      preview ? <><audio controls src={preview} aria-label="Predogled posnetka" />
-        <button type="button" className="icon-button" aria-label="Odstrani posnetek" onClick={() => { setPreview(''); onChange(null); }}><Trash2 size={16} /></button></> :
-        <button type="button" className="soft-button" disabled={busy} onClick={record}><Mic size={17} /> Posnemi beležko</button>}
-    {recording && <p role="status">Snemam, največ 30 sekund.</p>}
-    {status && <p className="error" role="alert">{status}</p>}
+    {recording ? <button type="button" className="soft-button" onClick={() => control.current?.stop()}><Square size={16} />{' '}{t('Ustavi snemanje')}</button> :
+      preview ? <><audio controls src={preview} aria-label={t('Predogled posnetka')} />
+        <button type="button" className="icon-button" aria-label={t('Odstrani posnetek')} onClick={() => { setPreview(''); onChange(null); }}><Trash2 size={16} /></button></> :
+        <button type="button" className="soft-button" disabled={busy} onClick={record}><Mic size={17} />{' '}{t('Posnemi beležko')}</button>}
+    {recording && <p role="status">{t('Snemam, največ 30 sekund.')}</p>}
+    {status && <p className="error" role="alert">{errorText(status)}</p>}
   </div>;
 }
