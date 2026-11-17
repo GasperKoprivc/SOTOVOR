@@ -40,3 +40,17 @@ data class Credentials(
 )
 @Serializable data class ApiError(val error: ErrorDetail)
 @Serializable data class ErrorDetail(val code: String, val message: String)
+@Serializable data class Page<T>(val items: List<T> = emptyList(), val nextCursor: String? = null)
+@Serializable data class EntryInput(
+    val title: String, val kind: String, val category: String = "drugo", val dueOn: String? = null,
+    val assigneeId: String? = null, val repeatDays: Int = 0, val rotate: Boolean = false,
+    val reminderDays: Int = 2, val version: Int? = null, val voice: Voice? = null
+)
+@Serializable data class Version(val version: Int)
+@Serializable data class NoticeTarget(val screen: String, val householdId: String, val entryId: String? = null)
+@Serializable data class Notice(val id: String, val type: String, val target: NoticeTarget, val createdAt: String, val readAt: String? = null)
+@Serializable data class DeviceSession(val id: String, val deviceName: String, val current: Boolean, val lastUsedAt: String)
+@Serializable data class DeleteAccount(val password: String, val deleteOwnedFamilies: Boolean)
+
+data class TaskFilters(val state: String = "all", val search: String = "", val category: String? = null, val assignee: String? = null)
+data class EntryEditor(val kind: String, val entry: Entry? = null, val day: String? = null)

@@ -41,11 +41,11 @@ class FamilyRepository @Inject constructor(
         if (store.current() == null) return@withContext null
         val selected = context.settings.data.first()[activeHousehold]
         try {
-            api.dashboard(selected)
+            api.dashboard(selected, includeEntries = true)
         } catch (error: HttpException) {
             if (selected == null || error.code() != 403) throw error
             context.settings.edit { it.remove(activeHousehold) }
-            api.dashboard(null)
+            api.dashboard(null, includeEntries = true)
         }
     }
 
@@ -53,6 +53,29 @@ class FamilyRepository @Inject constructor(
     suspend fun create(name: String, members: Int) = switch(api.createFamily(NewFamily(name, members)).householdId)
     suspend fun join(invite: String) = switch(api.joinFamily(Invitation(invite.trim())).householdId)
     suspend fun resend() = api.resend()
+    suspend fun tasks(household: String, filters: TaskFilters, cursor: String?) =
+        api.tasks(household, filters.state, filters.search.trim().takeIf { it.isNotEmpty() }, filters.category, filters.assignee, cursor)
+
+    suspend fun save(household: String, editor: EntryEditor, input: EntryInput) {
+        val entry = editor.entry
+        if (entry == null) api.createEntry(household, input)
+        else api.editEntry(household, entry.id, input.copy(version = entry.version))
+    }
+
+    suspend fun remove(household: String, entry: Entry) = api.removeEntry(household, entry.id, Version(entry.version))
+    suspend fun act(household: String, id: String, action: String) = api.taskAction(household, id, action)
+    suspend fun notices(household: String, cursor: String?) = api.notices(household, cursor)
+    suspend fun readNotice(household: String, id: String) = api.readNotice(household, id)
+    suspend fun devices() = api.sessions()
+    suspend fun revoke(device: DeviceSession) {
+        api.revoke(device.id)
+        if (device.current) clearLocalSession()
+    }
+    suspend fun export() = withContext(Dispatchers.IO) { api.export().use { it.string() } }
+    suspend fun deleteAccount(input: DeleteAccount) {
+        api.deleteAccount(input)
+        clearLocalSession()
+    }
 
     suspend fun logout() = withContext(Dispatchers.IO) {
         val stored = store.current()
@@ -61,6 +84,10 @@ class FamilyRepository @Inject constructor(
         } catch (error: HttpException) {
             if (error.code() != 401) throw error
         }
+        clearLocalSession()
+    }
+
+    private suspend fun clearLocalSession() = withContext(Dispatchers.IO) {
         store.replace(store.current(), null)
         context.settings.edit { it.remove(activeHousehold) }
     }

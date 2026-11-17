@@ -71,7 +71,12 @@ fun SotovorNav(model: WorkspaceViewModel) {
         }
         composable("login") { AuthForm(false, state, model, { model.clearNotice(); nav.popBackStack() }) }
         composable("register") { AuthForm(true, state, model, { model.clearNotice(); nav.popBackStack() }) }
-        composable("workspace") { state.workspace?.let { FamilyScreen(it, state, model) } }
+        composable("workspace") {
+            state.workspace?.let {
+                if (it.household == null) PanelScreen { FamilyControls(it, state, model) }
+                else CoreWorkspace(it, state, model)
+            }
+        }
     }
 }
 
@@ -120,8 +125,7 @@ private fun AuthForm(register: Boolean, state: WorkspaceState, model: WorkspaceV
             Field(R.string.last_name, last, { last = it })
             Field(R.string.phone, phone, { phone = it }, KeyboardType.Phone)
         }
-        Field(R.string.email, email, { email = it }, KeyboardType.Email)
-        Field(R.string.password, password, { password = it }, KeyboardType.Password)
+        CredentialFields(email, password, { email = it }, { password = it })
         Status(state)
         Button(
             enabled = !state.busy && email.isNotBlank() && password.isNotBlank() &&
@@ -144,13 +148,19 @@ private fun AuthForm(register: Boolean, state: WorkspaceState, model: WorkspaceV
 }
 
 @Composable
-private fun FamilyScreen(workspace: Workspace, state: WorkspaceState, model: WorkspaceViewModel) {
+fun CredentialFields(email: String, password: String, onEmail: (String) -> Unit, onPassword: (String) -> Unit) {
+    Field(R.string.email, email, onEmail, KeyboardType.Email)
+    Field(R.string.password, password, onPassword, KeyboardType.Password)
+}
+
+@Composable
+fun FamilyControls(workspace: Workspace, state: WorkspaceState, model: WorkspaceViewModel) {
     var mode by rememberSaveable { mutableStateOf("") }
     var familyName by rememberSaveable { mutableStateOf("") }
     var sizeText by rememberSaveable { mutableStateOf("4") }
     var code by rememberSaveable { mutableStateOf("") }
     LaunchedEffect(workspace.household?.id) { mode = ""; code = "" }
-    PanelScreen {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(stringResource(R.string.greeting, workspace.profile.firstName), style = MaterialTheme.typography.headlineLarge)
         workspace.household?.let { Text(it.name, style = MaterialTheme.typography.titleLarge) }
         Status(state)

@@ -3,6 +3,19 @@ info: {title: Sotovor native API, version: 1.0.0}
 servers: [{url: /api/v1}]
 security: [{bearer: []}, {browserSession: []}]
 paths:
+  /me/export:
+    get:
+      summary: Export the authenticated account’s personal data
+      responses:
+        '200': {description: Personal account data as an attachment, content: {application/json: {schema: {$ref: '#/components/schemas/PersonalExport'}}}}
+        default: {description: Request failed, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+  /me:
+    delete:
+      summary: Delete the authenticated account after confirming the password
+      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [password], properties: {password: {type: string}, deleteOwnedFamilies: {type: boolean}}}}}}
+      responses:
+        '200': {description: Account removed, content: {application/json: {schema: {$ref: '#/components/schemas/Ok'}}}}
+        default: {description: Request failed, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
   /auth/password/request:
     post:
       summary: Send a single-use password reset link when SMTP is configured
@@ -176,6 +189,10 @@ paths:
       parameters:
         - {"in":"query","name":"limit","schema":{"type":"integer","minimum":1,"maximum":100,"default":30}}
         - {"in":"query","name":"cursor","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {in: query, name: state, schema: {type: string, enum: [all, mine, available, due, recurring, done]}}
+        - {in: query, name: search, schema: {type: string, maxLength: 160}}
+        - {in: query, name: category, schema: {type: string, enum: [dom, druzina, opravki, zdravje, drugo]}}
+        - {in: query, name: assignee, schema: {type: string}}
         - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
       responses:
         '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/EntryPage"}}}}
@@ -344,6 +361,7 @@ components:
     bearer: {type: http, scheme: bearer, bearerFormat: opaque}
     browserSession: {type: apiKey, in: cookie, name: sotovor_session}
   schemas:
+    PersonalExport: {type: object, required: [profile, registeredAt, spaces], properties: {profile: {$ref: '#/components/schemas/Account'}, registeredAt: {type: string, format: date-time}, spaces: {type: array, items: {$ref: '#/components/schemas/Space'}}}}
     Error: {"type":"object","required":["error"],"properties":{"error":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string"},"message":{"type":"string"}}}}}
     Ok: {"type":"object","required":["ok"],"properties":{"ok":{"type":"boolean"}}}
     Account: {"type":"object","required":["firstName","lastName","email","phone"],"properties":{"firstName":{"type":"string","maxLength":40},"lastName":{"type":"string","maxLength":50},"email":{"type":"string","maxLength":254,"format":"email"},"phone":{"type":"string","maxLength":25},"emailVerificationPending":{"type":"boolean"}}}
