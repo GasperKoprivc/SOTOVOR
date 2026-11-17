@@ -71,9 +71,14 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
       if (session) {
         req.sessionId = sessionHash;
         req.account = await accounts.findOne({ _id: session.accountId });
-        const membership = { $or: [{ 'members.accountId': session.accountId }, { ownerAccountId: session.accountId }] };
+        const membership = { $or: [
+          { 'members.accountId': session.accountId },
+          { 'members.guestAccountId': session.accountId },
+          { ownerAccountId: session.accountId },
+        ] };
         const getMember = household => household.members.find(member =>
           member.accountId?.equals(session.accountId) ||
+          member.guestAccountId?.equals(session.accountId) ||
           (household.ownerAccountId?.equals(session.accountId) && member.id === household.ownerId));
         if (req.account) {
           const spaces = await households.find(membership).sort({ _id: 1 }).toArray();
@@ -197,22 +202,28 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
     router.post(joining ? '/households/join' : '/households', async (req, res) => {
       if (!req.account) throw new HttpError(401, 'Najprej se prijavi.');
       const hasSpace = req.spaces.length > 0;
-      if (hasSpace && (joining || req.spaces.some(space => !space.admin))) {
-        throw new HttpError(409, 'Tvoj račun že pripada družinskemu prostoru.');
+      if (req.spaces.some(space => !space.admin)) {
+        throw new HttpError(409, 'Tvoj račun je že član druge družine. Pred menjavo naj skrbnik potrdi izstop.');
       }
       const member = {
         id: new ObjectId().toHexString(), name: `${req.account.firstName} ${req.account.lastName}`,
-        ...(!hasSpace ? { accountId: req.account._id } : {}),
+        ...(joining ? { guestAccountId: req.account._id } : !hasSpace ? { accountId: req.account._id } : {}),
       };
       try {
       if (joining) {
         const inviteCode = requiredText(req.body.inviteCode, 32, 'Koda povabila').toLowerCase();
-        const result = await households.updateOne({ inviteCode, 'members.accountId': { $ne: req.account._id } },
-          { $push: { members: member } });
-        if (!result.matchedCount) {
-          if (await households.findOne({ 'members.accountId': req.account._id })) throw new HttpError(409, 'Tvoj račun že pripada prostoru.');
-          throw new HttpError(404, 'Koda povabila ni veljavna.');
+        if (!/^[a-f0-9]{32}$/.test(inviteCode)) throw new HttpError(400, 'Koda povabila mora imeti 32 znakov.');
+        const invited = await households.findOneAndUpdate({
+          inviteCode, ownerAccountId: { $ne: req.account._id },
+          'members.accountId': { $ne: req.account._id }, 'members.guestAccountId': { $ne: req.account._id },
+        }, { $push: { members: member } }, { returnDocument: 'after', projection: { _id: 1 } });
+        if (!invited) {
+          if (await households.findOne({ inviteCode }, { projection: { _id: 1 } })) {
+            throw new HttpError(409, 'V tem družinskem prostoru si že.');
+          }
+          throw new HttpError(404, 'Koda povabila ni veljavna ali je bila zamenjana.');
         }
+        return res.status(201).json({ householdId: String(invited._id) });
       } else {
         const { expectedMembers } = req.body;
         if (!Number.isInteger(expectedMembers) || expectedMembers < 1 || expectedMembers > 100) {
@@ -229,7 +240,6 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
         if (error.code === 11000) throw new HttpError(409, 'Tvoj račun že pripada družinskemu prostoru.');
         throw error;
       }
-      res.status(201).json({ ok: true });
     });
   }
 
@@ -273,7 +283,7 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
     } else if (action === 'remove') {
       await households.updateOne(condition, {
         $set: { 'members.$.inactive': true },
-        $unset: { 'members.$.accountId': '', 'members.$.sessionHash': '', 'members.$.expiresAt': '', 'members.$.leaveRequestedAt': '' },
+        $unset: { 'members.$.accountId': '', 'members.$.guestAccountId': '', 'members.$.sessionHash': '', 'members.$.expiresAt': '', 'members.$.leaveRequestedAt': '' },
       });
     } else {
       throw new HttpError(404, 'To dejanje ne obstaja.');

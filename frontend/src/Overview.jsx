@@ -24,17 +24,24 @@ export function Metrics({ tasks, memberId, today, onFilter }) {
     </button>)}</div>;
 }
 
-const filters = { all: 'Odprta', mine: 'Moja', available: 'Za prevzem', due: 'Rok blizu', done: 'Zaključena' };
+const filters = { all: 'Odprta', mine: 'Moja', available: 'Za prevzem', due: 'Rok blizu', recurring: 'Ponavljajoča', done: 'Zaključena' };
 
 export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAction, busy, onAdd, onEdit }) {
   const [pagination, setPagination] = useState({ filter, page: 1 });
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('');
+  const [assignee, setAssignee] = useState('');
   const names = new Map(members.map(member => [member.id, member.name]));
   const filtered = tasks.filter(task => {
+    if (category && task.category !== category) return false;
+    if (assignee && (task.assigneeId || 'unassigned') !== assignee) return false;
+    if (!task.title.toLocaleLowerCase('sl-SI').includes(search.trim().toLocaleLowerCase('sl-SI'))) return false;
     if (filter === 'done') return Boolean(task.completedAt);
     if (task.completedAt) return false;
     if (filter === 'mine') return task.assigneeId === memberId;
     if (filter === 'available') return !task.assigneeId;
     if (filter === 'due') return needsReminder(task, today);
+    if (filter === 'recurring') return task.repeatDays > 0;
     return true;
   }).sort((a, b) => (a.dueOn || '9999').localeCompare(b.dueOn || '9999'));
   const pageSize = 12;
@@ -50,6 +57,20 @@ export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAct
           setPagination({ filter: key, page: 1 });
           onFilter(key);
         }}>{label}</button>)}
+    </div>
+    <div className="task-refinements">
+      <label>Išči po naslovu<input type="search" value={search} placeholder="Npr. nakup" onChange={event => {
+        setSearch(event.target.value); setPagination({ filter, page: 1 });
+      }} /></label>
+      <label>Kategorija<select value={category} onChange={event => {
+        setCategory(event.target.value); setPagination({ filter, page: 1 });
+      }}><option value="">Vse kategorije</option>{Object.entries(categories).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
+      <label>Član<select value={assignee} onChange={event => {
+        setAssignee(event.target.value); setPagination({ filter, page: 1 });
+      }}>
+        <option value="">Vsi člani</option><option value="unassigned">Nedodeljeno</option>
+        {members.map(member => <option key={member.id} value={member.id}>{member.name}</option>)}
+      </select></label>
     </div>
     {filtered.length ? <ul className="task-list">{shown.map(task => {
       const due = task.dueOn && shortDate.format(fromKey(task.dueOn));

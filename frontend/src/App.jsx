@@ -21,6 +21,8 @@ const pages = {
   workload: ['Razporeditev', UsersRound],
   profile: ['Profil', UserRound],
 };
+const inviteFromUrl = new URLSearchParams(window.location.search).get('invite')?.trim().toLowerCase();
+const initialInvite = /^[a-f0-9]{32}$/.test(inviteFromUrl ?? '') ? inviteFromUrl : '';
 
 function updateWorkspace(data, setData) {
   selectHousehold(data?.profile ? data.household?.id : undefined);
@@ -99,7 +101,7 @@ function InviteDialog({ code, onClose, onRotate, busy, error }) {
   const [copied, setCopied] = useState(false);
   const input = useRef(null);
   return <Dialog title="Povabi družinskega člana" onClose={onClose}>
-    <p className="muted">Pošlji mu naslov Sotovora in kodo. Na začetni strani naj izbere možnost »Že imaš povabilo?«.</p>
+    <p className="muted">Pošlji povezavo ali kodo. Član po prijavi izbere »Pridruži se s povabilom«.</p>
     <label className="invite-label">Koda povabila<input ref={input} readOnly value={code} /></label>
     <button className="primary" onClick={async () => {
       try {
@@ -110,6 +112,8 @@ function InviteDialog({ code, onClose, onRotate, busy, error }) {
         input.current.select();
       }
     }}>{copied ? <Check size={18} /> : <Clipboard size={18} />} {copied ? 'Koda je kopirana' : 'Kopiraj kodo'}</button>
+    <label className="invite-label family-switch">Povezava za povabilo<input readOnly
+      value={`${window.location.origin}/?invite=${code}`} onFocus={event => event.target.select()} /></label>
     <button className="text-button rotate-code" disabled={busy} onClick={() => { setCopied(false); onRotate(); }}>Ustvari novo kodo</button>
     {error && <p className="error" role="alert">{error}</p>}
   </Dialog>;
@@ -147,14 +151,15 @@ function WhatsAppDialog({ linked, onClose, onUpdate }) {
 }
 
 export default function App() {
-  const [inApp, setInApp] = useState(Boolean(desktopBridge));
+  const [inApp, setInApp] = useState(Boolean(desktopBridge || initialInvite));
   const [data, setData] = useState(undefined);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [page, setPage] = useState(desktopBridge ? 'overview' : 'profile');
   const [filter, setFilter] = useState('all');
-  const [modal, setModal] = useState(null);
+  const [modal, setModal] = useState(initialInvite ? 'join' : null);
+  const [inviteCode, setInviteCode] = useState(initialInvite);
   const [editing, setEditing] = useState(null);
   const [calendarView, setCalendarView] = useState('month');
   const [entryDate, setEntryDate] = useState('');
@@ -227,6 +232,33 @@ export default function App() {
     open('edit');
   }
 
+  function followShortcut(destination) {
+    if (destination === 'join') {
+      go('profile');
+      open('join');
+    } else if (destination === 'voice') {
+      go('tasks');
+      if (data?.permissions?.create) open('task');
+    } else {
+      go(destination === 'reminders' || destination === 'recurring' ? 'tasks' : destination,
+        destination === 'reminders' ? 'due' : destination === 'recurring' ? 'recurring' : 'all');
+    }
+    setInApp(true);
+  }
+
+  async function joinOrCreate(joining, fields) {
+    const { householdId } = await request(joining ? '/households/join' : '/households', fields);
+    updateWorkspace(await request('/dashboard', undefined, undefined, householdId), setData);
+    if (joining && inviteCode) {
+      setInviteCode('');
+      const url = new URL(window.location.href);
+      url.searchParams.delete('invite');
+      history.replaceState(null, '', url);
+    }
+    setModal(null);
+    go('overview');
+  }
+
   if (data === undefined) return <main className="loading">
     <Brand />
     {error ? <><p role="alert">{error}</p><button className="primary" onClick={() => location.reload()}>Poskusi znova</button></> : <p role="status">Odpiram družinski prostor …</p>}
@@ -251,13 +283,10 @@ export default function App() {
   if (desktopLink && !desktopBridge) return <DesktopApproval profile={data?.profile} {...{ legacy, busy, error, onAuth }} onLogout={logout} />;
   if (desktopBridge && !data?.profile) return <DesktopSignIn />;
   if (!inApp || !data?.profile) return <Landing signedIn={Boolean(data?.profile)} {...{ legacy, busy, error, onAuth }}
-    onEnter={() => { go('profile'); setInApp(true); }} />;
+    startWithInvite={Boolean(inviteCode)} onEnter={followShortcut} onJoin={() => open('join')} />;
 
-  if (!data.household) return <ChooseHousehold profile={data.profile} busy={busy} error={error} onLogout={logout} onSubmit={(joining, fields) => run(async () => {
-    const { householdId } = await request(joining ? '/households/join' : '/households', fields);
-    updateWorkspace(await request('/dashboard', undefined, undefined, householdId), setData);
-    setPage('overview');
-  })} />;
+  if (!data.household) return <ChooseHousehold profile={data.profile} {...{ busy, error, inviteCode }}
+    startJoining={modal === 'join'} onLogout={logout} onSubmit={(joining, fields) => run(() => joinOrCreate(joining, fields))} />;
 
   const { household, memberId, members, entries, permissions } = data;
   const member = members.find(member => member.id === memberId);
@@ -333,6 +362,7 @@ export default function App() {
           <div className="hero-actions">
             <button className="primary" onClick={() => go('overview')}>Odpri nadzorno ploščo</button>
             {data.admin && <button className="soft-button" onClick={() => open('family')} disabled={busy}><Plus size={17} /> Nova družina</button>}
+            <button className="soft-button" onClick={() => open('join')} disabled={busy}>Pridruži se s povabilom</button>
           </div>
           {!data.admin && (data.leaveRequested ? <p>Prošnja za izstop čaka na skrbnika.</p> :
             <button className="text-button" onClick={() => run(async () => {
@@ -355,6 +385,17 @@ export default function App() {
         await request('/households/invite/rotate', {});
         setData(await request('/dashboard'));
       })} />}
+    {modal === 'join' && <Dialog title="Pridruži se s povabilom" onClose={() => { if (!busy) setModal(null); }}>
+      <form onSubmit={event => {
+        event.preventDefault();
+        const fields = new FormData(event.currentTarget);
+        run(() => joinOrCreate(true, { inviteCode: fields.get('inviteCode') }));
+      }}>
+        <label>Koda povabila<input name="inviteCode" defaultValue={inviteCode} maxLength={32} required spellCheck={false} autoCapitalize="none" /></label>
+        {error && <p className="error" role="alert">{error}</p>}
+        <button className="primary" disabled={busy}>Pridruži se prostoru</button>
+      </form>
+    </Dialog>}
     {modal === 'family' && data.admin && <Dialog title="Ustvari novo družino" onClose={() => { if (!busy) setModal(null); }}>
       <form onSubmit={event => {
         event.preventDefault();

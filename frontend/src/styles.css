@@ -112,6 +112,12 @@ input::placeholder { color: #9baaa5; }
 .filters button { padding: .33rem .54rem; color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: .4rem; font-size: .79rem; font-weight: 600; }
 .filters button:hover, .filters button[aria-pressed="true"] { background: var(--soft); color: var(--ink); }
 .filters button[aria-pressed="true"] { border-color: #496264; }
+.task-refinements { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: .55rem; padding: .7rem 0; }
+.task-refinements input, .task-refinements select { font-size: .8rem; padding: .45rem .55rem; }
+@media (max-width: 50rem) {
+  .task-refinements { grid-template-columns: 1fr 1fr; }
+  .task-refinements label:first-child { grid-column: 1 / -1; }
+}
 .task-row { display: grid; align-items: center; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: .55rem; padding: .75rem 0; border-bottom: 1px solid var(--line); }
 .task-row:last-child { border-bottom: 0; }
 .task-icon { width: 2.05rem; height: 2.05rem; }

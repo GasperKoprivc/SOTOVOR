@@ -100,6 +100,23 @@ test('desktop linking requires browser approval and the original verifier, and c
   assert.equal((await dashboard(webCookie)).data.household.name, 'Namizni dom');
 });
 
+test('an existing owner can accept an invitation and keep both spaces', async () => {
+  const host = await postJson('/households', { householdName: 'Povabilo', memberName: 'Ana' });
+  const visitor = await postJson('/households', { householdName: 'Moj prostor', memberName: 'Boris' });
+  const visitorCookie = sessionCookie(visitor.response);
+  const { household } = (await dashboard(sessionCookie(host.response))).data;
+  const invalid = await postJson('/households/join', { inviteCode: '0'.repeat(32) }, visitorCookie);
+  assert.equal(invalid.response.status, 404);
+  const accepted = await postJson('/households/join', { inviteCode: household.inviteCode.toUpperCase() }, visitorCookie);
+  assert.equal(accepted.response.status, 201);
+  assert.equal(accepted.data.householdId, household.id);
+  const selected = (await dashboard(visitorCookie, household.id)).data;
+  assert.equal(selected.spaces.length, 2);
+  assert.equal(selected.admin, false);
+  assert.equal((await dashboard(visitorCookie, visitor.data.householdId)).data.admin, true);
+  assert.equal((await postJson('/households/join', { inviteCode: household.inviteCode }, visitorCookie)).response.status, 409);
+});
+
 test('owners can create and switch between isolated family spaces', async () => {
   const first = await postJson('/households', { householdName: 'Prvi dom', memberName: 'Ana' });
   const owner = sessionCookie(first.response);
