@@ -1,0 +1,4 @@
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/sotovor_background" />
+    <foreground android:drawable="@drawable/sotovor_mark" />
+</adaptive-icon>

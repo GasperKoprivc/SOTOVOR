@@ -367,5 +367,13 @@
   "Preveč poskusov registracije. Poskusi pozneje.": {"en":"Too many registration attempts. Try again later.","de":"Zu viele Registrierungsversuche. Versuche es später erneut."},
   "Nastavitve obvestil": {"en":"Notification settings","de":"Benachrichtigungseinstellungen"},
   "Dodelitve": {"en":"Assignments","de":"Zuweisungen"},
-  "Zamenjave": {"en":"Swaps","de":"Vertretungen"}
+  "Zamenjave": {"en":"Swaps","de":"Vertretungen"},
+  "Ponastavi geslo": {"en":"Reset password","de":"Passwort zurücksetzen"},
+  "Shrani geslo": {"en":"Save password","de":"Passwort speichern"},
+  "Pošlji povezavo": {"en":"Send link","de":"Link senden"},
+  "Geslo je spremenjeno.": {"en":"Your password has been changed.","de":"Dein Passwort wurde geändert."},
+  "Če račun obstaja, boš prejel povezavo po e-pošti.": {"en":"If the account exists, we’ll email you a link.","de":"Wenn das Konto existiert, erhältst du einen Link per E-Mail."},
+  "Ponastavitev gesla tu ni nastavljena.": {"en":"Password reset is unavailable on this server.","de":"Das Zurücksetzen des Passworts ist auf diesem Server nicht eingerichtet."},
+  "Povezava za ponastavitev je neveljavna ali je potekla.": {"en":"The reset link is invalid or expired.","de":"Der Link zum Zurücksetzen ist ungültig oder abgelaufen."},
+  "Preveč poskusov. Poskusi pozneje.": {"en":"Too many attempts. Try again later.","de":"Zu viele Versuche. Versuche es später erneut."}
 }

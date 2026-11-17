@@ -20,12 +20,15 @@ export function smtpVerification(env = process.env) {
     host, port, secure: port === 465, requireTLS: true, auth: { user, pass },
     connectionTimeout: 5000, greetingTimeout: 5000, socketTimeout: 10000,
   });
-  return async (email, token) => {
-    const link = new URL('/#verify-email=' + token, publicUrl);
+  return async (email, token, purpose = 'verification') => {
+    const reset = purpose === 'password';
+    const link = new URL((reset ? '/#reset-password=' : '/#verify-email=') + token, publicUrl);
+    const subject = reset ? 'Ponastavi geslo za Sotovor / Reset your password' : 'Potrdi e-pošto za Sotovor / Verify your email';
     await transport.sendMail({
-      from, to: { address: email, name: '' }, subject: 'Potrdi e-pošto za Sotovor / Verify your email',
-      text: 'Potrdi e-poštni naslov za Sotovor / Verify your Sotovor email address:\n\n' + link.href +
-        '\n\nPovezava velja 24 ur. / This link is valid for 24 hours.',
+      from, to: { address: email, name: '' }, subject,
+      text: subject + '\n\n' + link.href + (reset
+        ? '\n\nPovezava velja eno uro. / This link is valid for one hour.'
+        : '\n\nPovezava velja 24 ur. / This link is valid for 24 hours.'),
     });
   };
 }

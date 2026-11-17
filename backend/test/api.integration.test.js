@@ -18,6 +18,7 @@ let database;
 let server;
 let apiUrl;
 const verificationMessages = new Map();
+const passwordMessages = new Map();
 
 before(async () => {
   process.env.SOTOVOR_MONGO_URI ||= 'mongodb://127.0.0.1:27027';
@@ -31,7 +32,7 @@ before(async () => {
   app.use(express.json({ limit: '8kb' }));
   const options = {
     whatsappEnabled: true,
-    verificationMail: async (email, token) => verificationMessages.set(email, token),
+    verificationMail: async (email, token, purpose) => (purpose === 'password' ? passwordMessages : verificationMessages).set(email, token),
   };
   app.use('/api/v1', createApi(database, { ...options, versioned: true }));
   app.use('/api', createApi(database, options));
@@ -159,6 +160,22 @@ test('v1 scopes task pages to the selected household and preserves legacy error 
   assert.equal(webFallback.headers.get('location'), '/?invite=' + 'a'.repeat(32));
   const links = await (await fetch(publicUrl + '/.well-known/assetlinks.json')).json();
   assert.equal(links[0].target.package_name, 'si.sotovor.app');
+});
+
+test('password reset is single use and revokes native sessions', async () => {
+  const user = await nativeUser();
+  assert.equal((await mobilePost('/auth/password/request', { email: user.email })).status, 200);
+  for (let attempt = 0; attempt < 20 && !passwordMessages.has(user.email); attempt++) {
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  const token = passwordMessages.get(user.email);
+  assert.match(token, /^[a-f0-9]{64}$/);
+  const request = { token, password: 'new-password-1234' };
+  assert.equal((await mobilePost('/auth/password/reset', request)).status, 200);
+  assert.equal((await mobilePost('/auth/password/reset', request)).status, 400);
+  assert.equal((await v1('/dashboard', { access: user.accessToken })).status, 401);
+  assert.equal((await mobilePost('/mobile/auth/refresh', { refreshToken: user.refreshToken })).status, 401);
+  assert.equal((await mobilePost('/mobile/auth/login', { email: user.email, password: request.password, deviceName: 'Pixel' })).status, 200);
 });
 
 test('device tokens are scoped, retired by FCM and reminders are deduplicated and configurable', async () => {

@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Sotovor</string>
+    <string name="welcome_copy">A shared space for family tasks, events and plans.</string>
+    <string name="sign_in">Sign in</string>
+    <string name="register">Register</string>
+    <string name="retry">Try again</string>
+    <string name="first_name">First name</string>
+    <string name="last_name">Last name</string>
+    <string name="phone">Phone number</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="forgot_password">Forgot password</string>
+    <string name="browser_unavailable">Browser unavailable.</string>
+    <string name="back">Back</string>
+    <string name="greeting">Hello, %1$s!</string>
+    <string name="verify_email">Check your inbox and verify your email address.</string>
+    <string name="resend_email">Resend link</string>
+    <string name="verification_sent">Verification link sent.</string>
+    <string name="switch_family">Switch family space</string>
+    <string name="new_family">Create family</string>
+    <string name="join_family">Join with an invite</string>
+    <string name="family_name">Family name</string>
+    <string name="family_size">Family size</string>
+    <string name="invite_code">Invite code</string>
+    <string name="sign_out">Sign out</string>
+    <string name="offline">Offline. Check the server address and try again.</string>
+    <string name="error_generic">Something went wrong. Try again.</string>
+</resources>
