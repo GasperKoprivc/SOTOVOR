@@ -353,5 +353,16 @@
   "Strežnik ni potrdil seje.": {"en":"The server did not confirm the session.","de":"Der Server hat die Sitzung nicht bestätigt."},
   "Povezava je potekla.": {"en":"The link has expired.","de":"Der Link ist abgelaufen."},
   "Sotovor · Družinski prostor": {"en":"Sotovor · Family space","de":"Sotovor · Familienbereich"},
-  "Uporabljene dodelitve: %0. Vmes spremenjena opravila: %1.": {"en":"Assignments applied: %0. Tasks changed in the meantime: %1.","de":"Zuweisungen übernommen: %0. Inzwischen geänderte Aufgaben: %1."}
+  "Uporabljene dodelitve: %0. Vmes spremenjena opravila: %1.": {"en":"Assignments applied: %0. Tasks changed in the meantime: %1.","de":"Zuweisungen übernommen: %0. Inzwischen geänderte Aufgaben: %1."},
+  "Potrdi e-pošto": {"en":"Verify your email","de":"E-Mail bestätigen"},
+  "E-poštni naslov je potrjen.": {"en":"Your email address is verified.","de":"Deine E-Mail-Adresse ist bestätigt."},
+  "Potrdi e-poštni naslov": {"en":"Verify email address","de":"E-Mail-Adresse bestätigen"},
+  "Nazaj v Sotovor": {"en":"Back to Sotovor","de":"Zurück zu Sotovor"},
+  "Preveri pošto in potrdi svoj e-poštni naslov.": {"en":"Check your inbox to verify your email address.","de":"Prüfe deinen Posteingang, um deine E-Mail-Adresse zu bestätigen."},
+  "Ponovno pošlji povezavo": {"en":"Resend verification link","de":"Bestätigungslink erneut senden"},
+  "Povezava je poslana.": {"en":"Verification link sent.","de":"Bestätigungslink gesendet."},
+  "Pred ponovnim pošiljanjem počakaj eno minuto.": {"en":"Wait one minute before sending another link.","de":"Warte eine Minute, bevor du einen weiteren Link anforderst."},
+  "E-pošte ni bilo mogoče poslati. Poskusi pozneje.": {"en":"Could not send email. Try again later.","de":"Die E-Mail konnte nicht gesendet werden. Versuche es später erneut."},
+  "Povezava za potrditev je neveljavna ali je potekla.": {"en":"This verification link is invalid or has expired.","de":"Dieser Bestätigungslink ist ungültig oder abgelaufen."},
+  "Preveč poskusov registracije. Poskusi pozneje.": {"en":"Too many registration attempts. Try again later.","de":"Zu viele Registrierungsversuche. Versuche es später erneut."}
 }

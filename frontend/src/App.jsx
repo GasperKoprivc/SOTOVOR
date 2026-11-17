@@ -12,6 +12,7 @@ import { Brand, ChooseHousehold } from './Account.jsx';
 import Landing from './Landing.jsx';
 import './landing.css';
 import FamilySettings from './FamilySettings.jsx';
+import { EmailVerificationReminder } from './EmailVerification.jsx';
 import MonthCalendar from './MonthCalendar.jsx';
 import SmartPlanning from './SmartPlanning.jsx';
 import { DesktopApproval, DesktopSignIn, desktopBridge, desktopLink } from './DesktopAccess.jsx';
@@ -154,11 +155,7 @@ function WhatsAppDialog({ linked, onClose, onUpdate }) {
 }
 
 export default function App() {
-  const language = useSyncExternalStore(subscribe, getLanguage);
-  useEffect(() => {
-    document.documentElement.lang = language;
-    document.title = t('Sotovor · Družinski prostor');
-  }, [language]);
+  useSyncExternalStore(subscribe, getLanguage);
   const [inApp, setInApp] = useState(Boolean(desktopBridge || initialInvite));
   const [data, setData] = useState(undefined);
   const [error, setError] = useState('');
@@ -295,6 +292,7 @@ export default function App() {
     startWithInvite={Boolean(inviteCode)} onEnter={followShortcut} onJoin={() => open('join')} />;
 
   if (!data.household) return <ChooseHousehold profile={data.profile} {...{ busy, error, inviteCode }}
+    verification={data.profile.emailVerificationPending && <EmailVerificationReminder />}
     startJoining={modal === 'join'} onLogout={logout} onSubmit={(joining, fields) => run(() => joinOrCreate(joining, fields))} />;
 
   const { household, memberId, members, entries, permissions } = data;
@@ -369,6 +367,7 @@ export default function App() {
         {page === 'profile' && <div className="profile-grid"><section className="panel account-card">
           <h2>{data.profile.firstName} {data.profile.lastName}</h2>
           <p>{data.profile.email}<br />{data.profile.phone}</p>
+          {data.profile.emailVerificationPending && <EmailVerificationReminder />}
           <p><strong>{household.name}</strong> · {data.admin ? t('Skrbnik') : t('Član')}</p>
           {data.spaces?.length > 1 && <label className="family-switch">{t('Družinski prostor')}<select value={household.id} disabled={busy} onChange={event => {
               const id = event.target.value;

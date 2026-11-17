@@ -5,6 +5,7 @@ import { materializeOccurrences, nextOccurrence } from './recurrence.js';
 import { codeHash } from './whatsapp.js';
 import { emailPattern, passwordHash, publicProfile, sessionSeconds, verifyPassword } from './accounts.js';
 import { registerDesktopAuth } from './desktop-auth.js';
+import { confirmEmailVerification, sendEmailVerification } from './email-verification.js';
 import { availabilityStates, familyRoles, householdDay, isDay, planTasks } from './planning.js';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -48,7 +49,9 @@ function parseVoice(voice) {
   return { mime, bytes: new Binary(bytes) };
 }
 
-export function createApi({ households, entries, accounts, sessions, desktopLinks }, { whatsappEnabled = false } = {}) {
+export function createApi({ households, entries, accounts, sessions, desktopLinks }, {
+  whatsappEnabled = false, verificationMail, reportMailFailure = () => console.error('Verification email delivery failed.'),
+} = {}) {
   const router = Router();
   const cookieOptions = { httpOnly: true, sameSite: 'strict', path: '/' };
 
@@ -112,6 +115,7 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
 
   async function dashboard(household, member, account, spaces = []) {
     const profile = account ? publicProfile(account) : null;
+    if (profile && verificationMail) profile.emailVerificationPending = !account.emailVerifiedAt;
     if (!household) return profile ? { profile, household: null, spaces } : null;
     const admin = isAdmin(household, member);
     const inactiveMemberIds = new Set(household.members.filter(person => person.inactive).map(person => person.id));
@@ -180,8 +184,26 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
       }
     }
     await startSession(req, res, account._id);
+    if (verificationMail) await sendEmailVerification(accounts, account, verificationMail, reportMailFailure);
     res.status(201).json({ ok: true });
   });
+
+  if (verificationMail) {
+    router.post('/auth/email/resend', async (req, res) => {
+      if (!req.account) throw new HttpError(401, 'Najprej se prijavi.');
+      if (req.account.emailVerifiedAt) return res.json({ ok: true });
+      const outcome = await sendEmailVerification(accounts, req.account, verificationMail, reportMailFailure);
+      if (outcome === 'wait') throw new HttpError(429, 'Pred ponovnim pošiljanjem počakaj eno minuto.');
+      if (outcome === 'failed') throw new HttpError(503, 'E-pošte ni bilo mogoče poslati. Poskusi pozneje.');
+      res.json({ ok: true });
+    });
+    router.post('/auth/email/verify', async (req, res) => {
+      if (!await confirmEmailVerification(accounts, req.body.token)) {
+        throw new HttpError(400, 'Povezava za potrditev je neveljavna ali je potekla.');
+      }
+      res.json({ ok: true });
+    });
+  }
 
   const dummyPassword = passwordHash(randomBytes(24).toString('hex'));
   router.post('/auth/login', async (req, res) => {
