@@ -21,3 +21,10 @@
 5. Under **Secrets and variables → Actions**, confirm the existing repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` have permission to publish to `gasperkoprivc/sotovor`. If the image is private, also sign the VPS into Docker Hub with a separate pull-only token as the deployment user.
 6. After the first manual setup works, create the repository **variable** `DEPLOY_ENABLED` with value `true`. On the next push to `main`, watch **CI** and then **Deploy production** in Actions. If using required reviewers, approve that run in GitHub. Remove the variable to pause automatic VPS deploys while retaining image publishing.
 7. Set up the daily cron job from the deployment guide, take a first backup and test restoring it. Keep an encrypted copy outside the VPS.
+
+## Android App Links and Firebase
+
+1. Create a Firebase project and add an Android app with package `si.sotovor.app`. Add the SHA-1 and SHA-256 fingerprints from your debug and release signing certificates. If you use Play App Signing, include Google's app-signing fingerprints.
+2. Download `google-services.json` for the Android project. Keep it out of commits. Use a base64-encoded copy for the Android CI secret when push testing is enabled.
+3. Generate a service-account credential with FCM send access. For Docker Compose, store its one-line JSON as a single-quoted value of `SOTOVOR_FCM_SERVICE_ACCOUNT_JSON` in the VPS `.env`. For a direct Node deployment, `SOTOVOR_FCM_SERVICE_ACCOUNT_FILE` can point to a private mounted JSON file.
+4. Set `SOTOVOR_ANDROID_FINGERPRINTS` to the comma-separated SHA-256 signing fingerprints. Verify that `https://YOUR_DOMAIN/.well-known/assetlinks.json` returns the package name and fingerprints over HTTPS.

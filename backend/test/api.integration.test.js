@@ -5,6 +5,10 @@ import { after, before, test } from 'node:test';
 import express from 'express';
 import { connect } from '../src/db.js';
 import { createApi, handleError } from '../src/api.js';
+import { versionedErrors } from '../src/api-errors.js';
+import { registerAppLinks } from '../src/app-links.js';
+import { produceNotifications } from '../src/notifications.js';
+import { pushDelivery } from '../src/push.js';
 import { createWhatsApp } from '../src/whatsapp.js';
 
 const whatsapp = { secret: 'test-secret', verify: 'test-verify', phoneId: '123' };
@@ -22,11 +26,15 @@ before(async () => {
 
   const app = express();
   app.use('/webhooks/whatsapp', createWhatsApp(database, whatsapp));
+  registerAppLinks(app, { SOTOVOR_ANDROID_FINGERPRINTS: Array(32).fill('AB').join(':') });
+  app.use('/api/v1', versionedErrors);
   app.use(express.json({ limit: '8kb' }));
-  app.use('/api', createApi(database, {
+  const options = {
     whatsappEnabled: true,
     verificationMail: async (email, token) => verificationMessages.set(email, token),
-  }));
+  };
+  app.use('/api/v1', createApi(database, { ...options, versioned: true }));
+  app.use('/api', createApi(database, options));
   app.use(handleError);
   server = app.listen(0, '127.0.0.1');
   await once(server, 'listening');
@@ -78,6 +86,115 @@ async function dashboard(cookie, household) {
   const response = await fetch(`${apiUrl}/dashboard`, { headers });
   return { response, data: await response.json() };
 }
+
+async function v1(path, { method = 'GET', body, access, household } = {}) {
+  const response = await fetch(apiUrl + '/v1' + path, {
+    method, headers: {
+      ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+      ...(access ? { Authorization: 'Bearer ' + access } : {}),
+      ...(household ? { 'x-sotovor-household': household } : {}),
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  return { status: response.status, body: await response.json() };
+}
+
+const mobilePost = (path, body, access) => v1(path, { method: 'POST', body, access });
+
+async function nativeUser() {
+  const email = `${randomUUID()}@test.invalid`;
+  const password = 'integration-test-password';
+  const registered = await mobilePost('/auth/register', { firstName: 'Native', lastName: 'Test', email, password, phone: '+38640000111' });
+  assert.equal(registered.status, 201);
+  const login = await mobilePost('/mobile/auth/login', { email, password, deviceName: 'Pixel test' });
+  assert.equal(login.status, 200);
+  return { email, ...login.body };
+}
+
+test('v1 rotates refresh tokens atomically and revokes access by device and credential', async () => {
+  const initial = await nativeUser();
+  assert.equal(initial.emailVerificationPending, true);
+  const attempts = await Promise.all(Array.from({ length: 2 }, () => mobilePost('/mobile/auth/refresh', { refreshToken: initial.refreshToken })));
+  assert.deepEqual(attempts.map(result => result.status).sort(), [200, 401]);
+  const next = attempts.find(result => result.status === 200).body;
+  assert.equal(next.sessionId, initial.sessionId);
+  assert.equal((await v1('/dashboard', { access: initial.accessToken })).body.error.code, 'invalid_session');
+  const account = await database.accounts.findOne({ email: initial.email });
+  const sessions = await v1('/mobile/auth/sessions', { access: next.accessToken });
+  assert.equal(sessions.body[0].current, true);
+  const record = await database.mobileSessions.findOne({ accountId: account._id });
+  assert.equal(record.refreshHash, createHash('sha256').update(next.refreshToken).digest('hex'));
+  const removed = await v1('/mobile/auth/sessions/' + next.sessionId, { method: 'DELETE', access: next.accessToken });
+  assert.equal(removed.status, 200);
+  assert.equal((await mobilePost('/mobile/auth/refresh', { refreshToken: next.refreshToken })).status, 401);
+  const relogin = (await mobilePost('/mobile/auth/login', { email: initial.email, password: 'integration-test-password', deviceName: 'Second device' })).body;
+  await database.accounts.updateOne({ _id: account._id }, { $set: { passwordHash: 'changed-credential' } });
+  assert.equal((await v1('/dashboard', { access: relogin.accessToken })).status, 401);
+  assert.equal((await mobilePost('/mobile/auth/refresh', { refreshToken: relogin.refreshToken })).status, 401);
+});
+
+test('v1 scopes task pages to the selected household and preserves legacy error responses', async () => {
+  const a = await nativeUser();
+  const b = await nativeUser();
+  const createFamily = user => mobilePost('/households', { householdName: 'Mobile', expectedMembers: 2 }, user.accessToken);
+  const home = (await createFamily(a)).body.householdId;
+  await createFamily(b);
+  for (const title of ['A', 'B', 'C']) {
+    assert.equal((await mobilePost('/entries', { title, kind: 'task' }, a.accessToken)).status, 201);
+  }
+  const first = await v1('/tasks?limit=2', { access: a.accessToken });
+  assert.equal(first.body.items.length, 2);
+  assert.equal(first.body.items[0].version, 0);
+  const second = await v1('/tasks?limit=2&cursor=' + first.body.nextCursor, { access: a.accessToken });
+  assert.equal(second.body.items.length, 1);
+  assert.equal(second.body.nextCursor, null);
+  assert.equal((await v1('/tasks', { access: b.accessToken, household: home })).status, 403);
+  assert.equal((await v1('/entries/' + first.body.items[0].id, { access: b.accessToken })).status, 404);
+  const legacy = await fetch(apiUrl + '/tasks', { headers: { Authorization: 'Bearer ' + b.accessToken } });
+  assert.equal(typeof (await legacy.json()).error, 'string');
+  const invalid = await v1('/events?limit=0', { access: a.accessToken });
+  assert.equal(invalid.body.error.code, 'invalid_request');
+  const publicUrl = apiUrl.replace(/\/api$/, '');
+  const webFallback = await fetch(publicUrl + '/join/' + 'a'.repeat(32), { redirect: 'manual' });
+  assert.equal(webFallback.headers.get('location'), '/?invite=' + 'a'.repeat(32));
+  const links = await (await fetch(publicUrl + '/.well-known/assetlinks.json')).json();
+  assert.equal(links[0].target.package_name, 'si.sotovor.app');
+});
+
+test('device tokens are scoped, retired by FCM and reminders are deduplicated and configurable', async () => {
+  const user = await nativeUser();
+  const credentials = user.accessToken;
+  const device = { token: 'mock-registration-token', platform: 'android', appVersion: '0.1.0', locale: 'sl' };
+  const registered = await mobilePost('/devices', device, credentials);
+  assert.equal(registered.status, 200);
+  assert.equal((await mobilePost('/devices', device, credentials)).body.id, registered.body.id);
+  assert.equal((await mobilePost('/households', { householdName: 'Alerts', expectedMembers: 2 }, credentials)).status, 201);
+  const dashboard = (await v1('/dashboard', { access: credentials })).body;
+  const today = '2040-11-17';
+  await mobilePost('/entries', { kind: 'task', title: 'Reminder', dueOn: today, assigneeId: dashboard.memberId, reminderDays: 0 }, credentials);
+  const reminder = { today, now: new Date('2040-11-17T10:00:00Z') };
+  const quiet = { assignments: false, reminders: false, swaps: true };
+  assert.deepEqual((await v1('/me/notification-settings', { method: 'PUT', body: quiet, access: credentials })).body, quiet);
+  const sent = [];
+  const push = pushDelivery(database, async message => {
+    sent.push(message);
+    throw Object.assign(new Error(), { code: 'messaging/registration-token-not-registered' });
+  });
+  await produceNotifications(database, push, reminder);
+  assert.equal((await v1('/notifications', { access: credentials })).body.items.length, 0);
+  await v1('/me/notification-settings', { method: 'PUT', body: { ...quiet, reminders: true }, access: credentials });
+  await Promise.all([produceNotifications(database, push, reminder), produceNotifications(database, push, reminder)]);
+  const notices = (await v1('/notifications', { access: credentials })).body.items;
+  assert.equal(notices.length, 1);
+  assert.equal(notices[0].type, 'deadline');
+  assert.equal(sent.length, 1);
+  assert.match(sent[0].data.deepLink, /^sotovor:\/\/task\?/);
+  assert.equal(await database.devices.countDocuments({ token: device.token }), 0);
+  await v1('/notifications/' + notices[0].id + '/read', { method: 'PUT', body: {}, access: credentials });
+  assert.ok((await v1('/notifications', { access: credentials })).body.items[0].readAt);
+  await mobilePost('/mobile/auth/logout', {}, credentials);
+  assert.equal((await v1('/dashboard', { access: credentials })).status, 401);
+});
 
 test('verification is sent on registration and accepts only a current, single-use token', async () => {
   const email = `${randomUUID()}@test.invalid`;

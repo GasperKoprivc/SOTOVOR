@@ -364,5 +364,8 @@
   "Pred ponovnim pošiljanjem počakaj eno minuto.": {"en":"Wait one minute before sending another link.","de":"Warte eine Minute, bevor du einen weiteren Link anforderst."},
   "E-pošte ni bilo mogoče poslati. Poskusi pozneje.": {"en":"Could not send email. Try again later.","de":"Die E-Mail konnte nicht gesendet werden. Versuche es später erneut."},
   "Povezava za potrditev je neveljavna ali je potekla.": {"en":"This verification link is invalid or has expired.","de":"Dieser Bestätigungslink ist ungültig oder abgelaufen."},
-  "Preveč poskusov registracije. Poskusi pozneje.": {"en":"Too many registration attempts. Try again later.","de":"Zu viele Registrierungsversuche. Versuche es später erneut."}
+  "Preveč poskusov registracije. Poskusi pozneje.": {"en":"Too many registration attempts. Try again later.","de":"Zu viele Registrierungsversuche. Versuche es später erneut."},
+  "Nastavitve obvestil": {"en":"Notification settings","de":"Benachrichtigungseinstellungen"},
+  "Dodelitve": {"en":"Assignments","de":"Zuweisungen"},
+  "Zamenjave": {"en":"Swaps","de":"Vertretungen"}
 }

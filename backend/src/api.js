@@ -1,4 +1,9 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
+import { parseBuffer } from 'music-metadata';
+import { HttpError, handleError } from './api-errors.js';
+import { bearerSession, hash, registerMobileAuth, validId } from './mobile-auth.js';
+import { pageOf } from './paging.js';
+import { registerNotificationRoutes } from './notifications.js';
 import { Router } from 'express';
 import { Binary, ObjectId } from 'mongodb';
 import { materializeOccurrences, nextOccurrence } from './recurrence.js';
@@ -8,7 +13,6 @@ import { registerDesktopAuth } from './desktop-auth.js';
 import { confirmEmailVerification, sendEmailVerification } from './email-verification.js';
 import { availabilityStates, familyRoles, householdDay, isDay, planTasks } from './planning.js';
 
-const hash = value => createHash('sha256').update(value).digest('hex');
 const idPattern = /^[0-9a-f]{24}$/;
 const categories = new Set(['dom', 'druzina', 'opravki', 'zdravje', 'drugo']);
 const defaultPermissions = { create: true, edit: false, move: false, remove: false };
@@ -17,13 +21,6 @@ const isAdmin = (household, member) => (household.ownerId ?? household.members[0
 const access = (household, member) => isAdmin(household, member) ? adminPermissions :
   { ...defaultPermissions, ...member.permissions };
 
-class HttpError extends Error {
-  constructor(status, message) {
-    super(message);
-    this.status = status;
-  }
-}
-
 function requiredText(value, limit, label) {
   if (typeof value !== 'string' || !value.trim() || value.trim().length > limit) {
     throw new HttpError(400, `${label} mora imeti od 1 do ${limit} znakov.`);
@@ -31,7 +28,7 @@ function requiredText(value, limit, label) {
   return value.trim();
 }
 
-function parseVoice(voice) {
+async function parseVoice(voice, versioned) {
   if (voice == null) return null;
   const signatures = new Map([
     ['audio/webm', [0, '1a45dfa3']], ['audio/ogg', [0, '4f676753']], ['audio/mp4', [4, '66747970']],
@@ -46,12 +43,23 @@ function parseVoice(voice) {
   if (bytes.length > limit || bytes.subarray(offset, offset + 4).toString('hex') !== signature) {
     throw new HttpError(400, 'Posnetek ni veljaven.');
   }
+  if (versioned) {
+    try {
+      const { format } = await parseBuffer(bytes, { mimeType: mime }, { duration: true, skipCovers: true });
+      if (!(format.duration > 0 && format.duration <= 30.15) || !format.sampleRate) {
+        throw new Error('Invalid audio duration');
+      }
+    } catch {
+      throw new HttpError(400, 'Posnetek mora vsebovati največ 30 sekund veljavnega zvoka.');
+    }
+  }
   return { mime, bytes: new Binary(bytes) };
 }
 
-export function createApi({ households, entries, accounts, sessions, desktopLinks }, {
-  whatsappEnabled = false, verificationMail, reportMailFailure = () => console.error('Verification email delivery failed.'),
+export function createApi(database, {
+  versioned = false, mobileOptions = {}, whatsappEnabled = false, verificationMail, reportMailFailure = () => console.error('Verification email delivery failed.'),
 } = {}) {
+  const { households, entries, accounts, sessions, desktopLinks } = database;
   const router = Router();
   const cookieOptions = { httpOnly: true, sameSite: 'strict', path: '/' };
 
@@ -65,45 +73,48 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
 
   router.use(async (req, res, next) => {
     res.set('Cache-Control', 'no-store');
-    if (req.method === 'POST' && (!req.is('application/json') || !req.body || Array.isArray(req.body))) {
+    if (['POST', 'PUT'].includes(req.method) && (!req.is('application/json') || !req.body || Array.isArray(req.body))) {
       throw new HttpError(415, 'Pošlji podatke v obliki objekta JSON.');
     }
     const token = req.headers.cookie?.match(/(?:^|;\s*)sotovor_session=([a-f0-9]{64})(?:;|$)/)?.[1];
-    if (token) {
+    const authorization = req.get('authorization');
+    if (authorization) {
+      const { session, account } = await bearerSession(authorization, database);
+      req.mobileSession = session;
+      req.account = account;
+    } else if (token) {
       const sessionHash = hash(token);
       const session = await sessions.findOne({ _id: sessionHash, expiresAt: { $gt: new Date() } });
       if (session) {
         req.sessionId = sessionHash;
         req.account = await accounts.findOne({ _id: session.accountId });
-        const membership = { $or: [
-          { 'members.accountId': session.accountId },
-          { 'members.guestAccountId': session.accountId },
-          { ownerAccountId: session.accountId },
-        ] };
-        const getMember = household => household.members.find(member =>
-          member.accountId?.equals(session.accountId) ||
-          member.guestAccountId?.equals(session.accountId) ||
-          (household.ownerAccountId?.equals(session.accountId) && member.id === household.ownerId));
-        if (req.account) {
-          const spaces = await households.find(membership).sort({ _id: 1 }).toArray();
-          const scope = req.get('x-sotovor-household') || (req.method === 'GET' ? req.query.household : undefined);
-          req.spaces = spaces.map(household => ({
-            id: String(household._id), name: household.name, admin: isAdmin(household, getMember(household)),
-          }));
-          const preferred = spaces.find(household => household.members.some(member => member.accountId?.equals(session.accountId))) ?? spaces[0];
-          const selected = scope ? spaces.find(household => String(household._id) === scope) : preferred;
-          if (scope && !selected) throw new HttpError(403, 'Ta družinski prostor ni dostopen tvojemu računu.');
-          req.household = selected;
-          req.member = selected && getMember(selected);
+      } else {
+        const legacy = await households.findOne({
+          members: { $elemMatch: { sessionHash, expiresAt: { $gt: new Date() } } },
+        });
+        if (legacy) {
+          req.household = legacy;
+          req.member = legacy.members.find(member => member.sessionHash === sessionHash);
         }
       }
-      const legacy = !session && await households.findOne({
-        members: { $elemMatch: { sessionHash, expiresAt: { $gt: new Date() } } },
-      });
-      if (legacy) {
-        req.household = legacy;
-        req.member = legacy.members.find(member => member.sessionHash === sessionHash);
-      }
+    }
+    if (req.account) {
+      const accountId = req.account._id;
+      const getMember = household => household.members.find(member =>
+        member.accountId?.equals(accountId) || member.guestAccountId?.equals(accountId) ||
+        (household.ownerAccountId?.equals(accountId) && member.id === household.ownerId));
+      const spaces = await households.find({ $or: [
+        { 'members.accountId': accountId }, { 'members.guestAccountId': accountId }, { ownerAccountId: accountId },
+      ] }).sort({ _id: 1 }).toArray();
+      const scope = req.get('x-sotovor-household') || (req.method === 'GET' ? req.query.household : undefined);
+      req.spaces = spaces.map(household => ({
+        id: String(household._id), name: household.name, admin: isAdmin(household, getMember(household)),
+      }));
+      const preferred = spaces.find(household => household.members.some(member => member.accountId?.equals(accountId))) ?? spaces[0];
+      const selected = scope ? spaces.find(household => String(household._id) === scope) : preferred;
+      if (scope && !selected) throw new HttpError(403, 'Ta družinski prostor ni dostopen tvojemu računu.');
+      req.household = selected;
+      req.member = selected && getMember(selected);
     }
     next();
   });
@@ -113,16 +124,29 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
     setDesktopSession: startSession,
   });
 
-  async function dashboard(household, member, account, spaces = []) {
+  if (versioned) {
+    registerMobileAuth(router, database, { ...mobileOptions, verificationEnabled: Boolean(verificationMail) });
+    registerNotificationRoutes(router, database);
+  }
+
+  const entryProjection = { householdId: 0, nextOccurrence: 0, whatsappMessageId: 0, 'voice.bytes': 0 };
+  function publicEntry({ _id, ...item }, household) {
+    return {
+      id: String(_id), ...item, version: item.version ?? 0,
+      assigneeId: !item.completedAt && household.members.some(person => person.inactive && person.id === item.assigneeId)
+        ? null : item.assigneeId,
+    };
+  }
+
+  async function dashboard(household, member, account, spaces = [], includeEntries = true) {
     const profile = account ? publicProfile(account) : null;
     if (profile && verificationMail) profile.emailVerificationPending = !account.emailVerifiedAt;
     if (!household) return profile ? { profile, household: null, spaces } : null;
     const admin = isAdmin(household, member);
-    const inactiveMemberIds = new Set(household.members.filter(person => person.inactive).map(person => person.id));
-    await materializeOccurrences(entries, household._id);
-    const items = await entries.find({ householdId: household._id, archivedAt: null }, {
-      projection: { householdId: 0, nextOccurrence: 0, whatsappMessageId: 0, 'voice.bytes': 0 },
-    }).sort({ createdAt: -1 }).toArray();
+    if (includeEntries) await materializeOccurrences(entries, household._id);
+    const items = includeEntries ? await entries.find({ householdId: household._id, archivedAt: null }, {
+      projection: entryProjection,
+    }).sort({ createdAt: -1 }).toArray() : [];
     return {
       memberId: member.id,
       profile,
@@ -139,15 +163,11 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
         ...(admin ? { permissions: access(household, person), leaveRequested: Boolean(person.leaveRequestedAt),
           availability: person.availability ?? 'available', unavailableUntil: person.unavailableUntil ?? null } : {}),
       })),
-      entries: items.map(({ _id, ...item }) => ({
-        id: String(_id), ...item,
-        assigneeId: !item.completedAt && inactiveMemberIds.has(item.assigneeId)
-          ? null : item.assigneeId,
-      })),
+      entries: items.map(item => publicEntry(item, household)),
     };
   }
 
-  const currentDashboard = req => dashboard(req.household, req.member, req.account, req.spaces);
+  const currentDashboard = req => dashboard(req.household, req.member, req.account, req.spaces, !versioned || req.query.includeEntries !== 'false');
   router.get('/dashboard', async (req, res) => res.json(await currentDashboard(req)));
 
   router.post('/auth/register', async (req, res) => {
@@ -232,7 +252,7 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
       }
       const member = {
         id: new ObjectId().toHexString(), name: `${req.account.firstName} ${req.account.lastName}`,
-        ...(joining ? { guestAccountId: req.account._id } : !hasSpace ? { accountId: req.account._id } : {}),
+        ...(joining ? { guestAccountId: req.account._id, joinedAt: new Date() } : !hasSpace ? { accountId: req.account._id } : {}),
       };
       try {
       if (joining) {
@@ -399,10 +419,29 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
     return { kind, title, dueOn, category, assigneeId, repeatDays, rotate, reminderDays };
   }
 
+  if (versioned) {
+    for (const [path, kind] of [['tasks', 'task'], ['events', 'event']]) {
+      router.get('/' + path, async (req, res) => {
+        await materializeOccurrences(entries, req.household._id);
+        res.json(await pageOf(entries, { householdId: req.household._id, archivedAt: null, kind }, req.query, {
+          projection: entryProjection, map: item => publicEntry(item, req.household),
+        }));
+      });
+    }
+    router.get('/entries/:id', async (req, res) => {
+      if (!validId(req.params.id)) throw new HttpError(404, 'Vnos ne obstaja.');
+      const entry = await entries.findOne({
+        _id: new ObjectId(req.params.id), householdId: req.household._id, archivedAt: null,
+      }, { projection: entryProjection });
+      if (!entry) throw new HttpError(404, 'Vnos ne obstaja.');
+      res.json(publicEntry(entry, req.household));
+    });
+  }
+
   router.post('/entries', async (req, res) => {
     if (!access(req.household, req.member).create) throw new HttpError(403, 'Nimaš dovoljenja za dodajanje vnosov.');
     const fields = entryFields(req);
-    const voice = parseVoice(req.body.voice);
+    const voice = await parseVoice(req.body.voice, versioned);
     await entries.insertOne({
       ...fields, householdId: req.household._id,
       assignedAt: fields.assigneeId ? new Date() : null,
@@ -464,7 +503,7 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
     const { id, action } = req.params;
     const changes = {
       claim: { assigneeId: req.member.id, assignedAt: new Date(), coverRequestedAt: null },
-      cover: { assigneeId: null, assignedAt: null, coverRequestedAt: new Date() },
+      cover: { assigneeId: null, assignedAt: null, coverRequestedAt: new Date(), coverRequestedBy: req.member.id },
       complete: { completedAt: new Date() },
     };
     if (!idPattern.test(id) || !Object.hasOwn(changes, action)) throw new HttpError(404, 'Ta pot ne obstaja.');
@@ -493,11 +532,4 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
   return router;
 }
 
-export function handleError(error, _req, res, next) {
-  if (res.headersSent) return next(error);
-  if (error instanceof HttpError) return res.status(error.status).json({ error: error.message });
-  if (error.type === 'entity.parse.failed') return res.status(400).json({ error: 'Neveljavni podatki JSON.' });
-  if (error.type === 'entity.too.large') return res.status(413).json({ error: 'Zahteva je prevelika.' });
-  console.error(error);
-  return res.status(500).json({ error: 'Prišlo je do napake na strežniku.' });
-}
+export { handleError };

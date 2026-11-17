@@ -42,6 +42,8 @@ jobs:
         run: npm test
         env:
           SOTOVOR_MONGO_URI: mongodb://127.0.0.1:27017
+      - name: Validate native API contract
+        run: node backend/test/validate-openapi.js
       - name: Build frontend
         run: npm run build
       - name: Test production stack and backup restore

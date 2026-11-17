@@ -41,15 +41,15 @@ export function voiceUrl(id) {
   return `/api/entries/${id}/voice${activeHousehold ? '?household=' + activeHousehold : ''}`;
 }
 
-export async function request(path, body, signal, household = activeHousehold) {
+export async function request(path, body, signal, household = activeHousehold, method = body === undefined ? 'GET' : 'POST') {
   const headers = household ? { 'X-Sotovor-Household': household } : {};
   const options = body === undefined ? { signal, headers } : {
-    method: 'POST',
+    method,
     headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   };
   const response = await fetch('/api' + path, options);
   const data = await response.json();
-  if (!response.ok) throw Object.assign(new Error(data.error), { status: response.status });
+  if (!response.ok) throw Object.assign(new Error(data.error?.message ?? data.error), { status: response.status });
   return data;
 }
