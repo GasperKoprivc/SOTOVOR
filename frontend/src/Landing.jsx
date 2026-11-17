@@ -105,6 +105,7 @@ export function AuthDialog({ mode, legacy, busy, error, onAuth, onMode }) {
       {error && <p className="auth-error" role="alert">{errorText(error)}</p>}
       <button className="launch-button solid" disabled={busy}>{register ? t('Registriraj se') : t('Prijavi se')} <ArrowRight size={17} /></button>
     </form>
+    {!register && <a className="auth-switch" href="/#reset-password">{t('Pozabljeno geslo')}</a>}
     <button className="auth-switch" disabled={busy} onClick={() => onMode(register ? 'login' : 'register')}>
       {register ? t('Že imaš račun? Prijava') : t('Ustvari račun')}
     </button>

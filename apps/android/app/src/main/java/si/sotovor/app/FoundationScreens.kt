@@ -80,7 +80,7 @@ fun SotovorNav(model: WorkspaceViewModel, push: NativePush) {
         composable("register") { AuthForm(true, state, model, { model.clearNotice(); nav.popBackStack() }) }
         composable("workspace") {
             state.workspace?.let {
-                if (it.household == null) PanelScreen { FamilyControls(it, state, model) }
+                if (it.household == null) ProfilePage(it, state, model)
                 else CoreWorkspace(it, state, model, push)
             }
         }
