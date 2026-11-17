@@ -26,4 +26,17 @@ On macOS and Linux use `./gradlew`. CI uploads the debug APK as `sotovor-android
 
 With the emulator running, use `./gradlew connectedDebugAndroidTest` (or `gradlew.bat` on Windows) for the Compose UI tests. In the app, the workspace tabs open the dashboard, filtered task pages, calendar, workload, notifications and profile. Profile can revoke a device or export the account as a JSON file.
 
-The app builds without Firebase. To enable the Android Firebase SDK, add the matching `google-services.json` as `app/google-services.json`. See the [firebase and App Links setup](../../docs/HUMAN_TASKS.md#android-app-links-and-firebase).
+## Push, invite links and updates
+
+The app builds and runs without Firebase. Add `app/google-services.json` to enable push locally. The optional GitHub secret `GOOGLE_SERVICES_JSON_BASE64` supplies that file for a second debug artifact. CI always builds a Firebase-free APK first. Set the server's Firebase service account separately and grant phone notifications in the app's **Notifications → Notification settings**. In-app notices stay available if phone notifications are off.
+
+Set `sotovorReleaseUrl` to the public HTTPS domain before building an APK that should handle verified invitations. Add the app-signing SHA-256 fingerprint to the server's asset links. With a real invite, run:
+
+```bash
+adb shell am start -a android.intent.action.VIEW -d "https://sotovor.example.com/join/0123456789abcdef0123456789abcdef"
+adb shell pm get-app-links si.sotovor.app
+```
+
+Use your actual domain and invite code. Without an installed, verified app, the same URL opens the website's join form. Set `sotovorUpdateUrl` to a public APK download page or the Play listing before publishing. The server's minimum and latest versions control the blocking and optional update prompts.
+
+See [Firebase credentials and signing setup](../../docs/HUMAN_TASKS.md#android-app-links-and-firebase).

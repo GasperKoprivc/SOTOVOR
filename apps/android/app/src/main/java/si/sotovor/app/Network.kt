@@ -40,7 +40,7 @@ class MobileAuthenticator(private val store: CredentialStore, private val refres
 @Module
 @InstallIn(SingletonComponent::class)
 object Network {
-    @Provides @Singleton fun json(): Json = Json { ignoreUnknownKeys = true }
+    @Provides @Singleton fun json(): Json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
     @Provides @Singleton @Named("public")
     fun publicApi(json: Json): SotovorApi = retrofit(OkHttpClient(), json)

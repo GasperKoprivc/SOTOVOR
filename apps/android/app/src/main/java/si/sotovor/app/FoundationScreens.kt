@@ -45,8 +45,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
 @Composable
-fun SotovorNav(model: WorkspaceViewModel) {
+fun SotovorNav(model: WorkspaceViewModel, push: NativePush) {
     val state by model.state.collectAsStateWithLifecycle()
+    val upgrade by model.updateLevel.collectAsStateWithLifecycle()
     val nav = rememberNavController()
     val signedIn = state.workspace != null
     LaunchedEffect(signedIn) {
@@ -57,7 +58,13 @@ fun SotovorNav(model: WorkspaceViewModel) {
             nav.popBackStack("welcome", inclusive = false)
         }
     }
-    NavHost(navController = nav, startDestination = "welcome") {
+    if (upgrade == UpdateLevel.REQUIRED) {
+        PanelScreen { UpdateNotice(required = true, dismiss = {}) }
+        return
+    }
+    Column(Modifier.fillMaxSize().safeDrawingPadding()) {
+        if (upgrade == UpdateLevel.OPTIONAL) UpdateNotice(required = false, dismiss = model::dismissUpdate)
+        NavHost(navController = nav, startDestination = "welcome", modifier = Modifier.weight(1f)) {
         composable("welcome") {
             PanelScreen {
                 Image(painterResource(R.drawable.sotovor_mark), null, Modifier.size(80.dp))
@@ -74,8 +81,9 @@ fun SotovorNav(model: WorkspaceViewModel) {
         composable("workspace") {
             state.workspace?.let {
                 if (it.household == null) PanelScreen { FamilyControls(it, state, model) }
-                else CoreWorkspace(it, state, model)
+                else CoreWorkspace(it, state, model, push)
             }
+        }
         }
     }
 }
@@ -155,11 +163,17 @@ fun CredentialFields(email: String, password: String, onEmail: (String) -> Unit,
 
 @Composable
 fun FamilyControls(workspace: Workspace, state: WorkspaceState, model: WorkspaceViewModel) {
+    val incoming by model.links.collectAsStateWithLifecycle()
     var mode by rememberSaveable { mutableStateOf("") }
     var familyName by rememberSaveable { mutableStateOf("") }
     var sizeText by rememberSaveable { mutableStateOf("4") }
     var code by rememberSaveable { mutableStateOf("") }
     LaunchedEffect(workspace.household?.id) { mode = ""; code = "" }
+    LaunchedEffect(incoming, workspace.household?.id) {
+        val invitation = incoming as? NativeLink.Invite ?: return@LaunchedEffect
+        mode = "join"
+        code = invitation.code
+    }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(stringResource(R.string.greeting, workspace.profile.firstName), style = MaterialTheme.typography.headlineLarge)
         workspace.household?.let { Text(it.name, style = MaterialTheme.typography.titleLarge) }
@@ -202,6 +216,13 @@ fun FamilyControls(workspace: Workspace, state: WorkspaceState, model: Workspace
                     Text(stringResource(R.string.join_family))
                 }
             }
+        }
+        if (mode.isNotEmpty()) TextButton(onClick = { mode = ""; model.clearLink() }, enabled = !state.busy) {
+            Text(stringResource(R.string.cancel))
+        }
+        if (workspace.household != null && !workspace.admin) {
+            if (workspace.leaveRequested) Text(stringResource(R.string.leave_requested))
+            else TextButton(onClick = model::leaveRequest, enabled = !state.busy) { Text(stringResource(R.string.request_leave)) }
         }
         TextButton(onClick = model::signOut, enabled = !state.busy) { Text(stringResource(R.string.sign_out)) }
     }

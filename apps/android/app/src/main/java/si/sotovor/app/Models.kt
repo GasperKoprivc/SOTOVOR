@@ -36,7 +36,7 @@ data class Credentials(
 @Serializable data class Workspace(
     val profile: Profile, val household: Space? = null, val spaces: List<Space> = emptyList(),
     val memberId: String? = null, val members: List<Member> = emptyList(), val entries: List<Entry> = emptyList(),
-    val admin: Boolean = false, val permissions: Permissions = Permissions()
+    val admin: Boolean = false, val permissions: Permissions = Permissions(), val leaveRequested: Boolean = false
 )
 @Serializable data class ApiError(val error: ErrorDetail)
 @Serializable data class ErrorDetail(val code: String, val message: String)
@@ -51,6 +51,15 @@ data class Credentials(
 @Serializable data class Notice(val id: String, val type: String, val target: NoticeTarget, val createdAt: String, val readAt: String? = null)
 @Serializable data class DeviceSession(val id: String, val deviceName: String, val current: Boolean, val lastUsedAt: String)
 @Serializable data class DeleteAccount(val password: String, val deleteOwnedFamilies: Boolean)
+@Serializable data class PlanningMember(val familyRole: String, val availability: String, val unavailableUntil: String?)
+@Serializable data class PlanRequest(val rebalance: Boolean, val signature: String? = null)
+@Serializable data class PlanChange(val id: String, val title: String, val assigneeName: String)
+@Serializable data class PlanPreview(val changes: List<PlanChange>, val skipped: Int, val until: String, val signature: String)
+@Serializable data class PlanResult(val applied: Int, val conflicts: Int)
+@Serializable data class NotificationSettings(val assignments: Boolean, val reminders: Boolean, val swaps: Boolean)
+@Serializable data class PushDevice(val token: String, val platform: String, val appVersion: String, val locale: String)
+@Serializable data class DeviceId(val id: String)
+@Serializable data class Versions(val minSupported: String, val latest: String)
 
 data class TaskFilters(val state: String = "all", val search: String = "", val category: String? = null, val assignee: String? = null)
 data class EntryEditor(val kind: String, val entry: Entry? = null, val day: String? = null)

@@ -72,6 +72,8 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
     var remind by rememberSaveable(original?.id) { mutableStateOf((original?.reminderDays ?: 2).toString()) }
     var rotate by rememberSaveable(original?.id) { mutableStateOf(original?.rotate ?: false) }
     var deleting by rememberSaveable(original?.id) { mutableStateOf(false) }
+    var voice by remember { mutableStateOf<Voice?>(null) }
+    var recording by remember { mutableStateOf(false) }
     val size = repeat.toIntOrNull() ?: -1
     val threshold = remind.toIntOrNull() ?: -1
     val validDate = date.isBlank() || runCatching { LocalDate.parse(date).toString() == date }.getOrDefault(false)
@@ -88,7 +90,7 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
     }
 
     AlertDialog(
-        onDismissRequest = { if (!state.busy) model.edit(null) },
+        onDismissRequest = { if (!state.busy && !recording) model.edit(null) },
         title = { Text(stringResource(if (original != null) R.string.entry_details else if (task) R.string.add_task else R.string.add_event)) },
         text = {
             Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -108,6 +110,8 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
                         Text(stringResource(R.string.rotate_tasks))
                     }
                 }
+                if (original == null) VoiceAttachment(voice, !state.busy, { voice = it }, { recording = it })
+                if (original?.voice != null) VoicePlayback(original.id, model)
                 Status(state)
                 if (open && task && original != null) {
                     if (original.assigneeId == null) TextButton(onClick = { model.taskAction(original.id, "claim") }, enabled = !state.busy) {
@@ -125,15 +129,15 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
         },
         confirmButton = {
             if (canEdit || canDate) TextButton(
-                enabled = !state.busy && title.isNotBlank() && validDate && size in 0..3660 &&
+                enabled = !state.busy && !recording && title.isNotBlank() && validDate && size in 0..3660 &&
                     threshold in 0..30 && (date.isNotBlank() || (task && size == 0)),
                 onClick = {
                     model.save(EntryInput(title.trim(), editor.kind, category, date.ifBlank { null }, assigned,
-                        size, size > 0 && rotate, threshold))
+                        size, size > 0 && rotate, threshold, voice = voice))
                 }
             ) { Text(stringResource(R.string.save)) }
         },
-        dismissButton = { TextButton(onClick = { model.edit(null) }, enabled = !state.busy) { Text(stringResource(R.string.cancel)) } }
+        dismissButton = { TextButton(onClick = { model.edit(null) }, enabled = !state.busy && !recording) { Text(stringResource(R.string.cancel)) } }
     )
 }
 

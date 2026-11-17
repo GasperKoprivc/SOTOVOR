@@ -81,12 +81,12 @@ fun CalendarPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVi
         }
         val matches = workspace.entries.filter { it.dueOn == selected }
         if (matches.isEmpty()) Text(stringResource(R.string.no_entries))
-        matches.forEach { EntryCard(it, workspace) { model.edit(EntryEditor(it.kind, it)) } }
+        matches.forEach { EntryCard(it, workspace, model) { model.edit(EntryEditor(it.kind, it)) } }
     }
 }
 
 @Composable
-fun WorkloadPage(workspace: Workspace) {
+fun WorkloadPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceViewModel) {
     var days by rememberSaveable { mutableIntStateOf(30) }
     PanelScreen {
         SectionTitle(R.string.workload)
@@ -96,6 +96,7 @@ fun WorkloadPage(workspace: Workspace) {
             }
         }
         WorkloadBars(workspace, days)
+        SmartPlan(workspace, state, model)
     }
 }
 

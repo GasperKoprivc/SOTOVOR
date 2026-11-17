@@ -7,7 +7,7 @@
 Namenjen je vsakodnevnim stvarem: pospravljanju, nakupom, prevzemu otrok, družinskim dogodkom in drugim obveznostim, ki sicer hitro ostanejo v sporočilih ali v glavi enega človeka. Člani lahko delo prevzamejo sami, prosijo za zamenjavo ali ga dobijo dodeljenega. Skrbnik lahko pripravi tudi predlog razporeditve glede na vloge, razpoložljivost in dosedanjo obremenitev.
 
 > **Trenutno stanje · 17. november 2026**
-> Implementirani so spletna aplikacija, namizni odjemalec za Windows, skupni API in shranjevanje v MongoDB. Na telefonu je na voljo odzivna spletna različica. Samostojna aplikacija Android je še načrtovana.
+> Na voljo so spletna aplikacija, namizni odjemalec za Windows in projekt za Android, ki uporabljajo skupni API in MongoDB. Na telefonu lahko še vedno uporabiš odzivno spletno različico.
 
 **React 19 · Vite 8 · Node.js 24+ · Express 5 · MongoDB · Tauri 2**
 
@@ -25,6 +25,7 @@ Namenjen je vsakodnevnim stvarem: pospravljanju, nakupom, prevzemu otrok, druži
 - [Demo družina](#demo-družina)
 - [Povezava z WhatsAppom](#povezava-z-whatsappom)
 - [Dostop s telefona](#dostop-s-telefona)
+- [Aplikacija za Android](apps/android/README.md)
 - [Tehnična zasnova in struktura](#tehnična-zasnova-in-struktura)
 - [Nastavitve okolja](#nastavitve-okolja)
 - [Razvoj in preverjanja](#razvoj-in-preverjanja)
@@ -458,7 +459,7 @@ GitHub Actions ob potiskih in pull requestih namesti odvisnosti, preveri sintaks
 
 Ta README opisuje trenutno implementirano stanje. Pri nadaljnjem razvoju so pomembne naslednje meje:
 
-- **Android:** mapa [apps/mobile](apps/mobile/README.md) je pripravljena za prihodnji projekt; trenutno se na telefonu uporablja spletna različica.
+- **Android:** [projekt za Android Studio](apps/android/README.md) lahko zgradiš lokalno ali uporabiš debug APK iz GitHub Actions. Za javno objavo in preverjene povezave sta potrebna podpis in nastavljena javna domena.
 - **Povezava s strežnikom:** spletni in namizni odjemalec uporabljata skupni API in MongoDB; samostojno delo brez povezave ni implementirano.
 - **Obvestila:** delujejo znotraj aplikacije. Sistemska potisna obvestila in pošiljanje opomnikov po e-pošti niso implementirani.
 - **Osveževanje:** spremembe se pridobivajo periodično, ne prek WebSocket povezave.

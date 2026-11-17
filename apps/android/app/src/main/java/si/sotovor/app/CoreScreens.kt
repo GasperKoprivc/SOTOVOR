@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.ZoneId
@@ -49,11 +50,23 @@ fun today(): LocalDate = LocalDate.now(ZoneId.of("Europe/Ljubljana"))
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CoreWorkspace(workspace: Workspace, state: WorkspaceState, model: WorkspaceViewModel) {
+fun CoreWorkspace(workspace: Workspace, state: WorkspaceState, model: WorkspaceViewModel, push: NativePush) {
     val household = workspace.household ?: return
     val tabs = listOf(R.string.overview, R.string.tasks, R.string.calendar, R.string.workload, R.string.notifications, R.string.profile)
     var tab by rememberSaveable(household.id) { mutableIntStateOf(0) }
     var requestedFilter by remember { mutableStateOf(TaskFilters()) }
+    val incoming by model.links.collectAsStateWithLifecycle()
+    LaunchedEffect(incoming, household.id) {
+        when (val link = incoming) {
+            is NativeLink.Invite -> tab = 5
+            is NativeLink.Target -> {
+                model.state.first { !it.busy }
+                tab = if (link.entry == null) 5 else 1
+                model.openTarget(link)
+            }
+            null -> Unit
+        }
+    }
     LaunchedEffect(tab, household.id) {
         model.state.first { !it.busy }
         when (tab) {
@@ -86,8 +99,8 @@ fun CoreWorkspace(workspace: Workspace, state: WorkspaceState, model: WorkspaceV
                     model.tasks(it)
                 }
                 2 -> CalendarPage(workspace, state, model)
-                3 -> WorkloadPage(workspace)
-                4 -> NotificationPage(state, model) { item ->
+                3 -> WorkloadPage(workspace, state, model)
+                4 -> NotificationPage(state, model, push) { item ->
                     val target = workspace.entries.find { it.id == item.target.entryId }
                     if (target == null) tab = if (item.target.screen == "family") 5 else 1
                     else model.edit(EntryEditor(target.kind, target))
@@ -123,7 +136,7 @@ private fun DashboardPage(workspace: Workspace, state: WorkspaceState, model: Wo
         }
         SectionTitle(R.string.tasks)
         open.sortedBy { it.dueOn ?: "9999-12-31" }.take(6).forEach { entry ->
-            EntryCard(entry, workspace) { model.edit(EntryEditor(entry.kind, entry)) }
+            EntryCard(entry, workspace, model) { model.edit(EntryEditor(entry.kind, entry)) }
         }
         if (open.isEmpty()) Text(stringResource(R.string.no_tasks))
         SectionTitle(R.string.this_week)
@@ -167,7 +180,7 @@ private fun TasksPage(state: WorkspaceState, workspace: Workspace, model: Worksp
             if (state.tasks.isEmpty() && !state.busy) Text(stringResource(R.string.no_tasks))
         }
         items(state.tasks, key = { it.id }) { entry ->
-            EntryCard(entry, workspace) { model.edit(EntryEditor("task", entry)) }
+            EntryCard(entry, workspace, model) { model.edit(EntryEditor("task", entry)) }
         }
         if (state.taskCursor != null) item {
             OutlinedButton(onClick = { model.tasks(filters, more = true) }, enabled = !state.busy) {
@@ -178,7 +191,7 @@ private fun TasksPage(state: WorkspaceState, workspace: Workspace, model: Worksp
 }
 
 @Composable
-fun EntryCard(entry: Entry, workspace: Workspace, open: () -> Unit) {
+fun EntryCard(entry: Entry, workspace: Workspace, model: WorkspaceViewModel? = null, open: () -> Unit) {
     val currentDate = today()
     val dueOn = entry.dueOn
     val state = when {
@@ -195,6 +208,7 @@ fun EntryCard(entry: Entry, workspace: Workspace, open: () -> Unit) {
                 ?: if (entry.kind == "task") stringResource(R.string.unassigned) else ""
             Text(listOfNotNull(category, entry.dueOn, assignee).filter { it.isNotBlank() }.joinToString(" · "))
             state?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.tertiary) }
+            if (entry.voice != null && model != null) VoicePlayback(entry.id, model)
         }
     }
 }
@@ -205,10 +219,11 @@ private val notificationLabels = mapOf(
 )
 
 @Composable
-private fun NotificationPage(state: WorkspaceState, model: WorkspaceViewModel, open: (Notice) -> Unit) {
+private fun NotificationPage(state: WorkspaceState, model: WorkspaceViewModel, push: NativePush, open: (Notice) -> Unit) {
     LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         item {
             SectionTitle(R.string.notifications)
+            NotificationControls(state, model, push)
             Status(state)
             if (state.notifications.isEmpty() && !state.busy) Text(stringResource(R.string.no_notifications))
         }
