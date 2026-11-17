@@ -318,7 +318,8 @@ export default function App() {
       <header className="topbar"><span><House size={16} />{household.name}</span>
         <div className="top-actions">
           <LanguageSelect />
-          <Notifications key={memberId} {...{ tasks, memberId, today }} onView={next => go('tasks', next)} />
+          <Notifications key={memberId} tasks={tasks} householdId={household.id}
+            onView={next => next === 'family' ? go('profile') : go('tasks', next)} />
           {data.admin && data.whatsapp?.enabled && <button className="soft-button" onClick={() => open('whatsapp')}>WhatsApp</button>}
           {data.admin && <button className="soft-button" onClick={() => open('invite')}><UserRoundPlus size={17} />{' '}{t('Povabi člana')}</button>}
           <button className="soft-button" type="button" onClick={logout} disabled={busy}><LogOut size={17} />{' '}{t('Odjava')}</button>

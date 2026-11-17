@@ -1,43 +1,49 @@
-import { errorText, t } from './i18n.js';
 import { useEffect, useState } from 'react';
 import { Bell, Check } from 'lucide-react';
-import { needsReminder, request } from './data.js';
+import { errorText, t } from './i18n.js';
+import { request } from './data.js';
 
 const settingsPath = '/v1/me/notification-settings';
 const labels = { assignments: 'Dodelitve', reminders: 'Opomniki', swaps: 'Zamenjave' };
+const noticeTypes = {
+  assignment: ['Dodeljeno tebi', 'mine'], deadline: ['Opomnik za rok', 'due'],
+  overdue: ['Rok je potekel', 'due'], swap: ['Išče se zamenjava', 'available'], member_joined: ['Nov družinski član', 'family'],
+};
 
-export default function Notifications({ tasks, memberId, today, onView }) {
-  const storageKey = `sotovor-notices-${memberId}`;
+export default function Notifications({ tasks, householdId, onView }) {
+  const [notices, setNotices] = useState([]);
   const [settings, setSettings] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
   useEffect(() => {
     const controller = new AbortController();
-    request(settingsPath, undefined, controller.signal, null).then(setSettings).catch(() => {});
-    return () => controller.abort();
-  }, [memberId]);
-  const [dismissed, setDismissed] = useState(() => {
-    try {
-      const value = JSON.parse(localStorage.getItem(storageKey));
-      return Array.isArray(value) ? value : [];
-    } catch {
-      return [];
+    let refreshing = false;
+    async function refresh() {
+      if (refreshing || document.hidden) return;
+      refreshing = true;
+      try {
+        const page = await request('/v1/notifications?unread=true', undefined, controller.signal, householdId);
+        setNotices(page.items);
+      } catch (problem) {
+        if (!controller.signal.aborted) setError(problem.message);
+      } finally {
+        refreshing = false;
+      }
     }
-  });
-  const notices = tasks.filter(task => !task.completedAt).flatMap(task => {
-    if (task.assigneeId === memberId) return [
-      ...(task.assignedAt && settings?.assignments !== false ? [{ id: `${task.id}-${task.assignedAt}`, label: 'Dodeljeno tebi', filter: 'mine', task }] : []),
-      ...(settings?.reminders !== false && needsReminder(task, today) ? [{ id: `${task.id}-due-${task.dueOn}-${task.assignedAt}`, label: 'Opomnik za rok', filter: 'due', task }] : []),
-    ];
-    return settings?.swaps !== false && task.coverRequestedAt && !task.assigneeId
-      ? [{ id: `${task.id}-${task.coverRequestedAt}`, label: 'Išče se zamenjava', filter: 'available', task }]
-      : [];
-  }).filter(notice => !dismissed.includes(notice.id));
+    request(settingsPath, undefined, controller.signal, null).then(setSettings).catch(() => {});
+    void refresh();
+    const timer = setInterval(refresh, 8000);
+    return () => { controller.abort(); clearInterval(timer); };
+  }, [householdId]);
 
-  function markRead(id) {
-    const next = [...dismissed, id];
-    setDismissed(next);
-    try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* Keep the current view usable. */ }
+  async function markRead(id) {
+    try {
+      await request('/v1/notifications/' + id + '/read', {}, undefined, householdId, 'PUT');
+      setNotices(previous => previous.map(notice => notice.id === id ? { ...notice, readAt: new Date().toISOString() } : notice));
+    } catch (problem) {
+      setError(problem.message);
+    }
   }
 
   async function changeSetting(key, checked) {
@@ -52,8 +58,9 @@ export default function Notifications({ tasks, memberId, today, onView }) {
     }
   }
 
+  const unread = notices.filter(notice => !notice.readAt);
   return <details className="notifications">
-    <summary className="soft-button"><Bell size={18} />{' '}{t('Obvestila')}{notices.length > 0 && <span>{notices.length}</span>}</summary>
+    <summary className="soft-button"><Bell size={18} /> {t('Obvestila')}{unread.length > 0 && <span>{unread.length}</span>}</summary>
     <div className="panel notification-panel">
       <h2>{t('Obvestila')}</h2>
       {settings && <fieldset>
@@ -64,14 +71,19 @@ export default function Notifications({ tasks, memberId, today, onView }) {
         </label>)}
       </fieldset>}
       {error && <p className="error" role="alert">{errorText(error)}</p>}
-      {notices.length === 0 && <p className="muted">{t('Trenutno nimaš novih obvestil.')}</p>}
-      <ul>{notices.map(({ id, label, filter, task }) => <li key={id}>
-        <button className="notification-link" onClick={event => {
-          event.currentTarget.closest('details').open = false;
-          onView(filter);
-        }}><small>{t(label)}</small><strong>{task.title}</strong></button>
-        <button className="icon-button" aria-label={t("Označi kot prebrano: %0", task.title)} onClick={() => markRead(id)}><Check size={16} /></button>
-      </li>)}</ul>
+      {unread.length === 0 && <p className="muted">{t('Trenutno nimaš novih obvestil.')}</p>}
+      <ul>{unread.map(({ id, type, target }) => {
+        const [label, filter] = noticeTypes[type] ?? ['Obvestila', 'all'];
+        const title = tasks.find(task => task.id === target.entryId)?.title ?? t(label);
+        return <li key={id}>
+          <button className="notification-link" onClick={event => {
+            event.currentTarget.closest('details').open = false;
+            void markRead(id);
+            onView(filter);
+          }}><strong>{title}</strong>{title !== t(label) && <small>{t(label)}</small>}</button>
+          <button className="icon-button" aria-label={t('Označi kot prebrano: %0', title)} onClick={() => void markRead(id)}><Check size={16} /></button>
+        </li>;
+      })}</ul>
     </div>
   </details>;
 }

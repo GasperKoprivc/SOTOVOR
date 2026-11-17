@@ -173,7 +173,7 @@ Pri opravilu določiš, koliko dni pred rokom naj se pojavi med opomniki: od **0
 
 Meni **Obvestila** prikazuje nove dodelitve trenutnemu članu, bližnje oziroma zamujene roke njegovih opravil in prošnje za zamenjavo. Klik na obvestilo odpre ustrezen seznam, kljukica pa ga označi kot prebranega.
 
-Oznake prebranih obvestil se shranjujejo v lokalnem pomnilniku trenutnega odjemalca. Nadzorna plošča preverja spremembe približno vsakih **8 sekund**, dokler je dokument viden. Tako se spremembe drugih članov pojavijo brez ročnega ponovnega nalaganja.
+Prebrana obvestila se shranijo na strežniku in se sinhronizirajo med spletom, namizjem in Androidom. Strežnik pregleda dodelitve, roke in zamenjave vsakih 30 sekund. Nadzorna plošča preverja spremembe približno vsakih **8 sekund**, dokler je dokument viden.
 
 ### 11. Glasovne beležke
 

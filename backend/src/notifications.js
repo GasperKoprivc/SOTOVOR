@@ -60,7 +60,9 @@ export function registerNotificationRoutes(router, { accounts, devices, mobileSe
     res.json({ ok: true });
   });
   router.get('/notifications', async (req, res) => {
-    res.json(await pageOf(notifications, noticeScope(req), req.query, { map: publicNotice }));
+    const scope = noticeScope(req);
+    if (req.query.unread === 'true') scope.readAt = null;
+    res.json(await pageOf(notifications, scope, req.query, { map: publicNotice }));
   });
   router.put('/notifications/:id/read', async (req, res) => {
     const scope = noticeScope(req);
