@@ -25,6 +25,6 @@
 ## Android App Links and Firebase
 
 1. Create a Firebase project and add an Android app with package `si.sotovor.app`. Add the SHA-1 and SHA-256 fingerprints from your debug and release signing certificates. If you use Play App Signing, include Google's app-signing fingerprints.
-2. Download `google-services.json` for the Android project. Keep it out of commits. Use a base64-encoded copy for the Android CI secret when push testing is enabled.
+2. Download `google-services.json` to `apps/android/app/google-services.json`. Keep it out of commits. To build the optional Firebase debug APK in CI, add the base64-encoded file to the GitHub Actions secret `GOOGLE_SERVICES_JSON_BASE64`.
 3. Generate a service-account credential with FCM send access. For Docker Compose, store its one-line JSON as a single-quoted value of `SOTOVOR_FCM_SERVICE_ACCOUNT_JSON` in the VPS `.env`. For a direct Node deployment, `SOTOVOR_FCM_SERVICE_ACCOUNT_FILE` can point to a private mounted JSON file.
 4. Set `SOTOVOR_ANDROID_FINGERPRINTS` to the comma-separated SHA-256 signing fingerprints. Verify that `https://YOUR_DOMAIN/.well-known/assetlinks.json` returns the package name and fingerprints over HTTPS.

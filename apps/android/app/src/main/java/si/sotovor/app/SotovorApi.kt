@@ -11,6 +11,7 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Streaming
 
 interface SotovorApi {
     @POST("mobile/auth/login") suspend fun login(@Body login: Login): Credentials
@@ -39,4 +40,17 @@ interface SotovorApi {
     @DELETE("mobile/auth/sessions/{id}") suspend fun revoke(@Path("id") id: String): Ok
     @GET("me/export") suspend fun export(): ResponseBody
     @HTTP(method = "DELETE", path = "me", hasBody = true) suspend fun deleteAccount(@Body body: DeleteAccount): Ok
+    @GET("mobile/min-version") suspend fun versions(): Versions
+    @GET("entries/{id}") suspend fun entry(@Header("X-Sotovor-Household") household: String, @Path("id") id: String): Entry
+    @Streaming @GET("entries/{id}/voice") suspend fun voice(@Header("X-Sotovor-Household") household: String, @Path("id") id: String): ResponseBody
+    @POST("households/invite/rotate") suspend fun rotateInvite(@Header("X-Sotovor-Household") household: String, @Body body: Empty = Empty()): Ok
+    @POST("households/leave") suspend fun leave(@Header("X-Sotovor-Household") household: String, @Body body: Empty = Empty()): Ok
+    @POST("households/members/{id}/planning") suspend fun member(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Body body: PlanningMember): Ok
+    @POST("households/members/{id}/permissions") suspend fun permissions(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Body body: Permissions): Ok
+    @POST("households/members/{id}/{action}") suspend fun memberAction(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Path("action") action: String, @Body body: Empty = Empty()): Ok
+    @POST("planning/preview") suspend fun preview(@Header("X-Sotovor-Household") household: String, @Body body: PlanRequest): PlanPreview
+    @POST("planning/apply") suspend fun apply(@Header("X-Sotovor-Household") household: String, @Body body: PlanRequest): PlanResult
+    @GET("me/notification-settings") suspend fun settings(): NotificationSettings
+    @PUT("me/notification-settings") suspend fun saveSettings(@Body settings: NotificationSettings): NotificationSettings
+    @POST("devices") suspend fun pushDevice(@Body body: PushDevice): DeviceId
 }

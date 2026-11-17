@@ -18,13 +18,18 @@ data class WorkspaceState(
     val problem: String? = null, val problemResource: Int? = null, val notice: Int? = null,
     val tasks: List<Entry> = emptyList(), val taskCursor: String? = null, val filters: TaskFilters = TaskFilters(),
     val notifications: List<Notice> = emptyList(), val noticeCursor: String? = null, val devices: List<DeviceSession>? = null,
-    val editor: EntryEditor? = null, val conflict: Boolean = false, val export: String? = null
+    val editor: EntryEditor? = null, val conflict: Boolean = false, val export: String? = null,
+    val plan: PlanPreview? = null, val notificationSettings: NotificationSettings? = null
 )
 
 @HiltViewModel
 class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepository, private val json: Json) : ViewModel() {
     private val mutable = MutableStateFlow(WorkspaceState())
     val state = mutable.asStateFlow()
+    private val navigation = MutableStateFlow<NativeLink?>(null)
+    val links = navigation.asStateFlow()
+    private val upgrade = MutableStateFlow(UpdateLevel.CURRENT)
+    val updateLevel = upgrade.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -52,6 +57,7 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
     }
     fun joinFamily(code: String) = update {
         repository.join(code)
+        navigation.value = null
         load()
     }
     fun switchFamily(id: String) = update {
@@ -162,12 +168,93 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
     fun deleteAccount(input: DeleteAccount) = update { repository.deleteAccount(input) }
     private fun household() = mutable.value.workspace?.household?.id
 
+    fun checkVersion() {
+        viewModelScope.launch {
+            try {
+                val versions = repository.versions()
+                upgrade.value = upgradeLevel(BuildConfig.VERSION_NAME, versions.minSupported, versions.latest)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                // The workspace still reports ordinary connectivity failures when the API is offline.
+            }
+        }
+    }
+    fun dismissUpdate() { if (upgrade.value == UpdateLevel.OPTIONAL) upgrade.value = UpdateLevel.CURRENT }
+    fun receiveLink(raw: String?) { parseNativeLink(raw)?.let { navigation.value = it } }
+    fun clearLink() { navigation.value = null }
+    fun openTarget(target: NativeLink.Target) = update {
+        if (mutable.value.workspace?.spaces?.none { it.id == target.household } != false) {
+            mutable.update { it.copy(problemResource = R.string.space_unavailable) }
+            navigation.value = null
+            return@update
+        }
+        if (household() != target.household) {
+            repository.switch(target.household)
+            load()
+        }
+        navigation.value = null
+        target.entry?.let { id ->
+            val entry = repository.entry(target.household, id)
+            edit(EntryEditor(entry.kind, entry))
+        }
+    }
+    fun rotateInvite() = update {
+        household()?.let { repository.rotateInvite(it) }
+        load()
+    }
+    fun leaveRequest() = update {
+        household()?.let { repository.leave(it) }
+        load()
+    }
+    fun memberPlanning(id: String, value: PlanningMember) = update {
+        household()?.let { repository.member(it, id, value) }
+        load()
+    }
+    fun memberPermissions(id: String, value: Permissions) = update {
+        household()?.let { repository.permissions(it, id, value) }
+        load()
+    }
+    fun memberAction(id: String, action: String) = update {
+        household()?.let { repository.memberAction(it, id, action) }
+        load()
+    }
+    fun clearPlan() = mutable.update { it.copy(plan = null) }
+    fun preview(rebalance: Boolean) = update {
+        val id = household() ?: return@update
+        val plan = repository.preview(id, rebalance)
+        mutable.update { it.copy(plan = plan) }
+    }
+    fun applyPlan(rebalance: Boolean) = update {
+        val id = household() ?: return@update
+        val plan = mutable.value.plan ?: return@update
+        try {
+            val result = repository.apply(id, rebalance, plan.signature)
+            clearPlan()
+            load()
+            mutable.update { it.copy(notice = if (result.conflicts == 0) R.string.plan_applied else R.string.plan_some_conflicts) }
+        } catch (error: HttpException) {
+            if (error.code() != 409) throw error
+            clearPlan()
+            mutable.update { it.copy(problemResource = R.string.stale_plan) }
+        }
+    }
+    fun loadNotificationSettings() = update {
+        val settings = repository.settings()
+        mutable.update { it.copy(notificationSettings = settings) }
+    }
+    fun saveNotificationSettings(value: NotificationSettings) = update {
+        val settings = repository.saveSettings(value)
+        mutable.update { it.copy(notificationSettings = settings) }
+    }
+    suspend fun audio(id: String) = repository.downloadVoice(checkNotNull(household()), id)
+
     private suspend fun load() {
         val workspace = repository.workspace()
         mutable.update {
             if (it.workspace?.household?.id == workspace?.household?.id) it.copy(workspace = workspace)
             else it.copy(workspace = workspace, tasks = emptyList(), taskCursor = null, notifications = emptyList(),
-                noticeCursor = null, filters = TaskFilters(), editor = null)
+                noticeCursor = null, filters = TaskFilters(), editor = null, plan = null)
         }
     }
 

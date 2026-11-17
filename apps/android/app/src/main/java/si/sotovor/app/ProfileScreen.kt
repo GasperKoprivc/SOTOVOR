@@ -47,6 +47,7 @@ fun ProfilePage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVie
         Text(workspace.profile.email)
         Text(workspace.profile.phone)
         FamilyControls(workspace, state, model)
+        if (workspace.admin) AdminControls(workspace, state, model)
         TextButton(onClick = model::devices, enabled = !state.busy) { Text(stringResource(R.string.devices)) }
         state.devices?.forEach { device ->
             Text(device.deviceName + if (device.current) " · " + stringResource(R.string.this_device) else "")

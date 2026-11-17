@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
@@ -75,6 +76,42 @@ class FamilyRepository @Inject constructor(
     suspend fun deleteAccount(input: DeleteAccount) {
         api.deleteAccount(input)
         clearLocalSession()
+    }
+    suspend fun versions() = publicApi.versions()
+    suspend fun entry(household: String, id: String) = api.entry(household, id)
+    suspend fun rotateInvite(household: String) = api.rotateInvite(household)
+    suspend fun leave(household: String) = api.leave(household)
+    suspend fun member(household: String, id: String, value: PlanningMember) = api.member(household, id, value)
+    suspend fun permissions(household: String, id: String, value: Permissions) = api.permissions(household, id, value)
+    suspend fun memberAction(household: String, id: String, action: String) = api.memberAction(household, id, action)
+    suspend fun preview(household: String, rebalance: Boolean) = api.preview(household, PlanRequest(rebalance))
+    suspend fun apply(household: String, rebalance: Boolean, signature: String) = api.apply(household, PlanRequest(rebalance, signature))
+    suspend fun settings() = api.settings()
+    suspend fun saveSettings(value: NotificationSettings) = api.saveSettings(value)
+
+    suspend fun downloadVoice(household: String, id: String): File = withContext(Dispatchers.IO) {
+        val output = File.createTempFile("voice-", ".audio", context.cacheDir)
+        try {
+            api.voice(household, id).use { body ->
+                output.outputStream().use { target ->
+                    val stream = body.byteStream()
+                    val buffer = ByteArray(8192)
+                    var total = 0
+                    while (true) {
+                        val count = stream.read(buffer)
+                        if (count < 0) break
+                        total += count
+                        if (total > 2 * 1024 * 1024) throw java.io.IOException("Invalid voice file size")
+                        target.write(buffer, 0, count)
+                    }
+                    if (total == 0) throw java.io.IOException("Empty voice file")
+                }
+            }
+            output
+        } catch (error: Exception) {
+            output.delete()
+            throw error
+        }
     }
 
     suspend fun logout() = withContext(Dispatchers.IO) {

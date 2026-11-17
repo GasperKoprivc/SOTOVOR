@@ -375,5 +375,8 @@
   "Če račun obstaja, boš prejel povezavo po e-pošti.": {"en":"If the account exists, we’ll email you a link.","de":"Wenn das Konto existiert, erhältst du einen Link per E-Mail."},
   "Ponastavitev gesla tu ni nastavljena.": {"en":"Password reset is unavailable on this server.","de":"Das Zurücksetzen des Passworts ist auf diesem Server nicht eingerichtet."},
   "Povezava za ponastavitev je neveljavna ali je potekla.": {"en":"The reset link is invalid or expired.","de":"Der Link zum Zurücksetzen ist ungültig oder abgelaufen."},
-  "Preveč poskusov. Poskusi pozneje.": {"en":"Too many attempts. Try again later.","de":"Zu viele Versuche. Versuche es später erneut."}
+  "Preveč poskusov. Poskusi pozneje.": {"en":"Too many attempts. Try again later.","de":"Zu viele Versuche. Versuche es später erneut."},
+  "Rok je potekel": {"en":"Task overdue","de":"Aufgabe überfällig"},
+  "Nov družinski član": {"en":"New family member","de":"Neues Familienmitglied"},
+  "Pozabljeno geslo": {"en":"Forgot password","de":"Passwort vergessen"}
 }

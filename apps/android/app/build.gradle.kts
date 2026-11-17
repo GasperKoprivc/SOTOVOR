@@ -29,6 +29,9 @@ fun url(property: String, fallback: String, allowHttp: Boolean): String {
 }
 val debugUrl = url("sotovorDebugUrl", "http://10.0.2.2:3000/", true)
 val releaseUrl = url("sotovorReleaseUrl", "https://sotovor.example.com/", false)
+val updateUrl = providers.gradleProperty("sotovorUpdateUrl").orNull ?: local.getProperty("sotovorUpdateUrl")
+    ?: "https://play.google.com/store/apps/details?id=si.sotovor.app"
+require(URI(updateUrl).scheme == "https" && URI(updateUrl).host != null && '"' !in updateUrl) { "Invalid sotovorUpdateUrl" }
 
 android {
     namespace = "si.sotovor.app"
@@ -41,6 +44,9 @@ android {
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("boolean", "FIREBASE_CONFIGURED", firebaseConfigured.toString())
+        buildConfigField("String", "PUBLIC_URL", "\"$releaseUrl\"")
+        buildConfigField("String", "UPDATE_URL", "\"$updateUrl\"")
+        manifestPlaceholders["inviteHost"] = URI(releaseUrl).host
     }
     buildTypes {
         debug { buildConfigField("String", "BASE_URL", "\"$debugUrl\"") }
@@ -76,10 +82,8 @@ dependencies {
     implementation(libs.datastore)
     implementation(libs.splash)
     implementation(libs.browser)
-    if (firebaseConfigured) {
-        implementation(platform(libs.firebase.bom))
-        implementation(libs.firebase.messaging)
-    }
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
     debugImplementation(libs.compose.tooling)
     testImplementation(libs.junit)
     testImplementation(libs.mockwebserver)

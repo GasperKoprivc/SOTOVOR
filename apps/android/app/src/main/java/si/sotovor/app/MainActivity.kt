@@ -2,6 +2,7 @@ package si.sotovor.app
 
 import android.os.Build
 import android.os.Bundle
+import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -18,14 +19,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val viewModel: WorkspaceViewModel by viewModels()
+    @Inject lateinit var nativePush: NativePush
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
+        viewModel.receiveLink(intent.dataString ?: intent.getStringExtra("deepLink"))
+        viewModel.checkVersion()
         splash.setKeepOnScreenCondition { viewModel.state.value.busy && viewModel.state.value.workspace == null && !rendered }
         enableEdgeToEdge()
         setContent {
@@ -37,9 +42,15 @@ class MainActivity : ComponentActivity() {
                 else -> lightColorScheme(primary = Color(0xFF28584A), secondary = Color(0xFF8F492B), background = Color(0xFFFFF8F0))
             }
             MaterialTheme(colorScheme = colors) {
-                Surface(Modifier.fillMaxSize()) { SotovorNav(viewModel) }
+                Surface(Modifier.fillMaxSize()) { SotovorNav(viewModel, nativePush) }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        viewModel.receiveLink(intent.dataString ?: intent.getStringExtra("deepLink"))
     }
 
     private var rendered = false

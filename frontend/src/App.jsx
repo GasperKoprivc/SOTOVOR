@@ -25,7 +25,8 @@ const pages = {
   workload: ['Razporeditev', UsersRound],
   profile: ['Profil', UserRound],
 };
-const inviteFromUrl = new URLSearchParams(window.location.search).get('invite')?.trim().toLowerCase();
+const inviteFromUrl = (new URLSearchParams(window.location.search).get('invite') ??
+  window.location.pathname.match(/^\/join\/([a-f0-9]{32})$/i)?.[1])?.trim().toLowerCase();
 const initialInvite = /^[a-f0-9]{32}$/.test(inviteFromUrl ?? '') ? inviteFromUrl : '';
 
 function updateWorkspace(data, setData) {
@@ -117,7 +118,7 @@ function InviteDialog({ code, onClose, onRotate, busy, error }) {
       }
     }}>{copied ? <Check size={18} /> : <Clipboard size={18} />} {copied ? t('Koda je kopirana') : t('Kopiraj kodo')}</button>
     <label className="invite-label family-switch">{t('Povezava za povabilo')}<input readOnly
-      value={`${window.location.origin}/?invite=${code}`} onFocus={event => event.target.select()} /></label>
+      value={`${window.location.origin}/join/${code}`} onFocus={event => event.target.select()} /></label>
     <button className="text-button rotate-code" disabled={busy} onClick={() => { setCopied(false); onRotate(); }}>{t('Ustvari novo kodo')}</button>
     {error && <p className="error" role="alert">{errorText(error)}</p>}
   </Dialog>;
@@ -258,6 +259,7 @@ export default function App() {
       setInviteCode('');
       const url = new URL(window.location.href);
       url.searchParams.delete('invite');
+      if (url.pathname.startsWith('/join/')) url.pathname = '/';
       history.replaceState(null, '', url);
     }
     setModal(null);
@@ -318,7 +320,8 @@ export default function App() {
       <header className="topbar"><span><House size={16} />{household.name}</span>
         <div className="top-actions">
           <LanguageSelect />
-          <Notifications key={memberId} {...{ tasks, memberId, today }} onView={next => go('tasks', next)} />
+          <Notifications key={memberId} tasks={tasks} householdId={household.id}
+            onView={next => next === 'family' ? go('profile') : go('tasks', next)} />
           {data.admin && data.whatsapp?.enabled && <button className="soft-button" onClick={() => open('whatsapp')}>WhatsApp</button>}
           {data.admin && <button className="soft-button" onClick={() => open('invite')}><UserRoundPlus size={17} />{' '}{t('Povabi člana')}</button>}
           <button className="soft-button" type="button" onClick={logout} disabled={busy}><LogOut size={17} />{' '}{t('Odjava')}</button>

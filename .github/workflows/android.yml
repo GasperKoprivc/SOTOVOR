@@ -35,3 +35,17 @@ jobs:
         with:
           name: sotovor-android-debug
           path: apps/android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Build the optional Firebase variant
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          if [[ -n "$GOOGLE_SERVICES_JSON_BASE64" ]]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > app/google-services.json
+            ./gradlew assembleDebug
+            echo "firebase_apk=true" >> "$GITHUB_ENV"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: env.firebase_apk == 'true'
+        with:
+          name: sotovor-android-firebase-debug
+          path: apps/android/app/build/outputs/apk/debug/app-debug.apk
