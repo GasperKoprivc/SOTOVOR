@@ -14,6 +14,8 @@ Za razvoj potrebuješ Node.js 24, MongoDB Community Server, stabilni Rust za `x8
 
 Namizna prijava se ohrani med zagoni aplikacije. Odjava v namiznem oknu zaključi namizno sejo. Brskalnik ima svojo sejo.
 
+Jezik lahko izbereš že v oknu za prijavo. Privzeta je angleščina, na voljo sta tudi slovenščina in nemščina. Namizni odjemalec si izbiro zapomni ločeno od brskalnika.
+
 ## Izvršljiva datoteka in namestitveni paket
 
 Po gradnji je izvršljiva datoteka v `src-tauri/target/release/sotovor.exe`. Za lokalno uporabo naj `start.bat` najprej zažene strežnik. Za izdelavo namestitvenega paketa Windows iz mape `src-tauri` uporabi:

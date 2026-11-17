@@ -34,6 +34,7 @@ Namenjen je vsakodnevnim stvarem: pospravljanju, nakupom, prevzemu otrok, druži
 | Področje | Kaj je na voljo |
 | --- | --- |
 | **Računi** | Registracija, prijava, odjava in prikaz osebnih podatkov v profilu. |
+| **Jezik vmesnika** | Angleščina (privzeto), slovenščina in nemščina v spletnem in namiznem odjemalcu. |
 | **Družinski prostori** | Ustvarjanje družin, povabila s kodo ali povezavo in preklapljanje med prostori. |
 | **Člani in pravice** | Skrbniško upravljanje članov, dovoljenj, družinskih vlog, bolezni in odsotnosti. |
 | **Opravila** | Dodajanje, urejanje, roki, kategorije, dodeljevanje, prevzem, prošnja za zamenjavo in zaključevanje. |
@@ -51,6 +52,8 @@ Namenjen je vsakodnevnim stvarem: pospravljanju, nakupom, prevzemu otrok, druži
 ### 1. Naslovnica, račun in prvi vstop
 
 Predstavitvena stran predstavi Sotovor in omogoča prijavo, registracijo ter vstop prek povabila. Registracija zajema ime, priimek, e-poštni naslov, telefon in geslo. Po prijavi uporabnik v profilu vidi svoje podatke in lahko odpre nadzorno ploščo.
+
+Jezik izbereš v zgornji vrstici naslovnice ali nadzorne plošče. Aplikacija si ga zapomni v trenutnem brskalniku oziroma namiznem odjemalcu. Izbira spremeni tudi prikaz datumov, naslovi opravil in imena članov pa ostanejo v jeziku, v katerem so bili vneseni.
 
 Če račun še nima družinskega prostora, ponudi aplikacija dve poti:
 

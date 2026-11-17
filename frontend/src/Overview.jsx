@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 import { useState } from 'react';
 import {
   ArrowRight, CalendarDays, Check, ChevronLeft, ChevronRight, CircleCheckBig,
@@ -12,14 +13,14 @@ export function Avatar({ name, index = 0 }) {
 export function Metrics({ tasks, memberId, today, onFilter }) {
   const open = tasks.filter(task => !task.completedAt);
   const metrics = [
-    ['Moja odprta opravila', open.filter(task => task.assigneeId === memberId).length, ListTodo, 'mine'],
-    ['Na voljo za prevzem', open.filter(task => !task.assigneeId).length, Hand, 'available'],
-    ['Opomniki za roke', open.filter(task => needsReminder(task, today)).length, Clock3, 'due'],
+    [t('Moja odprta opravila'), open.filter(task => task.assigneeId === memberId).length, ListTodo, 'mine'],
+    [t('Na voljo za prevzem'), open.filter(task => !task.assigneeId).length, Hand, 'available'],
+    [t('Opomniki za roke'), open.filter(task => needsReminder(task, today)).length, Clock3, 'due'],
   ];
   return <div className="metrics">{metrics.map(([label, count, Icon, filter]) =>
     <button type="button" className="metric panel" key={filter} onClick={() => onFilter(filter)}>
       <span className={`metric-icon ${filter}`}><Icon size={20} /></span>
-      <span><strong>{count}</strong><span>{label}</span></span>
+      <span><strong>{count}</strong><span>{t(label)}</span></span>
       <ArrowRight className="metric-arrow" size={17} aria-hidden="true" />
     </button>)}</div>;
 }
@@ -32,11 +33,11 @@ export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAct
   const [category, setCategory] = useState('');
   const [assignee, setAssignee] = useState('');
   const names = new Map(members.map(member => [member.id, member.name]));
-  const term = search.trim().toLocaleLowerCase('sl-SI');
+  const term = search.trim().toLowerCase();
   const filtered = tasks.filter(task => {
     if (category && task.category !== category) return false;
     if (assignee && (task.assigneeId || 'unassigned') !== assignee) return false;
-    if (term && !task.title.toLocaleLowerCase('sl-SI').includes(term)) return false;
+    if (term && !task.title.toLowerCase().includes(term)) return false;
     if (filter === 'done') return Boolean(task.completedAt);
     if (task.completedAt) return false;
     if (filter === 'mine') return task.assigneeId === memberId;
@@ -51,25 +52,25 @@ export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAct
   const shown = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   return <section className="panel task-panel">
-    <div className="panel-heading"><div><h2>Družinska opravila</h2><p>Dogovorite se, kdo kaj prevzame.</p></div><ListTodo aria-hidden="true" size={22} /></div>
-    <div className="filters" aria-label="Filtri opravil">
+    <div className="panel-heading"><div><h2>{t('Družinska opravila')}</h2><p>{t('Dogovorite se, kdo kaj prevzame.')}</p></div><ListTodo aria-hidden="true" size={22} /></div>
+    <div className="filters" aria-label={t('Filtri opravil')}>
       {Object.entries(filters).map(([key, label]) =>
         <button type="button" key={key} aria-pressed={filter === key} onClick={() => {
           setPagination({ filter: key, page: 1 });
           onFilter(key);
-        }}>{label}</button>)}
+        }}>{t(label)}</button>)}
     </div>
     <div className="task-refinements">
-      <label>Išči po naslovu<input type="search" value={search} placeholder="Npr. nakup" onChange={event => {
+      <label>{t('Išči po naslovu')}<input type="search" value={search} placeholder={t('Npr. nakup')} onChange={event => {
         setSearch(event.target.value); setPagination({ filter, page: 1 });
       }} /></label>
-      <label>Kategorija<select value={category} onChange={event => {
+      <label>{t('Kategorija')}<select value={category} onChange={event => {
         setCategory(event.target.value); setPagination({ filter, page: 1 });
-      }}><option value="">Vse kategorije</option>{Object.entries(categories).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
-      <label>Član<select value={assignee} onChange={event => {
+      }}><option value="">{t('Vse kategorije')}</option>{Object.entries(categories).map(([id, label]) => <option key={id} value={id}>{t(label)}</option>)}</select></label>
+      <label>{t('Član')}<select value={assignee} onChange={event => {
         setAssignee(event.target.value); setPagination({ filter, page: 1 });
       }}>
-        <option value="">Vsi člani</option><option value="unassigned">Nedodeljeno</option>
+        <option value="">{t('Vsi člani')}</option><option value="unassigned">{t('Nedodeljeno')}</option>
         {members.map(member => <option key={member.id} value={member.id}>{member.name}</option>)}
       </select></label>
     </div>
@@ -82,29 +83,29 @@ export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAct
         </span>
         <div className="task-info">
           <strong>{task.title}</strong>
-          <p>{names.get(task.assigneeId) || 'Na voljo za prevzem'}{due && <span className={needsReminder(task, today) ? 'overdue' : ''}> · {overdue ? 'V zamudi, ' : ''}{due}</span>}{task.repeatDays > 0 && <span> · Vsakih {task.repeatDays} dni{task.rotate ? ' · Rotacija' : ''}</span>}</p>
+          <p>{names.get(task.assigneeId) || t('Na voljo za prevzem')}{due && <span className={needsReminder(task, today) ? 'overdue' : ''}> · {overdue ? t('V zamudi, ') : ''}{due}</span>}{task.repeatDays > 0 && <span>{t(' · Vsakih %0 dni', task.repeatDays)}{task.rotate ? t(' · Rotacija') : ''}</span>}</p>
         </div>
-        <span className="tag">{categories[task.category]}</span>
+        <span className="tag">{t(categories[task.category])}</span>
         <div className="row-actions">
-          {!task.completedAt && onEdit && <button className="icon-button" aria-label={`Uredi ${task.title}`} onClick={() => onEdit(task)}><Pencil size={16} /></button>}
-          {!task.completedAt && !task.assigneeId && <button className="soft-button" disabled={busy} onClick={() => onAction(task.id, 'claim')}>Prevzemi</button>}
+          {!task.completedAt && onEdit && <button className="icon-button" aria-label={t("Uredi %0", task.title)} onClick={() => onEdit(task)}><Pencil size={16} /></button>}
+          {!task.completedAt && !task.assigneeId && <button className="soft-button" disabled={busy} onClick={() => onAction(task.id, 'claim')}>{t('Prevzemi')}</button>}
           {!task.completedAt && task.assigneeId === memberId && <>
-            <button className="soft-button" disabled={busy} onClick={() => onAction(task.id, 'cover')}>Prosi za zamenjavo</button>
-            <button className="icon-button" aria-label={`Zaključi ${task.title}`} title="Zaključi" disabled={busy} onClick={() => onAction(task.id, 'complete')}><Check size={19} /></button>
+            <button className="soft-button" disabled={busy} onClick={() => onAction(task.id, 'cover')}>{t('Prosi za zamenjavo')}</button>
+            <button className="icon-button" aria-label={t("Zaključi %0", task.title)} title={t('Zaključi')} disabled={busy} onClick={() => onAction(task.id, 'complete')}><Check size={19} /></button>
           </>}
         </div>
-        {task.voice && <audio className="task-audio" controls preload="none" src={voiceUrl(task.id)} aria-label={`Glasovna beležka: ${task.title}`} />}
+        {task.voice && <audio className="task-audio" controls preload="none" src={voiceUrl(task.id)} aria-label={t("Glasovna beležka: %0", task.title)} />}
       </li>;
     })}</ul> : <div className="empty">
       <span className="empty-icon">{filter === 'done' ? <CircleCheckBig /> : <ListTodo />}</span>
-      <strong>{tasks.length ? 'V tem pogledu ni opravil' : 'Začnite s prvim opravilom'}</strong>
-      <p>{tasks.length ? 'Izberi drug filter za več opravil.' : 'Dodaj nekaj, kar bi radi uredili skupaj.'}</p>
-      {!tasks.length && onAdd && <button className="soft-button" onClick={onAdd}><Plus size={17} /> Dodaj opravilo</button>}
+      <strong>{tasks.length ? t('V tem pogledu ni opravil') : t('Začnite s prvim opravilom')}</strong>
+      <p>{tasks.length ? t('Izberi drug filter za več opravil.') : t('Dodaj nekaj, kar bi radi uredili skupaj.')}</p>
+      {!tasks.length && onAdd && <button className="soft-button" onClick={onAdd}><Plus size={17} />{' '}{t('Dodaj opravilo')}</button>}
     </div>}
-    {totalPages > 1 && <nav className="task-pagination" aria-label="Strani opravil">
-      <button className="icon-button" disabled={page === 1} aria-label="Prejšnja stran opravil" onClick={() => setPagination({ filter, page: page - 1 })}><ChevronLeft size={17} /></button>
-      <span aria-live="polite">{(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)} od {filtered.length}</span>
-      <button className="icon-button" disabled={page === totalPages} aria-label="Naslednja stran opravil" onClick={() => setPagination({ filter, page: page + 1 })}><ChevronRight size={17} /></button>
+    {totalPages > 1 && <nav className="task-pagination" aria-label={t('Strani opravil')}>
+      <button className="icon-button" disabled={page === 1} aria-label={t('Prejšnja stran opravil')} onClick={() => setPagination({ filter, page: page - 1 })}><ChevronLeft size={17} /></button>
+      <span aria-live="polite">{(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)}{' '}{t('od')}{' '}{filtered.length}</span>
+      <button className="icon-button" disabled={page === totalPages} aria-label={t('Naslednja stran opravil')} onClick={() => setPagination({ filter, page: page + 1 })}><ChevronRight size={17} /></button>
     </nav>}
   </section>;
 }
@@ -119,11 +120,11 @@ export function Calendar({ entries, today, compact, onOpen, onAdd, onEdit }) {
   const rangeStart = shortDate.format(monday) + (monday.getFullYear() !== sunday.getFullYear() ? ` ${monday.getFullYear()}` : '');
   return <section className={`panel calendar ${compact ? 'compact' : ''}`}>
     <div className="panel-heading">
-      <div><h2>{compact ? 'Ta teden' : 'Tedenski koledar'}</h2><p>{rangeStart} – {shortDate.format(sunday)} {sunday.getFullYear()}</p></div>
+      <div><h2>{compact ? t('Ta teden') : t('Tedenski koledar')}</h2><p>{rangeStart} – {shortDate.format(sunday)} {sunday.getFullYear()}</p></div>
       {compact ? <CalendarDays size={22} aria-hidden="true" /> : <div className="week-controls">
-        <button className="icon-button" aria-label="Prejšnji teden" onClick={() => setOffset(offset - 1)}><ChevronLeft size={18} /></button>
-        <button className="soft-button" onClick={() => setOffset(0)}>Danes</button>
-        <button className="icon-button" aria-label="Naslednji teden" onClick={() => setOffset(offset + 1)}><ChevronRight size={18} /></button>
+        <button className="icon-button" aria-label={t('Prejšnji teden')} onClick={() => setOffset(offset - 1)}><ChevronLeft size={18} /></button>
+        <button className="soft-button" onClick={() => setOffset(0)}>{t('Danes')}</button>
+        <button className="icon-button" aria-label={t('Naslednji teden')} onClick={() => setOffset(offset + 1)}><ChevronRight size={18} /></button>
       </div>}
     </div>
     <ol className="week">
@@ -134,18 +135,18 @@ export function Calendar({ entries, today, compact, onOpen, onAdd, onEdit }) {
           <span>{weekday.format(day)}</span><strong>{day.getDate()}</strong>
           {compact ? <span className={items.length ? 'day-dot' : 'day-dot empty-dot'} /> :
             <ul className="day-entries">{items.map(entry => <li key={entry.id} className={entry.kind}>
-              <span>{entry.kind === 'event' ? 'Dogodek' : entry.completedAt ? 'Zaključeno' : 'Opravilo'}</span>
-              {entry.completedAt || !onEdit ? entry.title : <button className="calendar-edit" onClick={() => onEdit(entry)} aria-label={`Uredi ${entry.title}`}>{entry.title}</button>}
+              <span>{entry.kind === 'event' ? t('Dogodek') : entry.completedAt ? t('Zaključeno') : t('Opravilo')}</span>
+              {entry.completedAt || !onEdit ? entry.title : <button className="calendar-edit" onClick={() => onEdit(entry)} aria-label={t("Uredi %0", entry.title)}>{entry.title}</button>}
               {entry.voice && (window.sotovorDesktop
-                ? <audio className="voice-link desktop-audio" controls preload="none" src={voiceUrl(entry.id)} aria-label={`Glasovna beležka: ${entry.title}`} />
-                : <a className="voice-link" href={voiceUrl(entry.id)} target="_blank" rel="noreferrer">Poslušaj</a>)}
+                ? <audio className="voice-link desktop-audio" controls preload="none" src={voiceUrl(entry.id)} aria-label={t("Glasovna beležka: %0", entry.title)} />
+                : <a className="voice-link" href={voiceUrl(entry.id)} target="_blank" rel="noreferrer">{t('Poslušaj')}</a>)}
             </li>)}</ul>}
         </li>;
       })}
     </ol>
-    {compact && <><p className="calendar-caption">{week.length ? `Vnosov ta teden: ${week.length}` : 'Ta teden še ni vnosov.'}</p>
-      <button className="text-button" onClick={onOpen}>Odpri koledar <ArrowRight size={16} /></button></>}
-    {!compact && onAdd && <button className="text-button" onClick={onAdd}><Plus size={17} /> Dodaj dogodek</button>}
+    {compact && <><p className="calendar-caption">{week.length ? t("Vnosov ta teden: %0", week.length) : t('Ta teden še ni vnosov.')}</p>
+      <button className="text-button" onClick={onOpen}>{t('Odpri koledar')}{' '}<ArrowRight size={16} /></button></>}
+    {!compact && onAdd && <button className="text-button" onClick={onAdd}><Plus size={17} />{' '}{t('Dodaj dogodek')}</button>}
   </section>;
 }
 
@@ -159,20 +160,19 @@ export function Workload({ members, tasks, memberId, compact, onOpen }) {
   });
   const max = Math.max(1, ...rows.map(row => row.open + row.done));
   return <section className="panel workload">
-    <div className="panel-heading"><div><h2>Razporeditev dela</h2><p>Opravila po družinskih članih</p></div><UsersRound size={22} aria-hidden="true" /></div>
-    {!compact && <label className="workload-filter">Obdobje za zaključena opravila
-      <select value={days} onChange={event => setDays(event.target.value)}>
-        <option value="7">Zadnjih 7 dni</option><option value="30">Zadnjih 30 dni</option><option value="all">Vse od začetka</option>
+    <div className="panel-heading"><div><h2>{t('Razporeditev dela')}</h2><p>{t('Opravila po družinskih članih')}</p></div><UsersRound size={22} aria-hidden="true" /></div>
+    {!compact && <label className="workload-filter">{t('Obdobje za zaključena opravila')}<select value={days} onChange={event => setDays(event.target.value)}>
+        <option value="7">{t('Zadnjih 7 dni')}</option><option value="30">{t('Zadnjih 30 dni')}</option><option value="all">{t('Vse od začetka')}</option>
       </select>
     </label>}
     <ul className="load-list">{rows.map(row => <li key={row.id}>
       <Avatar name={row.name} index={row.index} />
-      <div><strong>{row.name}{row.id === memberId && <span> · ti</span>}</strong>
+      <div><strong>{row.name}{row.id === memberId && <span>{' '}{t('· ti')}</span>}</strong>
         <div className="load-bar" aria-hidden="true"><span style={{ width: `${row.done / max * 100}%` }} /><span style={{ width: `${row.open / max * 100}%` }} /></div>
-        <p>{row.open} odprtih · {row.done} zaključenih</p>
+        <p>{t('%0 odprtih · %1 zaključenih', row.open, row.done)}</p>
       </div>
     </li>)}</ul>
-    {!compact && <p className="muted workload-unassigned">Brez odgovornega člana: {tasks.filter(task => !task.assigneeId && !task.completedAt).length}</p>}
-    {compact && <button className="text-button" onClick={onOpen}>Poglej razporeditev <ArrowRight size={16} /></button>}
+    {!compact && <p className="muted workload-unassigned">{t('Brez odgovornega člana:')}{' '}{tasks.filter(task => !task.assigneeId && !task.completedAt).length}</p>}
+    {compact && <button className="text-button" onClick={onOpen}>{t('Poglej razporeditev')}{' '}<ArrowRight size={16} /></button>}
   </section>;
 }

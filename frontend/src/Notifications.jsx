@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 import { useState } from 'react';
 import { Bell, Check } from 'lucide-react';
 import { needsReminder } from './data.js';
@@ -29,16 +30,16 @@ export default function Notifications({ tasks, memberId, today, onView }) {
   }
 
   return <details className="notifications">
-    <summary className="soft-button"><Bell size={18} /> Obvestila{notices.length > 0 && <span>{notices.length}</span>}</summary>
+    <summary className="soft-button"><Bell size={18} />{' '}{t('Obvestila')}{notices.length > 0 && <span>{notices.length}</span>}</summary>
     <div className="panel notification-panel">
-      <h2>Obvestila</h2>
-      {notices.length === 0 && <p className="muted">Trenutno nimaš novih obvestil.</p>}
+      <h2>{t('Obvestila')}</h2>
+      {notices.length === 0 && <p className="muted">{t('Trenutno nimaš novih obvestil.')}</p>}
       <ul>{notices.map(({ id, label, filter, task }) => <li key={id}>
         <button className="notification-link" onClick={event => {
           event.currentTarget.closest('details').open = false;
           onView(filter);
-        }}><small>{label}</small><strong>{task.title}</strong></button>
-        <button className="icon-button" aria-label={`Označi kot prebrano: ${task.title}`} onClick={() => markRead(id)}><Check size={16} /></button>
+        }}><small>{t(label)}</small><strong>{task.title}</strong></button>
+        <button className="icon-button" aria-label={t("Označi kot prebrano: %0", task.title)} onClick={() => markRead(id)}><Check size={16} /></button>
       </li>)}</ul>
     </div>
   </details>;
