@@ -8,8 +8,8 @@ export function Brand() {
   return <span className="brand"><BrandMark className="brand-icon" />Sotovor<span className="brand-dot">.</span></span>;
 }
 
-export function ChooseHousehold({ profile, busy, error, onSubmit, onLogout }) {
-  const [joining, setJoining] = useState(false);
+export function ChooseHousehold({ profile, busy, error, onSubmit, onLogout, inviteCode, startJoining }) {
+  const [joining, setJoining] = useState(Boolean(startJoining));
   return <main className="profile-shell">
     <Brand />
     <section className="panel account-card">
@@ -20,7 +20,7 @@ export function ChooseHousehold({ profile, busy, error, onSubmit, onLogout }) {
         const fields = Object.fromEntries(new FormData(event.currentTarget));
         onSubmit(joining, joining ? fields : { ...fields, expectedMembers: Number(fields.expectedMembers) });
       }}>
-        {joining ? <label>Koda povabila<input name="inviteCode" maxLength={32} required spellCheck={false} /></label> : <>
+        {joining ? <label>Koda povabila<input name="inviteCode" defaultValue={inviteCode} maxLength={32} required spellCheck={false} /></label> : <>
           <label>Ime prostora<input name="householdName" maxLength={80} required placeholder="Npr. Naš dom" /></label>
           <label>Število družinskih članov<input name="expectedMembers" type="number" min={1} max={100} defaultValue={4} required /></label>
         </>}

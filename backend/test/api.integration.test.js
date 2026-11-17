@@ -100,6 +100,23 @@ test('desktop linking requires browser approval and the original verifier, and c
   assert.equal((await dashboard(webCookie)).data.household.name, 'Namizni dom');
 });
 
+test('an existing owner can accept an invitation and keep both spaces', async () => {
+  const host = await postJson('/households', { householdName: 'Povabilo', memberName: 'Ana' });
+  const visitor = await postJson('/households', { householdName: 'Moj prostor', memberName: 'Boris' });
+  const visitorCookie = sessionCookie(visitor.response);
+  const { household } = (await dashboard(sessionCookie(host.response))).data;
+  const invalid = await postJson('/households/join', { inviteCode: '0'.repeat(32) }, visitorCookie);
+  assert.equal(invalid.response.status, 404);
+  const accepted = await postJson('/households/join', { inviteCode: household.inviteCode.toUpperCase() }, visitorCookie);
+  assert.equal(accepted.response.status, 201);
+  assert.equal(accepted.data.householdId, household.id);
+  const selected = (await dashboard(visitorCookie, household.id)).data;
+  assert.equal(selected.spaces.length, 2);
+  assert.equal(selected.admin, false);
+  assert.equal((await dashboard(visitorCookie, visitor.data.householdId)).data.admin, true);
+  assert.equal((await postJson('/households/join', { inviteCode: household.inviteCode }, visitorCookie)).response.status, 409);
+});
+
 test('owners can create and switch between isolated family spaces', async () => {
   const first = await postJson('/households', { householdName: 'Prvi dom', memberName: 'Ana' });
   const owner = sessionCookie(first.response);
@@ -118,6 +135,41 @@ test('owners can create and switch between isolated family spaces', async () => 
   assert.equal(added.response.status, 201);
   assert.equal((await dashboard(owner)).data.entries.length, 0);
   assert.equal((await dashboard(member, id)).data.entries.length, 1);
+});
+
+test('smart planning excludes sick members, uses child roles and checks the preview before applying', async () => {
+  const created = await postJson('/households', { householdName: 'Razpored', memberName: 'Ana' });
+  const owner = sessionCookie(created.response);
+  const initial = (await dashboard(owner)).data;
+  const inviteCode = initial.household.inviteCode;
+  const sick = sessionCookie((await postJson('/households/join', { memberName: 'Luka', inviteCode })).response);
+  const child = sessionCookie((await postJson('/households/join', { memberName: 'Ema', inviteCode })).response);
+  const sickId = (await dashboard(sick)).data.memberId;
+  const childId = (await dashboard(child)).data.memberId;
+  const position = id => '/households/members/' + id + '/planning';
+
+  const settings = { familyRole: 'child', availability: 'sick' };
+  assert.equal((await postJson(position(sickId), settings, sick)).response.status, 403);
+  assert.equal((await postJson(position(sickId), { ...settings, unavailableUntil: '2026-02-30' }, owner)).response.status, 400);
+  assert.equal((await postJson(position(sickId), settings, owner)).response.status, 200);
+  assert.equal((await postJson(position(childId), { familyRole: 'child', availability: 'available' }, owner)).response.status, 200);
+  assert.equal((await dashboard(child)).data.members.find(person => person.id === sickId).availability, undefined);
+  assert.equal((await postJson('/planning/preview', {}, child)).response.status, 403);
+
+  await postJson('/entries', { kind: 'task', title: 'Zdravnik', category: 'zdravje', assigneeId: sickId }, owner);
+  await postJson('/entries', { kind: 'task', title: 'Zalij rože', category: 'dom' }, owner);
+  let preview = (await postJson('/planning/preview', {}, owner)).data;
+  assert.deepEqual(preview.changes.map(item => [item.title, item.assigneeName]), [['Zdravnik', 'Ana Test'], ['Zalij rože', 'Ema Test']]);
+  assert.equal((await dashboard(owner)).data.entries.find(entry => entry.title === 'Zdravnik').assigneeId, sickId);
+  await postJson('/entries', { kind: 'task', title: 'Nakup', category: 'opravki' }, owner);
+  assert.equal((await postJson('/planning/apply', { signature: preview.signature }, owner)).response.status, 409);
+  preview = (await postJson('/planning/preview', {}, owner)).data;
+  const applied = await postJson('/planning/apply', { signature: preview.signature }, owner);
+  assert.deepEqual(applied.data, { applied: 3, conflicts: 0 });
+  const entries = (await dashboard(owner)).data.entries;
+  assert.equal(entries.find(entry => entry.title === 'Zdravnik').assigneeId, initial.memberId);
+  assert.equal(entries.find(entry => entry.title === 'Zalij rože').assigneeId, childId);
+  assert.equal(entries.find(entry => entry.title === 'Nakup').assigneeId, initial.memberId);
 });
 
 function sessionCookie(response) {

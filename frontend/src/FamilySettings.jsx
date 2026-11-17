@@ -1,7 +1,31 @@
 import { useState } from 'react';
 import { Avatar } from './Overview.jsx';
+import { availabilityStates, familyRoles } from './data.js';
 
 const labels = { create: 'Dodaja vnose', edit: 'Ureja vsebino', move: 'Premika datume', remove: 'Odstranjuje vnose' };
+
+function MemberPlanning({ person, busy, onChange }) {
+  const [availability, setAvailability] = useState(person.availability ?? 'available');
+  return <form className="member-planning" onSubmit={event => {
+    event.preventDefault();
+    const fields = new FormData(event.currentTarget);
+    onChange(person.id, 'planning', {
+      familyRole: fields.get('familyRole'), availability,
+      unavailableUntil: fields.get('unavailableUntil') || null,
+    });
+  }}>
+    <div className="planning-fields">
+      <label>Družinska vloga<select name="familyRole" defaultValue={person.familyRole}>
+        {Object.entries(familyRoles).map(([value, name]) => <option key={value} value={value}>{name}</option>)}
+      </select></label>
+      <label>Razpoložljivost<select value={availability} onChange={event => setAvailability(event.target.value)}>
+        {Object.entries(availabilityStates).map(([value, name]) => <option key={value} value={value}>{name}</option>)}
+      </select></label>
+      {availability !== 'available' && <label>Odsoten do (neobvezno)<input name="unavailableUntil" type="date" defaultValue={person.unavailableUntil ?? ''} /></label>}
+    </div>
+    <button className="soft-button" disabled={busy}>Shrani vlogo in razpoložljivost</button>
+  </form>;
+}
 
 function MemberSettings({ person, index, busy, onChange }) {
   const [confirmRemove, setConfirmRemove] = useState(false);
@@ -9,6 +33,7 @@ function MemberSettings({ person, index, busy, onChange }) {
     <div className="member-title"><Avatar name={person.name} index={index} /><div><strong>{person.name}</strong>
       <p className="muted">{person.admin ? 'Skrbnik' : person.leaveRequested ? 'Želi zapustiti prostor' : 'Član'}</p>
     </div></div>
+    <MemberPlanning key={JSON.stringify([person.familyRole, person.availability, person.unavailableUntil])} {...{ person, busy, onChange }} />
     {!person.admin && <form key={JSON.stringify(person.permissions)} onSubmit={event => {
       event.preventDefault();
       const form = new FormData(event.currentTarget);

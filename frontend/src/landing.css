@@ -113,6 +113,10 @@ html:has(.landing:not(.motion-paused)) { scroll-behavior: smooth; }
   animation: orbit-spin 48s linear var(--phase) infinite reverse;
 }
 .satellite svg { width: 56%; height: 56%; filter: drop-shadow(0 1px #ffffff70); }
+.satellite-link { padding: 0; pointer-events: auto; }
+.satellite-link:hover, .satellite-link:focus-visible { filter: brightness(1.15); }
+.satellite-track:has(.satellite-link:is(:hover, :focus-visible)) .satellite-arm,
+.satellite-track:has(.satellite-link:is(:hover, :focus-visible)) .satellite { animation-play-state: paused; }
 .hero-copy { max-width: 58rem; text-align: center; animation: landing-rise .72s cubic-bezier(.22,.75,.24,1) both; }
 .hero-copy h1 {
   font-family: var(--display-font); font-weight: 850; font-size: clamp(3.25rem, 10vw, 9rem);

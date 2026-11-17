@@ -37,6 +37,12 @@ Ustvarjalec prostora je skrbnik. V profilu lahko ustvari dodatno družino, prekl
 
 Koledar ima mesečni in tedenski pogled. V mesečnem pogledu klikni dan za seznam vseh opravil in dogodkov.
 
+V **Pregledu** in pod **Opravila** lahko združiš filter stanja, iskanje po naslovu, kategorijo in člana. Za pridružitev uporabi **Pridruži se s povabilom** na naslovnici ali v profilu. Skrbnik lahko v meniju **Povabi člana** deli kodo ali povezavo. Če že upravljaš svoj prostor, ga ob sprejemu povabila obdržiš. Račun je lahko navaden član ene družine naenkrat.
+
+### Pametna razporeditev opravil
+
+Skrbnik v profilu pri posameznem članu nastavi družinsko vlogo, bolezen ali drugo odsotnost in po želji datum, do katerega velja. V **Razporeditvi** najprej pripravi predlog, nato potrdi dodelitve. Lokalni razporejevalnik zajame opravila od danes do šest dni naprej ter zamujena opravila in opravila brez roka. Upošteva obremenitev, izpusti trenutno nedosegljive člane ter otrokom dodeljuje le domače, družinske in druge naloge. Že pripravljene dodelitve razpoložljivih članov spremeni samo, če to izbereš. Razporejanje poteka na strežniku in ne pošilja podatkov zunanjemu modelu.
+
 ### Lokalna demo družina
 
 Zaženi `start.bat` in pusti Sotovor odprt. V drugem PowerShellu v korenski mapi projekta ustvari demo podatke za trenutni mesec:
