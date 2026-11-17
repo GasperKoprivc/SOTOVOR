@@ -1,0 +1,363 @@
+openapi: 3.0.3
+info: {title: Sotovor native API, version: 1.0.0}
+servers: [{url: /api/v1}]
+security: [{bearer: []}, {browserSession: []}]
+paths:
+  /mobile/min-version:
+    get:
+      summary: "Get minimum and latest supported app versions"
+      security: []
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/MinVersion"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /auth/register:
+    post:
+      summary: "Register a shared Sotovor account"
+      security: []
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Registration"}}}}
+      responses:
+        '201': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Ok"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /auth/email/resend:
+    post:
+      summary: "Send another verification email"
+      parameters:
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"type":"object"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Ok"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /mobile/auth/login:
+    post:
+      summary: "Sign in a native device"
+      security: []
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Login"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Tokens"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /mobile/auth/refresh:
+    post:
+      summary: "Rotate the access and refresh credentials"
+      security: []
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Refresh"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Tokens"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /mobile/auth/logout:
+    post:
+      summary: "Revoke the current native device"
+      parameters:
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"type":"object"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Ok"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /mobile/auth/sessions:
+    get:
+      summary: "List the current account’s native devices"
+      parameters:
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/Session"}}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /mobile/auth/sessions/{id}:
+    delete:
+      summary: "Revoke a native device"
+      parameters:
+        - {"in":"path","name":"id","required":true,"schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Ok"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /dashboard:
+    get:
+      summary: "Read account, household and workspace state"
+      parameters:
+        - {"in":"query","name":"includeEntries","schema":{"type":"boolean","default":true}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Dashboard"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /households:
+    post:
+      summary: "Create a family space"
+      parameters:
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateHousehold"}}}}
+      responses:
+        '201': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HouseholdId"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /households/join:
+    post:
+      summary: "Join a family with its invitation code"
+      parameters:
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Invite"}}}}
+      responses:
+        '201': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HouseholdId"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /households/invite/rotate:
+    post:
+      summary: "Generate a replacement invite code"
+      parameters:
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"type":"object"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Ok"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /households/leave:
+    post:
+      summary: "Request to leave a family"
+      parameters:
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"type":"object"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Ok"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /households/members/{id}/planning:
+    post:
+      summary: "Apply member action: planning"
+      parameters:
+        - {"in":"path","name":"id","required":true,"schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/MemberPlanning"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Ok"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /households/members/{id}/permissions:
+    post:
+      summary: "Apply member action: permissions"
+      parameters:
+        - {"in":"path","name":"id","required":true,"schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Permissions"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Ok"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /households/members/{id}/deny:
+    post:
+      summary: "Apply member action: deny"
+      parameters:
+        - {"in":"path","name":"id","required":true,"schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"type":"object"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Ok"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /households/members/{id}/remove:
+    post:
+      summary: "Apply member action: remove"
+      parameters:
+        - {"in":"path","name":"id","required":true,"schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"type":"object"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Ok"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /tasks:
+    get:
+      summary: "Page through tasks in the selected family"
+      parameters:
+        - {"in":"query","name":"limit","schema":{"type":"integer","minimum":1,"maximum":100,"default":30}}
+        - {"in":"query","name":"cursor","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/EntryPage"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /events:
+    get:
+      summary: "Page through events in the selected family"
+      parameters:
+        - {"in":"query","name":"limit","schema":{"type":"integer","minimum":1,"maximum":100,"default":30}}
+        - {"in":"query","name":"cursor","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/EntryPage"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /entries/{id}:
+    get:
+      summary: "Read a single entry with its current version"
+      parameters:
+        - {"in":"path","name":"id","required":true,"schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Entry"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /entries:
+    post:
+      summary: "Create a task or calendar event"
+      parameters:
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/EntryInput"}}}}
+      responses:
+        '201': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Dashboard"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /entries/{id}/edit:
+    post:
+      summary: "Edit an entry at its expected version"
+      parameters:
+        - {"in":"path","name":"id","required":true,"schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/EntryEdit"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Dashboard"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /entries/{id}/remove:
+    post:
+      summary: "Remove an entry at its expected version"
+      parameters:
+        - {"in":"path","name":"id","required":true,"schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Version"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Dashboard"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /tasks/{id}/claim:
+    post:
+      summary: "Apply task action: claim"
+      parameters:
+        - {"in":"path","name":"id","required":true,"schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"type":"object"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Dashboard"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /tasks/{id}/cover:
+    post:
+      summary: "Apply task action: cover"
+      parameters:
+        - {"in":"path","name":"id","required":true,"schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"type":"object"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Dashboard"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /tasks/{id}/complete:
+    post:
+      summary: "Apply task action: complete"
+      parameters:
+        - {"in":"path","name":"id","required":true,"schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"type":"object"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Dashboard"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /entries/{id}/voice:
+    get:
+      summary: "Stream a family voice recording"
+      parameters:
+        - {"in":"path","name":"id","required":true,"schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      responses:
+        '200': {"description":"Successful response","content":{"audio/mp4":{"schema":{"type":"string","format":"binary"}},"audio/ogg":{"schema":{"type":"string","format":"binary"}},"audio/webm":{"schema":{"type":"string","format":"binary"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /notifications:
+    get:
+      summary: "Page through notifications for your selected family"
+      parameters:
+        - {"in":"query","name":"limit","schema":{"type":"integer","minimum":1,"maximum":100,"default":30}}
+        - {"in":"query","name":"cursor","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/NotificationPage"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /notifications/{id}/read:
+    put:
+      summary: "Mark a notification as read"
+      parameters:
+        - {"in":"path","name":"id","required":true,"schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"type":"object"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Ok"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /me/notification-settings:
+    get:
+      summary: "Read this account’s notification settings"
+      parameters:
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Settings"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+    put:
+      summary: "Update this account’s notification settings"
+      parameters:
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Settings"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Settings"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /devices:
+    post:
+      summary: "Associate an FCM token with the current device"
+      parameters:
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Device"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/DeviceId"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /devices/{id}:
+    delete:
+      summary: "Unregister an FCM token from your account"
+      parameters:
+        - {"in":"path","name":"id","required":true,"schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Ok"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /planning/preview:
+    post:
+      summary: "Preview smart task assignments"
+      parameters:
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/PlanOptions"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/PlanPreview"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+  /planning/apply:
+    post:
+      summary: "Apply a current smart assignment preview"
+      parameters:
+        - {"in":"header","name":"X-Sotovor-Household","schema":{"type":"string","pattern":"^[0-9a-f]{24}$"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/PlanApproval"}}}}
+      responses:
+        '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/PlanResult"}}}}
+        default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
+components:
+  securitySchemes:
+    bearer: {type: http, scheme: bearer, bearerFormat: opaque}
+    browserSession: {type: apiKey, in: cookie, name: sotovor_session}
+  schemas:
+    Error: {"type":"object","required":["error"],"properties":{"error":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string"},"message":{"type":"string"}}}}}
+    Ok: {"type":"object","required":["ok"],"properties":{"ok":{"type":"boolean"}}}
+    Account: {"type":"object","required":["firstName","lastName","email","phone"],"properties":{"firstName":{"type":"string","maxLength":40},"lastName":{"type":"string","maxLength":50},"email":{"type":"string","maxLength":254,"format":"email"},"phone":{"type":"string","maxLength":25},"emailVerificationPending":{"type":"boolean"}}}
+    Registration: {"type":"object","required":["firstName","lastName","email","phone","password"],"properties":{"firstName":{"type":"string","maxLength":40},"lastName":{"type":"string","maxLength":50},"email":{"type":"string","maxLength":254,"format":"email"},"phone":{"type":"string","maxLength":25},"password":{"type":"string","maxLength":128,"minLength":10}}}
+    Login: {"type":"object","required":["email","password","deviceName"],"properties":{"email":{"type":"string","maxLength":254},"password":{"type":"string","maxLength":128},"deviceName":{"type":"string","maxLength":80}}}
+    Refresh: {"type":"object","required":["refreshToken"],"properties":{"refreshToken":{"type":"string"}}}
+    Tokens: {"type":"object","required":["accessToken","refreshToken","sessionId","expiresIn","emailVerificationPending"],"properties":{"accessToken":{"type":"string"},"refreshToken":{"type":"string"},"sessionId":{"type":"string","pattern":"^[0-9a-f]{24}$"},"expiresIn":{"type":"integer","minimum":1,"maximum":900},"emailVerificationPending":{"type":"boolean"}}}
+    Session: {"type":"object","required":["id","deviceName","current","createdAt","lastUsedAt","expiresAt"],"properties":{"id":{"type":"string","pattern":"^[0-9a-f]{24}$"},"deviceName":{"type":"string"},"current":{"type":"boolean"},"createdAt":{"type":"string","format":"date-time"},"lastUsedAt":{"type":"string","format":"date-time"},"expiresAt":{"type":"string","format":"date-time"}}}
+    Permissions: {"type":"object","required":["create","edit","move","remove"],"properties":{"create":{"type":"boolean"},"edit":{"type":"boolean"},"move":{"type":"boolean"},"remove":{"type":"boolean"}}}
+    Member: {"type":"object","required":["id","name","inactive","admin","familyRole"],"properties":{"id":{"type":"string","pattern":"^[0-9a-f]{24}$"},"name":{"type":"string"},"inactive":{"type":"boolean"},"admin":{"type":"boolean"},"permissions":{"$ref":"#/components/schemas/Permissions"},"leaveRequested":{"type":"boolean"},"familyRole":{"type":"string","enum":["father","mother","guardian","child","other"]},"availability":{"type":"string","enum":["available","sick","unavailable"]},"unavailableUntil":{"type":"string","format":"date","nullable":true}}}
+    Household: {"type":"object","required":["id","name"],"properties":{"id":{"type":"string","pattern":"^[0-9a-f]{24}$"},"name":{"type":"string"},"expectedMembers":{"type":"integer","minimum":1,"maximum":100,"nullable":true},"inviteCode":{"type":"string","maxLength":32}}}
+    Space: {"type":"object","required":["id","name","admin"],"properties":{"id":{"type":"string","pattern":"^[0-9a-f]{24}$"},"name":{"type":"string"},"admin":{"type":"boolean"}}}
+    HouseholdId: {"type":"object","required":["householdId"],"properties":{"householdId":{"type":"string","pattern":"^[0-9a-f]{24}$"}}}
+    CreateHousehold: {"type":"object","required":["householdName","expectedMembers"],"properties":{"householdName":{"type":"string","maxLength":80},"expectedMembers":{"type":"integer","minimum":1,"maximum":100}}}
+    Invite: {"type":"object","required":["inviteCode"],"properties":{"inviteCode":{"type":"string","maxLength":32}}}
+    Voice: {"type":"object","required":["mime","data"],"properties":{"mime":{"type":"string","enum":["audio/mp4","audio/ogg","audio/webm"]},"data":{"type":"string","format":"byte","description":"Base64 audio up to 2 MiB and 30 seconds"}}}
+    EntryInput: {"type":"object","required":["title","kind"],"properties":{"title":{"type":"string","maxLength":160},"kind":{"type":"string","enum":["task","event"]},"category":{"type":"string","enum":["dom","druzina","opravki","zdravje","drugo"]},"dueOn":{"type":"string","format":"date","nullable":true},"assigneeId":{"type":"string","pattern":"^[0-9a-f]{24}$","nullable":true},"repeatDays":{"type":"integer","minimum":0,"maximum":3660},"rotate":{"type":"boolean"},"reminderDays":{"type":"integer","minimum":0,"maximum":30},"voice":{"$ref":"#/components/schemas/Voice"}}}
+    EntryEdit: {"type":"object","required":["title","kind","version"],"properties":{"title":{"type":"string","maxLength":160},"kind":{"type":"string","enum":["task","event"]},"category":{"type":"string","enum":["dom","druzina","opravki","zdravje","drugo"]},"dueOn":{"type":"string","format":"date","nullable":true},"assigneeId":{"type":"string","pattern":"^[0-9a-f]{24}$","nullable":true},"repeatDays":{"type":"integer","minimum":0,"maximum":3660},"rotate":{"type":"boolean"},"reminderDays":{"type":"integer","minimum":0,"maximum":30},"version":{"type":"integer","minimum":0}}}
+    Version: {"type":"object","required":["version"],"properties":{"version":{"type":"integer","minimum":0}}}
+    Entry: {"type":"object","required":["id","version","title","kind","createdAt"],"properties":{"title":{"type":"string","maxLength":160},"kind":{"type":"string","enum":["task","event"]},"category":{"type":"string","enum":["dom","druzina","opravki","zdravje","drugo"]},"dueOn":{"type":"string","format":"date","nullable":true},"assigneeId":{"type":"string","pattern":"^[0-9a-f]{24}$","nullable":true},"repeatDays":{"type":"integer","minimum":0,"maximum":3660},"rotate":{"type":"boolean"},"reminderDays":{"type":"integer","minimum":0,"maximum":30},"id":{"type":"string","pattern":"^[0-9a-f]{24}$"},"version":{"type":"integer","minimum":0},"createdAt":{"type":"string","format":"date-time"},"assignedAt":{"type":"string","format":"date-time","nullable":true},"completedAt":{"type":"string","format":"date-time","nullable":true},"coverRequestedAt":{"type":"string","format":"date-time","nullable":true},"voice":{"type":"object","required":["mime"],"properties":{"mime":{"type":"string"}}}}}
+    Dashboard: {"nullable":true,"type":"object","required":["profile","household","spaces"],"properties":{"memberId":{"type":"string","pattern":"^[0-9a-f]{24}$"},"profile":{"$ref":"#/components/schemas/Account"},"household":{"nullable":true,"allOf":[{"$ref":"#/components/schemas/Household"}]},"spaces":{"type":"array","items":{"$ref":"#/components/schemas/Space"}},"admin":{"type":"boolean"},"permissions":{"$ref":"#/components/schemas/Permissions"},"leaveRequested":{"type":"boolean"},"members":{"type":"array","items":{"$ref":"#/components/schemas/Member"}},"entries":{"type":"array","items":{"$ref":"#/components/schemas/Entry"}}}}
+    EntryPage: {"type":"object","required":["items","nextCursor"],"properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/Entry"}},"nextCursor":{"type":"string","pattern":"^[0-9a-f]{24}$","nullable":true}}}
+    Notification: {"type":"object","required":["id","type","target","createdAt","readAt"],"properties":{"id":{"type":"string","pattern":"^[0-9a-f]{24}$"},"type":{"type":"string","enum":["assignment","deadline","overdue","swap","member_joined"]},"target":{"type":"object","required":["screen","householdId"],"properties":{"screen":{"type":"string","enum":["task","family"]},"householdId":{"type":"string","pattern":"^[0-9a-f]{24}$"},"entryId":{"type":"string","pattern":"^[0-9a-f]{24}$"}}},"createdAt":{"type":"string","format":"date-time"},"readAt":{"type":"string","format":"date-time","nullable":true}}}
+    NotificationPage: {"type":"object","required":["items","nextCursor"],"properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/Notification"}},"nextCursor":{"type":"string","pattern":"^[0-9a-f]{24}$","nullable":true}}}
+    Settings: {"type":"object","required":["assignments","reminders","swaps"],"properties":{"assignments":{"type":"boolean"},"reminders":{"type":"boolean"},"swaps":{"type":"boolean"}}}
+    Device: {"type":"object","required":["token","platform","appVersion","locale"],"properties":{"token":{"type":"string","maxLength":4096},"platform":{"type":"string","enum":["android"]},"appVersion":{"type":"string"},"locale":{"type":"string","maxLength":35}}}
+    DeviceId: {"type":"object","required":["id"],"properties":{"id":{"type":"string","pattern":"^[0-9a-f]{24}$"}}}
+    MinVersion: {"type":"object","required":["minSupported","latest"],"properties":{"minSupported":{"type":"string"},"latest":{"type":"string"}}}
+    MemberPlanning: {"type":"object","required":["familyRole","availability"],"properties":{"familyRole":{"type":"string","enum":["father","mother","guardian","child","other"]},"availability":{"type":"string","enum":["available","sick","unavailable"]},"unavailableUntil":{"type":"string","format":"date","nullable":true}}}
+    PlanOptions: {"type":"object","properties":{"rebalance":{"type":"boolean"}}}
+    PlanApproval: {"type":"object","required":["signature"],"properties":{"rebalance":{"type":"boolean"},"signature":{"type":"string"}}}
+    PlanResult: {"type":"object","required":["applied","conflicts"],"properties":{"applied":{"type":"integer","minimum":0},"conflicts":{"type":"integer","minimum":0}}}
+    PlanPreview: {"type":"object","required":["signature","until","skipped","changes"],"properties":{"signature":{"type":"string"},"until":{"type":"string","format":"date","nullable":true},"skipped":{"type":"integer","minimum":0},"changes":{"type":"array","items":{"type":"object","required":["id","title","assigneeName"],"properties":{"id":{"type":"string","pattern":"^[0-9a-f]{24}$"},"title":{"type":"string"},"assigneeName":{"type":"string"}}}}}}

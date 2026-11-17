@@ -5,12 +5,17 @@ import { connect } from './db.js';
 import { createApi, handleError } from './api.js';
 import { createWhatsApp, whatsappConfig } from './whatsapp.js';
 import { smtpVerification } from './email-verification.js';
+import { versionedErrors } from './api-errors.js';
+import { registerAppLinks } from './app-links.js';
+import { configurePush } from './push.js';
+import { scheduleNotifications } from './notifications.js';
 
 const host = process.env.SOTOVOR_HOST || '127.0.0.1';
 const port = Number(process.env.SOTOVOR_PORT || 3000);
 const dist = fileURLToPath(new URL('../../frontend/dist/', import.meta.url));
 const verificationMail = smtpVerification();
 const database = await connect();
+const push = await configurePush(database);
 const app = express();
 app.disable('x-powered-by');
 if (process.env.SOTOVOR_TRUST_PROXY === '1') app.set('trust proxy', 1);
@@ -20,6 +25,8 @@ app.use((_req, res, next) => {
   next();
 });
 const whatsapp = whatsappConfig();
+registerAppLinks(app);
+app.use('/api/v1', versionedErrors);
 app.get('/healthz', (_req, res) => res.set('Cache-Control', 'no-store').json({ status: 'ok' }));
 app.get('/readyz', async (_req, res) => {
   res.set('Cache-Control', 'no-store');
@@ -30,20 +37,28 @@ app.get('/readyz', async (_req, res) => {
     res.status(503).json({ status: 'unavailable' });
   }
 });
-app.get('/api/health', (_req, res) => res.json({ service: 'sotovor', desktopAuth: true, desktopCookie: true }));
+app.get(['/api/health', '/api/v1/health'], (_req, res) => res.json({ service: 'sotovor', desktopAuth: true, desktopCookie: true }));
 if (whatsapp) app.use('/webhooks/whatsapp', createWhatsApp(database, whatsapp));
 if (process.env.SOTOVOR_REQUIRE_SMTP === '1') {
-  app.post('/api/auth/register', rateLimit({
+  app.post(['/api/auth/register', '/api/v1/auth/register'], rateLimit({
     windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-8', legacyHeaders: false,
     message: { error: 'Preveč poskusov registracije. Poskusi pozneje.' },
   }));
 }
-app.post('/api/entries', express.json({ limit: '3mb' }));
-app.use('/api', express.json({ limit: '8kb' }), createApi(database, { whatsappEnabled: Boolean(whatsapp), verificationMail }));
+app.post(['/api/entries', '/api/v1/entries'], express.json({ limit: '3mb' }));
+const apiOptions = { whatsappEnabled: Boolean(whatsapp), verificationMail };
+const json = express.json({ limit: '8kb' });
+app.use('/api/v1', json, createApi(database, { ...apiOptions, versioned: true, mobileOptions: {
+  accessSeconds: Number(process.env.SOTOVOR_MOBILE_ACCESS_SECONDS ?? 600),
+  minSupported: process.env.SOTOVOR_ANDROID_MIN_VERSION,
+  latest: process.env.SOTOVOR_ANDROID_LATEST_VERSION,
+} }));
+app.use('/api', json, createApi(database, apiOptions));
 app.use(express.static(dist));
 app.use(handleError);
 
 const server = app.listen(port, host);
+const stopNotifications = scheduleNotifications(database, push);
 server.once('listening', () => {
   const address = host === '0.0.0.0' ? '127.0.0.1' : host;
   const url = `http://${address.includes(':') ? `[${address}]` : address}:${server.address().port}`;
@@ -52,10 +67,14 @@ server.once('listening', () => {
   console.log('Za ustavitev pritisni Ctrl+C.');
 });
 server.once('error', async error => {
+  stopNotifications();
   console.error(error.code === 'EADDRINUSE' ? `Vrata ${port} so že v uporabi.` : error.message);
   await database.client.close();
   process.exitCode = 1;
 });
 for (const signal of ['SIGINT', 'SIGTERM']) {
-  process.once(signal, () => server.close(() => void database.client.close()));
+  process.once(signal, () => {
+    stopNotifications();
+    server.close(() => void database.client.close());
+  });
 }
