@@ -11,6 +11,7 @@ import Landing from './Landing.jsx';
 import './landing.css';
 import FamilySettings from './FamilySettings.jsx';
 import MonthCalendar from './MonthCalendar.jsx';
+import SmartPlanning from './SmartPlanning.jsx';
 import { DesktopApproval, DesktopSignIn, desktopBridge, desktopLink } from './DesktopAccess.jsx';
 import { categories, dateKey, fullDate, request, selectHousehold } from './data.js';
 
@@ -343,7 +344,17 @@ export default function App() {
             onAdd={permissions.create ? date => open('event', date) : undefined} onEdit={canManage ? edit : undefined} /> :
             <Calendar {...{ entries, today }} onAdd={permissions.create ? () => open('event') : undefined} onEdit={canManage ? edit : undefined} />}
         </>}
-        {page === 'workload' && <Workload {...{ members, tasks, memberId }} />}
+        {page === 'workload' && <div className="right-stack">
+          <Workload {...{ members, tasks, memberId }} />
+          {data.admin && <SmartPlanning busy={busy}
+            onPreview={(rebalance, setPlan) => run(async () => setPlan(await request('/planning/preview', { rebalance })))}
+            onApply={(fields, clearPlan) => run(async () => {
+              const result = await request('/planning/apply', fields);
+              clearPlan();
+              setData(await request('/dashboard'));
+              setNotice(`Uporabljene dodelitve: ${result.applied}.${result.conflicts ? ` Vmes spremenjena opravila: ${result.conflicts}.` : ''}`);
+            })} />}
+        </div>}
         {page === 'profile' && <div className="profile-grid"><section className="panel account-card">
           <h2>{data.profile.firstName} {data.profile.lastName}</h2>
           <p>{data.profile.email}<br />{data.profile.phone}</p>

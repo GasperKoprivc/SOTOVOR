@@ -5,6 +5,7 @@ import { materializeOccurrences, nextOccurrence } from './recurrence.js';
 import { codeHash } from './whatsapp.js';
 import { emailPattern, passwordHash, publicProfile, sessionSeconds, verifyPassword } from './accounts.js';
 import { registerDesktopAuth } from './desktop-auth.js';
+import { availabilityStates, familyRoles, householdDay, isDay, planTasks } from './planning.js';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const idPattern = /^[0-9a-f]{24}$/;
@@ -130,7 +131,9 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
         ...(admin ? { inviteCode: household.inviteCode } : {}) },
       members: household.members.map(person => ({
         id: person.id, name: person.name, inactive: Boolean(person.inactive), admin: isAdmin(household, person),
-        ...(admin ? { permissions: access(household, person), leaveRequested: Boolean(person.leaveRequestedAt) } : {}),
+        familyRole: person.familyRole ?? 'other',
+        ...(admin ? { permissions: access(household, person), leaveRequested: Boolean(person.leaveRequestedAt),
+          availability: person.availability ?? 'available', unavailableUntil: person.unavailableUntil ?? null } : {}),
       })),
       entries: items.map(({ _id, ...item }) => ({
         id: String(_id), ...item,
@@ -270,8 +273,18 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
     const { id, action } = req.params;
     const person = req.household.members.find(member => member.id === id && !member.inactive);
     if (!person) throw new HttpError(404, 'Član ne obstaja.');
-    if (isAdmin(req.household, person)) throw new HttpError(403, 'Skrbnikovih pravic ni mogoče spremeniti.');
     const condition = { _id: req.household._id, members: { $elemMatch: { id, inactive: { $ne: true } } } };
+    if (action === 'planning') {
+      const { familyRole, availability, unavailableUntil = null } = req.body;
+      if (!familyRoles.has(familyRole) || !availabilityStates.has(availability) ||
+          (unavailableUntil !== null && !isDay(unavailableUntil))) throw new HttpError(400, 'Preveri vlogo in datum odsotnosti.');
+      await households.updateOne(condition, { $set: {
+        'members.$.familyRole': familyRole, 'members.$.availability': availability,
+        'members.$.unavailableUntil': availability === 'available' ? null : unavailableUntil,
+      } });
+      return res.json({ ok: true });
+    }
+    if (isAdmin(req.household, person)) throw new HttpError(403, 'Skrbnikovih pravic ni mogoče spremeniti.');
     if (action === 'permissions') {
       if (!Object.keys(defaultPermissions).every(key => typeof req.body[key] === 'boolean')) {
         throw new HttpError(400, 'Izberi veljavne pravice člana.');
@@ -289,6 +302,40 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
       throw new HttpError(404, 'To dejanje ne obstaja.');
     }
     res.json({ ok: true });
+  });
+
+  router.post('/planning/:action', async (req, res) => {
+    requireAdmin(req);
+    const { action } = req.params;
+    const { rebalance = false, signature } = req.body;
+    if (!['preview', 'apply'].includes(action) || typeof rebalance !== 'boolean') {
+      throw new HttpError(400, 'Neveljavna zahteva za razporeditev.');
+    }
+    const householdId = req.household._id;
+    const tasks = await entries.find({ householdId, archivedAt: null, kind: 'task' }, {
+      projection: { title: 1, category: 1, dueOn: 1, completedAt: 1, assigneeId: 1, version: 1 },
+    }).toArray();
+    const plan = planTasks(tasks, req.household.members, householdDay(), rebalance);
+    const fingerprint = hash(JSON.stringify(plan));
+    if (action === 'preview') {
+      return res.json({
+        changes: plan.changes.map(({ id, title, assigneeName }) => ({ id, title, assigneeName })),
+        skipped: plan.skipped, until: plan.until, signature: fingerprint,
+      });
+    }
+    if (signature !== fingerprint) throw new HttpError(409, 'Opravila ali razpoložljivost so se spremenili. Pripravi nov predlog.');
+    if (!plan.changes.length) return res.json({ applied: 0, conflicts: 0 });
+    const now = new Date();
+    const result = await entries.bulkWrite(plan.changes.map(change => ({
+      updateOne: {
+        filter: {
+          _id: new ObjectId(change.id), householdId, archivedAt: null, kind: 'task', completedAt: null,
+          assigneeId: change.previousAssigneeId, version: change.version,
+        },
+        update: { $set: { assigneeId: change.assigneeId, assignedAt: now, coverRequestedAt: null }, $inc: { version: 1 } },
+      },
+    })));
+    res.json({ applied: result.modifiedCount, conflicts: plan.changes.length - result.modifiedCount });
   });
 
   router.post('/whatsapp/pair', async (req, res) => {
@@ -313,12 +360,7 @@ export function createApi({ households, entries, accounts, sessions, desktopLink
     if (kind !== 'task' && kind !== 'event') throw new HttpError(400, 'Izberi opravilo ali dogodek.');
     const title = requiredText(req.body.title, 160, 'Naslov');
     if (!categories.has(category)) throw new HttpError(400, 'Izberi veljavno kategorijo.');
-    if (dueOn !== null) {
-      const date = typeof dueOn === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dueOn) ? new Date(dueOn) : null;
-      if (!date || Number.isNaN(+date) || date.toISOString().slice(0, 10) !== dueOn) {
-        throw new HttpError(400, 'Izberi veljaven datum.');
-      }
-    }
+    if (dueOn !== null && !isDay(dueOn)) throw new HttpError(400, 'Izberi veljaven datum.');
     if (kind === 'event' && !dueOn) throw new HttpError(400, 'Dogodek potrebuje datum.');
     if (!Number.isInteger(repeatDays) || repeatDays < 0 || repeatDays > 3660 ||
         (repeatDays > 0 && (kind !== 'task' || !dueOn)) || typeof rotate !== 'boolean' ||

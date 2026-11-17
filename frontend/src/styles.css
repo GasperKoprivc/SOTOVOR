@@ -175,6 +175,14 @@ dialog .fields { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
 .calendar-edit:hover { text-decoration: underline; }
 .profile-grid { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 1rem; align-items: start; }
 .family-settings { padding: 1.2rem; }
+.smart-planning { padding: 1.2rem; }
+.smart-planning > p { line-height: 1.5; }
+.planning-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .55rem; }
+.member-planning .soft-button { justify-self: start; }
+.planning-preview { margin-top: .95rem; padding: .8rem 0 0; border-top: 1px solid var(--line); }
+.planning-preview ul { max-height: 17rem; overflow: auto; margin-top: .5rem; }
+.planning-preview li { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .4rem; padding: .55rem 0; border-bottom: 1px solid var(--line); }
+.planning-preview li strong { color: var(--accent); }
 .member-settings { padding: .85rem 0; border-top: 1px solid var(--line); }
 .member-title { display: flex; align-items: center; gap: .6rem; }
 .member-title p { font-size: .78rem; }

@@ -32,10 +32,11 @@ export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAct
   const [category, setCategory] = useState('');
   const [assignee, setAssignee] = useState('');
   const names = new Map(members.map(member => [member.id, member.name]));
+  const term = search.trim().toLocaleLowerCase('sl-SI');
   const filtered = tasks.filter(task => {
     if (category && task.category !== category) return false;
     if (assignee && (task.assigneeId || 'unassigned') !== assignee) return false;
-    if (!task.title.toLocaleLowerCase('sl-SI').includes(search.trim().toLocaleLowerCase('sl-SI'))) return false;
+    if (term && !task.title.toLocaleLowerCase('sl-SI').includes(term)) return false;
     if (filter === 'done') return Boolean(task.completedAt);
     if (task.completedAt) return false;
     if (filter === 'mine') return task.assigneeId === memberId;
