@@ -1,0 +1,61 @@
+import { createHash, randomBytes } from 'node:crypto';
+import nodemailer from 'nodemailer';
+
+const hashToken = token => createHash('sha256').update(token).digest('hex');
+const cooldown = 60_000;
+const validity = 24 * 60 * 60 * 1000;
+
+export function smtpVerification(env = process.env) {
+  const { SOTOVOR_SMTP_HOST: host, SOTOVOR_SMTP_USER: user, SOTOVOR_SMTP_PASSWORD: pass,
+    SOTOVOR_SMTP_FROM: from, SOTOVOR_PUBLIC_URL: url } = env;
+  if (!host && env.SOTOVOR_REQUIRE_SMTP !== '1') return undefined;
+  const publicUrl = URL.parse(url ?? '');
+  if (!host || !user || !pass || !from || publicUrl?.protocol !== 'https:' ||
+      publicUrl.href !== publicUrl.origin + '/') {
+    throw new Error('Email verification requires SMTP host, user, password, sender, and a public HTTPS origin.');
+  }
+  const port = Number(env.SOTOVOR_SMTP_PORT || 587);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid SOTOVOR_SMTP_PORT.');
+  const transport = nodemailer.createTransport({
+    host, port, secure: port === 465, requireTLS: true, auth: { user, pass },
+    connectionTimeout: 5000, greetingTimeout: 5000, socketTimeout: 10000,
+  });
+  return async (email, token) => {
+    const link = new URL('/#verify-email=' + token, publicUrl);
+    await transport.sendMail({
+      from, to: { address: email, name: '' }, subject: 'Potrdi e-pošto za Sotovor / Verify your email',
+      text: 'Potrdi e-poštni naslov za Sotovor / Verify your Sotovor email address:\n\n' + link.href +
+        '\n\nPovezava velja 24 ur. / This link is valid for 24 hours.',
+    });
+  };
+}
+
+export async function sendEmailVerification(accounts, account, send, reportFailure) {
+  const now = Date.now();
+  const token = randomBytes(32).toString('hex');
+  const hash = hashToken(token);
+  const result = await accounts.updateOne({
+    _id: account._id, emailVerifiedAt: null,
+    $or: [{ emailVerification: { $exists: false } }, { 'emailVerification.sentAt': { $lte: new Date(now - cooldown) } }],
+  }, {
+    $set: { emailVerification: { hash, sentAt: new Date(now), expiresAt: new Date(now + validity) } },
+  });
+  if (!result.modifiedCount) return 'wait';
+  try {
+    await send(account.email, token);
+    return 'sent';
+  } catch {
+    reportFailure();
+    return 'failed';
+  }
+}
+
+export async function confirmEmailVerification(accounts, token) {
+  if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) return false;
+  const result = await accounts.updateOne({
+    emailVerifiedAt: null, 'emailVerification.hash': hashToken(token), 'emailVerification.expiresAt': { $gt: new Date() },
+  }, {
+    $set: { emailVerifiedAt: new Date() }, $unset: { emailVerification: '' },
+  });
+  return Boolean(result.modifiedCount);
+}

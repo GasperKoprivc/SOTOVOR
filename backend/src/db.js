@@ -19,6 +19,7 @@ export async function connect() {
       households.createIndex({ 'members.guestAccountId': 1 }, { unique: true, sparse: true }),
       households.createIndex({ ownerAccountId: 1 }, { sparse: true }),
       accounts.createIndex({ email: 1 }, { unique: true }),
+      accounts.createIndex({ 'emailVerification.hash': 1 }, { unique: true, sparse: true }),
       sessions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
       desktopLinks.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
       households.createIndex({ whatsappSender: 1 }, { unique: true, sparse: true }),

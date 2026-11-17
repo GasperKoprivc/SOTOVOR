@@ -21,6 +21,7 @@ Namenjen je vsakodnevnim stvarem: pospravljanju, nakupom, prevzemu otrok, druži
 - [Hiter zagon na Windows](#hiter-zagon-na-windows)
 - [Namizna aplikacija](#namizna-aplikacija)
 - [Zagon z Docker Compose](#zagon-z-docker-compose)
+- [Produkcijska namestitev](docs/DEPLOY.md)
 - [Demo družina](#demo-družina)
 - [Povezava z WhatsAppom](#povezava-z-whatsappom)
 - [Dostop s telefona](#dostop-s-telefona)
@@ -267,7 +268,9 @@ Pred prehodom na lokalni `start.bat` ustavi Compose, da isti vrati ne bosta zase
 
 ### Objava slike Docker v CI
 
-GitHub Actions po uspešnem preverjanju ob potisku na `main` ali oznaki `v*` objavi aplikacijsko sliko **`gasperkoprivc/sotovor`** na Docker Hubu. React in Express sta v isti sliki, saj Express streže zgrajeni frontend. MongoDB ostane ločena storitev.
+GitHub Actions po uspešnem preverjanju potiska na `main` objavi sliko **`gasperkoprivc/sotovor`** z oznakama `latest` in `sha-<celoten-commit>`. CI posebej objavi označene izdaje `v*`. React in Express sta v isti sliki, saj Express streže zgrajeni frontend. MongoDB ostane ločena storitev.
+
+Za javno namestitev z domensko HTTPS povezavo, SMTP potrditvijo e-pošte in dnevnimi varnostnimi kopijami uporabi [produkcijska navodila](docs/DEPLOY.md).
 
 V nastavitvah GitHub Actions nastavi secrets:
 

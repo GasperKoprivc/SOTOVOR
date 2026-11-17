@@ -2,7 +2,7 @@ import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 
 const derive = promisify(scrypt);
-export const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
+export const emailPattern = /^[^\s@<>,;:"\\]+@[^\s@<>,;:"\\]+\.[^\s@<>,;:"\\]+$/u;
 export const sessionSeconds = 90 * 24 * 60 * 60;
 
 export async function passwordHash(password, salt = randomBytes(16).toString('hex')) {

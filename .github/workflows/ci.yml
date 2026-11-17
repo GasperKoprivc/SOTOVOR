@@ -44,10 +44,12 @@ jobs:
           SOTOVOR_MONGO_URI: mongodb://127.0.0.1:27017
       - name: Build frontend
         run: npm run build
+      - name: Test production stack and backup restore
+        run: bash scripts/test-prod.sh
 
   publish:
     needs: build
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository

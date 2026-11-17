@@ -10,13 +10,14 @@ export function Brand() {
   return <span className="brand"><BrandMark className="brand-icon" />Sotovor<span className="brand-dot">.</span></span>;
 }
 
-export function ChooseHousehold({ profile, busy, error, onSubmit, onLogout, inviteCode, startJoining }) {
+export function ChooseHousehold({ profile, busy, error, onSubmit, onLogout, inviteCode, startJoining, verification }) {
   const [joining, setJoining] = useState(Boolean(startJoining));
   return <main className="profile-shell">
     <Brand />
     <LanguageSelect />
     <section className="panel account-card">
       <h1>{t('Živjo, %0!', profile.firstName)}</h1>
+      {verification}
       <p>{joining ? t('Vnesi kodo, ki ti jo je poslal skrbnik družinskega prostora.') : t('Ustvari družinski prostor, ki ga boš lahko upravljal in vanj povabil člane.')}</p>
       <form key={joining} onSubmit={event => {
         event.preventDefault();

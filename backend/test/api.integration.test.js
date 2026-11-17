@@ -13,6 +13,7 @@ const databaseName = `sotovor_test_${randomUUID().replaceAll('-', '')}`;
 let database;
 let server;
 let apiUrl;
+const verificationMessages = new Map();
 
 before(async () => {
   process.env.SOTOVOR_MONGO_URI ||= 'mongodb://127.0.0.1:27027';
@@ -22,7 +23,10 @@ before(async () => {
   const app = express();
   app.use('/webhooks/whatsapp', createWhatsApp(database, whatsapp));
   app.use(express.json({ limit: '8kb' }));
-  app.use('/api', createApi(database, { whatsappEnabled: true }));
+  app.use('/api', createApi(database, {
+    whatsappEnabled: true,
+    verificationMail: async (email, token) => verificationMessages.set(email, token),
+  }));
   app.use(handleError);
   server = app.listen(0, '127.0.0.1');
   await once(server, 'listening');
@@ -74,6 +78,32 @@ async function dashboard(cookie, household) {
   const response = await fetch(`${apiUrl}/dashboard`, { headers });
   return { response, data: await response.json() };
 }
+
+test('verification is sent on registration and accepts only a current, single-use token', async () => {
+  const email = `${randomUUID()}@test.invalid`;
+  const { response } = await postJson('/auth/register', {
+    firstName: 'Ana', lastName: 'Test', email, phone: '+38640000111', password: 'integration-test',
+  });
+  assert.equal(response.status, 201);
+  const cookie = sessionCookie(response);
+  const token = verificationMessages.get(email);
+  assert.match(token, /^[a-f0-9]{64}$/);
+  assert.equal((await dashboard(cookie)).data.profile.emailVerificationPending, true);
+  assert.equal((await postJson('/auth/email/resend', {})).response.status, 401);
+  assert.equal((await postJson('/auth/email/resend', {}, cookie)).response.status, 429);
+  const account = await database.accounts.findOne({ email });
+  assert.equal(account.emailVerification.hash, createHash('sha256').update(token).digest('hex'));
+  await database.accounts.updateOne({ email }, {
+    $set: { 'emailVerification.expiresAt': new Date(0), 'emailVerification.sentAt': new Date(0) },
+  });
+  assert.equal((await postJson('/auth/email/verify', { token })).response.status, 400);
+  assert.equal((await postJson('/auth/email/resend', {}, cookie)).response.status, 200);
+  assert.equal((await postJson('/auth/email/verify', { token })).response.status, 400);
+  const newToken = verificationMessages.get(email);
+  assert.equal((await postJson('/auth/email/verify', { token: newToken })).response.status, 200);
+  assert.equal((await postJson('/auth/email/verify', { token: newToken })).response.status, 400);
+  assert.equal((await dashboard(cookie)).data.profile.emailVerificationPending, false);
+});
 
 test('desktop linking requires browser approval and the original verifier, and can be redeemed once', async () => {
   const { response } = await postJson('/households', { householdName: 'Namizni dom', memberName: 'Ana' });
