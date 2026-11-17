@@ -4,9 +4,9 @@ import { request } from './data.js';
 import { errorText, getLanguage, subscribe, t } from './i18n.js';
 import LanguageSelect from './LanguageSelect.jsx';
 
-export const verificationToken = new URLSearchParams(location.hash.slice(1)).get('verify-email');
+export const getVerificationToken = () => new URLSearchParams(location.hash.slice(1)).get('verify-email');
 
-export function EmailVerificationPage() {
+export function EmailVerificationPage({ token }) {
   useSyncExternalStore(subscribe, getLanguage);
   const [verified, setVerified] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -16,7 +16,7 @@ export function EmailVerificationPage() {
     setBusy(true);
     setError('');
     try {
-      await request('/auth/email/verify', { token: verificationToken }, undefined, null);
+      await request('/auth/email/verify', { token }, undefined, null);
       history.replaceState(null, '', '/');
       setVerified(true);
     } catch (problem) {
