@@ -3,6 +3,22 @@ info: {title: Sotovor native API, version: 1.0.0}
 servers: [{url: /api/v1}]
 security: [{bearer: []}, {browserSession: []}]
 paths:
+  /auth/password/request:
+    post:
+      summary: Send a single-use password reset link when SMTP is configured
+      security: []
+      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [email], properties: {email: {type: string, format: email}}}}}}
+      responses:
+        '200': {description: Request received, content: {application/json: {schema: {$ref: '#/components/schemas/Ok'}}}}
+        default: {description: Request failed, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+  /auth/password/reset:
+    post:
+      summary: Replace the password with a single-use reset token
+      security: []
+      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [token, password], properties: {token: {type: string}, password: {type: string, minLength: 10, maxLength: 128}}}}}}
+      responses:
+        '200': {description: Password changed, content: {application/json: {schema: {$ref: '#/components/schemas/Ok'}}}}
+        default: {description: Request failed, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
   /mobile/min-version:
     get:
       summary: "Get minimum and latest supported app versions"

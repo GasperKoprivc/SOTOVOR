@@ -4,6 +4,7 @@ import { HttpError, handleError } from './api-errors.js';
 import { bearerSession, hash, registerMobileAuth, validId } from './mobile-auth.js';
 import { pageOf } from './paging.js';
 import { registerNotificationRoutes } from './notifications.js';
+import { registerPasswordReset } from './password-reset.js';
 import { Router } from 'express';
 import { Binary, ObjectId } from 'mongodb';
 import { materializeOccurrences, nextOccurrence } from './recurrence.js';
@@ -209,6 +210,7 @@ export function createApi(database, {
   });
 
   if (verificationMail) {
+    registerPasswordReset(router, database, verificationMail, reportMailFailure);
     router.post('/auth/email/resend', async (req, res) => {
       if (!req.account) throw new HttpError(401, 'Najprej se prijavi.');
       if (req.account.emailVerifiedAt) return res.json({ ok: true });
