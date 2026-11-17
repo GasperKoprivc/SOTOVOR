@@ -1,0 +1,84 @@
+services:
+  app:
+    image: ${SOTOVOR_IMAGE:-gasperkoprivc/sotovor:latest}
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      SOTOVOR_HOST: 0.0.0.0
+      SOTOVOR_PORT: "3000"
+      SOTOVOR_TRUST_PROXY: "1"
+      SOTOVOR_DB: ${SOTOVOR_DB:-sotovor}
+      SOTOVOR_MONGO_URI: mongodb://${SOTOVOR_MONGO_APP_USER:-sotovor_app}:${SOTOVOR_MONGO_APP_PASSWORD:?Set SOTOVOR_MONGO_APP_PASSWORD}@mongo:27017/${SOTOVOR_DB:-sotovor}?authSource=${SOTOVOR_DB:-sotovor}
+      SOTOVOR_PUBLIC_URL: https://${SOTOVOR_DOMAIN:?Set SOTOVOR_DOMAIN}
+      SOTOVOR_REQUIRE_SMTP: "1"
+      SOTOVOR_SMTP_HOST: ${SOTOVOR_SMTP_HOST:?Set SOTOVOR_SMTP_HOST}
+      SOTOVOR_SMTP_PORT: ${SOTOVOR_SMTP_PORT:-587}
+      SOTOVOR_SMTP_USER: ${SOTOVOR_SMTP_USER:?Set SOTOVOR_SMTP_USER}
+      SOTOVOR_SMTP_PASSWORD: ${SOTOVOR_SMTP_PASSWORD:?Set SOTOVOR_SMTP_PASSWORD}
+      SOTOVOR_SMTP_FROM: ${SOTOVOR_SMTP_FROM:?Set SOTOVOR_SMTP_FROM}
+      SOTOVOR_WHATSAPP_APP_SECRET: ${SOTOVOR_WHATSAPP_APP_SECRET:-}
+      SOTOVOR_WHATSAPP_VERIFY_TOKEN: ${SOTOVOR_WHATSAPP_VERIFY_TOKEN:-}
+      SOTOVOR_WHATSAPP_PHONE_ID: ${SOTOVOR_WHATSAPP_PHONE_ID:-}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/readyz').then(r => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 4s
+      retries: 6
+      start_period: 15s
+    networks: [web, database]
+
+  mongo:
+    image: mongo:8.0
+    restart: unless-stopped
+    command: ["mongod", "--auth", "--bind_ip_all"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${SOTOVOR_MONGO_ADMIN_USER:-sotovor_admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${SOTOVOR_MONGO_ADMIN_PASSWORD:?Set SOTOVOR_MONGO_ADMIN_PASSWORD}
+      MONGO_INITDB_DATABASE: ${SOTOVOR_DB:-sotovor}
+      SOTOVOR_MONGO_APP_USER: ${SOTOVOR_MONGO_APP_USER:-sotovor_app}
+      SOTOVOR_MONGO_APP_PASSWORD: ${SOTOVOR_MONGO_APP_PASSWORD:?Set SOTOVOR_MONGO_APP_PASSWORD}
+    volumes:
+      - mongo-data:/data/db
+      - ./deploy/mongo-init.js:/docker-entrypoint-initdb.d/10-sotovor.js:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          mongosh --quiet --host mongo
+          --username "$$SOTOVOR_MONGO_APP_USER" --password "$$SOTOVOR_MONGO_APP_PASSWORD"
+          --authenticationDatabase "$$MONGO_INITDB_DATABASE" "$$MONGO_INITDB_DATABASE"
+          --eval 'db.getCollection("accounts").findOne({}, {_id: 1});'
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks: [database]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      SOTOVOR_DOMAIN: ${SOTOVOR_DOMAIN:?Set SOTOVOR_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [web]
+
+networks:
+  web:
+  database:
+    internal: true
+
+volumes:
+  mongo-data:
+  caddy-data:
+  caddy-config:

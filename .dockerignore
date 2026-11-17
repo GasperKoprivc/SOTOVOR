@@ -1,5 +1,9 @@
 .git
 .env
+.env.*
+.release.env
+.previous-release.env
+backups
 data
 node_modules
 **/node_modules
