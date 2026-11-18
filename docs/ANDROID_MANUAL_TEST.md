@@ -20,7 +20,8 @@ APK downloaded through `/prenesi` before approving production.
 | Widget               | Add the widget, complete a task, tap a task to open it, receive a push, switch family, sign out and sign in as another account. Cached titles must clear when credentials are revoked.                                                                      |
 | R8 and update        | Install the production release, then install the next version over it. Exercise login/refresh, push, voice and deep links. Keep `mapping.txt` for each version.                                                                                             |
 
-Automated coverage is in `FamilyFlowTest` and `SotovorUiTest`. Firebase delivery,
+Automated coverage is in `FamilyFlowTest`, `R8FlowTest`, `AccessibilityTest`
+and `SotovorUiTest`. Firebase delivery,
 audio hardware, TalkBack traversal and production App Links still require a
 physical device. Record failures in the launch checklist and fix them before
 marking the device run accepted.

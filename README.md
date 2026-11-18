@@ -454,7 +454,7 @@ Za teste mora biti MongoDB dosegljiv na `127.0.0.1:27027` oziroma na naslovu v `
 
 Integracijski testi pokrivajo prevzem opravil, izolacijo prostorov, članstvo in pravice, ponavljanje z rotacijo, dostop do glasovnih beležk, podpisane WhatsApp vnose, zaščito pred zastarelim urejanjem, pametno razporejanje in namizno prijavo.
 
-GitHub Actions ob potiskih in pull requestih namesti odvisnosti, preveri sintakso izbranih strežniških datotek in zaganjalnika, izvede integracijske teste z začasnim MongoDB ter zgradi frontend. Projekt trenutno nima ločenega ukaza za lint.
+GitHub Actions preveri ESLint, Prettier, API, OpenAPI, Kotlin in odvisnosti. Playwright in Androidov emulator uporabljata začasen Docker Compose sklad s testnim poštnim nabiralnikom. Ukaza za lokalni pregled sta `npm run lint` in `npm run format:check`. Podroben postopek je v [seznamu za javno objavo](docs/LAUNCH_CHECKLIST.md).
 
 ## Trenutne meje in nadaljnji razvoj
 
@@ -462,12 +462,14 @@ Ta README opisuje trenutno implementirano stanje. Pri nadaljnjem razvoju so pome
 
 - **Android:** [projekt za Android Studio](apps/android/README.md) lahko zgradiš lokalno ali uporabiš debug APK iz GitHub Actions. Za javno objavo in preverjene povezave sta potrebna podpis in nastavljena javna domena.
 - **Povezava s strežnikom:** spletni in namizni odjemalec uporabljata skupni API in MongoDB; samostojno delo brez povezave ni implementirano.
-- **Obvestila:** delujejo znotraj aplikacije. Sistemska potisna obvestila in pošiljanje opomnikov po e-pošti niso implementirani.
-- **Osveževanje:** spremembe se pridobivajo periodično, ne prek WebSocket povezave.
-- **Koledar:** vnosi imajo datum; ure, trajanje dogodkov in sinhronizacija z zunanjimi koledarji trenutno niso vključeni.
-- **Ponavljanje:** uporablja interval v dnevih in ustvari naslednji vnos ob zaključku opravila.
-- **Glas:** podprte so posnete priloge, brez samodejnega prepisa ali ustvarjanja opravila iz govora.
-- **Pametna razporeditev:** temelji na pravilih, kategorijah, vlogah in številu opravil; posameznim opravilom se trenutno ne določa ocenjenega trajanja.
-- **WhatsApp:** potrebuje ločeno nastavitev Meta Cloud API in javni HTTPS webhook; v aplikaciji služi vnosu opravil ter dogodkov.
+- **Obvestila:** Androidova potisna obvestila potrebujejo nastavljen Firebase in uporabnikovo dovoljenje.
+- **Osveževanje:** nakupovalni seznam uporablja SSE, ostali pogledi pa periodično osveževanje.
+- **Koledar:** podpira datume, čas, trajanje in zasebno naročnino ICS. Uporabnik potrdi dodajanje posameznega dogodka v koledar telefona.
+- **Ponavljanje:** podpira interval v dnevih, izbrane dneve tedna in dan meseca. Naslednji vnos nastane ob zaključku opravila.
+- **Glas:** prepis je privzeto izklopljen in potrebuje nastavljenega ponudnika ter izrecno uporabnikovo dejanje.
+- **Pametna razporeditev:** lokalni deterministični algoritem upošteva ocenjene minute, vloge in razpoložljivost.
+- **WhatsApp:** potrebuje nastavitev Meta Cloud API in javni HTTPS webhook; podpira tudi ukaz `nakup mleko`.
 
 Spletna in namizna različica že uporabljata isto osnovo, zato se nadaljnje funkcionalnosti lahko razvijajo na skupnem API-ju in uporabniškem vmesniku.
+
+[Podpora funkcij po odjemalcih](docs/FEATURE_PARITY.md) · [Androidov ročni preizkus](docs/ANDROID_MANUAL_TEST.md) · [Meritve](docs/PERF.md) · [Osnutki za Google Play](docs/PLAY_STORE_CHECKLIST.md)

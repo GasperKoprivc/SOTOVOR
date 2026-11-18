@@ -84,11 +84,9 @@ android {
         }
     }
     // The QA variant runs release R8 rules against the local test API.
-    testBuildType = providers.gradleProperty("sotovorTestBuildType").orElse("debug").get()
     buildTypes.create("qa") {
         initWith(buildTypes.getByName("release"))
         applicationIdSuffix = ".qa"
-        proguardFiles("qa-test-proguard.pro")
         signingConfig = signingConfigs.getByName("debug")
         isDebuggable = false
         matchingFallbacks += listOf("release")
@@ -149,7 +147,6 @@ dependencies {
     androidTestImplementation(libs.android.test.runner)
     androidTestImplementation(libs.android.test.espresso)
     debugImplementation(libs.compose.test.manifest)
-    add("qaImplementation", libs.compose.test.manifest)
 }
 
 ktlint {

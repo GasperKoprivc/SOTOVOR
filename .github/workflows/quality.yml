@@ -5,6 +5,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -61,8 +65,9 @@ jobs:
           disable-animations: true
           script: |
             cd apps/android
-            ./gradlew connectedDebugAndroidTest -PsotovorDebugUrl=http://10.0.2.2:3060/
-            ./gradlew connectedQaAndroidTest -PsotovorTestBuildType=qa -PsotovorDebugUrl=http://10.0.2.2:3060/
+            ./gradlew assembleQa -PsotovorDebugUrl=http://10.0.2.2:3060/
+            adb install -r app/build/outputs/apk/qa/app-qa.apk
+            ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.r8=true -PsotovorDebugUrl=http://10.0.2.2:3060/
       - uses: actions/upload-artifact@v4
         if: always()
         with:

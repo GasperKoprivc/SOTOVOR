@@ -97,13 +97,13 @@ private fun TodayWidgetContent(snapshot: WidgetTasks?) {
         Text(
             context.getString(R.string.widget_title),
             style = heading,
-            modifier = GlanceModifier.clickable(actionStartActivity<MainActivity>())
+            modifier = GlanceModifier.height(64.dp).clickable(actionStartActivity<MainActivity>())
         )
         if (snapshot == null || snapshot.tasks.isEmpty()) {
             Text(
                 context.getString(if (snapshot == null) R.string.widget_open else R.string.widget_empty),
                 style = text,
-                modifier = GlanceModifier.padding(top = 8.dp).clickable(actionStartActivity<MainActivity>())
+                modifier = GlanceModifier.height(64.dp).padding(top = 8.dp).clickable(actionStartActivity<MainActivity>())
             )
         }
         snapshot?.tasks?.take(3)?.forEach { task ->

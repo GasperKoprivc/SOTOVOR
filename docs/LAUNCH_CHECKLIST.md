@@ -55,7 +55,9 @@ npm run test:e2e
 npm run test:load
 cd apps/android
 ./gradlew ktlintCheck detekt lintDebug testDebugUnitTest assembleRelease dependencyInventory
-./gradlew connectedDebugAndroidTest -PsotovorDebugUrl=http://10.0.2.2:3060/
+./gradlew assembleQa -PsotovorDebugUrl=http://10.0.2.2:3060/
+adb install -r app/build/outputs/apk/qa/app-qa.apk
+./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.r8=true -PsotovorDebugUrl=http://10.0.2.2:3060/
 cd ../..
 node scripts/audit-gradle.js
 npm audit --audit-level=high
@@ -82,7 +84,22 @@ The QA variant uses the release R8 rules with a test-only debug signature,
 application-ID suffix and local HTTP access. Public releases retain the
 production URL, signing configuration and cleartext restrictions.
 
-The minified QA APK retains shared AndroidX, Kotlin and networking types that
-the separate instrumentation APK calls. These QA keep rules are excluded from
-production. Physical-device acceptance uses the exact production shrinker
-configuration and final signing identity.
+UIAutomator drives the R8 QA app from a separate debug test process, while
+Compose tests cover the ordinary app. The QA app uses the exact production
+ProGuard rules and keeps its local URL, package suffix and test signing key.
+
+## Reviewed advisory findings
+
+| Advisory group                                                      | Disposition                                                                                                                             |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| AndroidGradlePluginVersion, GradleDependency, NewerVersionAvailable | Pinned versions pass the resolved Maven audit. Dependabot proposes upgrades for review.                                                 |
+| InsecureBaseConfiguration                                           | Local HTTP is confined to debug and QA manifests. Release retains HTTPS and cleartext restrictions.                                     |
+| UnusedAttribute                                                     | The widget defines minimum dp sizing for API 26 and additional launcher cell sizing for API 31+.                                        |
+| UseKtx, UseTomlInstead                                              | API and dependency declaration style suggestions. Existing Java calls preserve behavior and explicit new test tool versions are pinned. |
+| ObsoleteSdkInt                                                      | A redundant platform guard is harmless on the supported API range.                                                                      |
+| PluralsCandidate                                                    | Numeric metric labels require localization review as part of language acceptance.                                                       |
+| ScrollableTabRow and test RequestBody deprecations                  | Existing APIs remain supported by pinned dependencies. Their replacement can follow the dependency upgrade review.                      |
+
+These advisories are retained in the uploaded Android Lint report. Unknown lint
+issue IDs are errors, so a misspelled or unavailable configured rule cannot
+silently pass the gate.

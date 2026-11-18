@@ -1,4 +1,4 @@
-FROM node:24.11.1-alpine3.22 AS build
+FROM node:24.22.3-alpine3.24 AS build
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ COPY backend ./backend
 COPY frontend ./frontend
 RUN npm run build
 
-FROM node:24.11.1-alpine3.22 AS runtime
+FROM node:24.22.3-alpine3.24 AS runtime
 
 ENV NODE_ENV=production \
     SOTOVOR_HOST=0.0.0.0 \

@@ -28,7 +28,7 @@ services:
       timeout: 3s
       retries: 30
   mongo:
-    image: mongo:8.0.16
+    image: mongo:8.0.38
     tmpfs: /data/db
     healthcheck:
       test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
