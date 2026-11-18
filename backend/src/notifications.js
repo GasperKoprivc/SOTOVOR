@@ -36,15 +36,15 @@ export function registerNotificationRoutes(router, { accounts, devices, mobileSe
   router.post('/devices', async (req, res) => {
     const accountId = account(req);
     if (!req.mobileSession) throw new HttpError(401, 'Prijavi se v mobilni aplikaciji.');
-    const { token, platform, appVersion, locale } = req.body;
+    const { token, platform, appVersion, locale, widgetRefresh = false } = req.body;
     if (typeof token !== 'string' || !/^[\w:.-]{10,4096}$/.test(token) ||
-        platform !== 'android' || typeof appVersion !== 'string' || !/^\d+\.\d+\.\d+$/.test(appVersion) ||
+        typeof widgetRefresh !== 'boolean' || platform !== 'android' || typeof appVersion !== 'string' || !/^\d+\.\d+\.\d+$/.test(appVersion) ||
         typeof locale !== 'string' || !/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/.test(locale) || locale.length > 35) {
       throw new HttpError(400, 'Preveri podatke naprave.');
     }
     const sessionId = req.mobileSession._id;
     const device = await devices.findOneAndUpdate({ token }, {
-      $set: { accountId, sessionId, platform, appVersion, locale, updatedAt: new Date(), expiresAt: req.mobileSession.expiresAt },
+      $set: { accountId, sessionId, platform, appVersion, locale, widgetRefresh, updatedAt: new Date(), expiresAt: req.mobileSession.expiresAt },
     }, { upsert: true, returnDocument: 'after' });
     if (!await mobileSessions.findOne({ _id: sessionId }, { projection: { _id: 1 } })) {
       await devices.deleteOne({ _id: device._id, sessionId });

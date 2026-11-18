@@ -9,7 +9,7 @@
 | Task duration and planner weighting | Optional estimate and minute-weighted planning | Task editor and planner guidance | Task editor and planner guidance |
 | Points and rewards | Admin-controlled rewards and child scores | Task editor and reward thresholds | Task editor and reward thresholds |
 | Weekly and monthly recurrence | Successor on completion, with rotation | Task editor | Task editor |
-| Today widget | Planned | Planned | Planned |
+| Today widget | Member-scoped today endpoint and existing completion action | Android home-screen feature | Glance widget, open or complete, background refresh |
 | Voice transcription | Planned | Planned | Planned |
 | English and dark mode | Planned | Planned | Planned |
 
@@ -73,3 +73,11 @@ Set a due date and select either specific weekdays or a day of the month.
 A monthly schedule for the 31st uses the last day of shorter months and
 returns to the 31st when possible. Day intervals remain available. All three
 modes create the next task on completion and can rotate the assignee.
+
+## Android widget
+
+Add **Moja opravila danes** from the Android launcher widget picker. The
+widget displays up to three open tasks assigned to you and due today in the
+active family. Tap a task to open it, or tap **Končano** to complete it. Android
+schedules periodic and push-triggered refreshes through WorkManager. The
+launcher can display the titles to anyone with access to the home screen.

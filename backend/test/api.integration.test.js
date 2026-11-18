@@ -8,6 +8,7 @@ import { createApi, handleError } from '../src/api.js';
 import { versionedErrors } from '../src/api-errors.js';
 import { registerAppLinks } from '../src/app-links.js';
 import { produceNotifications } from '../src/notifications.js';
+import { householdDay } from '../src/planning.js';
 import { pushDelivery } from '../src/push.js';
 import { createShoppingList } from '../src/shopping.js';
 import { createWhatsApp } from '../src/whatsapp.js';
@@ -221,6 +222,13 @@ test('device tokens are scoped, retired by FCM and reminders are deduplicated an
   await shoppingPush.shopping(family);
   assert.equal(shoppingMessages.length, 1);
   assert.match(shoppingMessages[0].data.deepLink, /^sotovor:\/\/shopping\?/);
+  assert.ok(shoppingMessages[0].notification);
+  await mobilePost('/devices', { ...device, widgetRefresh: true }, credentials);
+  await shoppingPush.shopping(family);
+  assert.equal(shoppingMessages[1].notification, undefined);
+  assert.equal(shoppingMessages[1].android.priority, 'high');
+  assert.ok(shoppingMessages[1].data.body);
+
   const today = '2040-11-17';
   await mobilePost('/entries', { kind: 'task', title: 'Reminder', dueOn: today, assigneeId: dashboard.memberId, reminderDays: 0 }, credentials);
   const reminder = { today, now: new Date('2040-11-17T10:00:00Z') };
@@ -751,4 +759,22 @@ test('weekly and monthly recurrence creates successors on completion and retains
   assert.equal(nextMonth.dueOn, '2028-02-29');
   const march = (await complete(nextMonth)).data.entries.find(item => item.title === 'Monthly' && !item.completedAt);
   assert.equal(march.dueOn, '2028-03-31');
+});
+
+test('today widget returns only the current member’s open tasks due today', async () => {
+  const family = await postJson('/households', { householdName: 'Widget', memberName: 'Ana' });
+  const cookie = sessionCookie(family.response);
+  const { data: board } = await dashboard(cookie);
+  const dueOn = householdDay();
+  const myTask = { kind: 'task', title: 'Mine today', dueOn, assigneeId: board.memberId };
+  const created = await postJson('/entries', myTask, cookie);
+  const entry = created.data.entries[0];
+  await postJson('/entries', { ...myTask, title: 'Unassigned', assigneeId: null }, cookie);
+  await postJson('/entries', { ...myTask, title: 'Future', dueOn: '2099-01-01' }, cookie);
+  await postJson('/entries', { kind: 'event', title: 'Event', dueOn }, cookie);
+  assert.equal((await v1('/widget/today')).status, 401);
+  assert.deepEqual((await v1('/widget/today', { cookie })).body,
+    { householdId: family.data.householdId, tasks: [{ id: entry.id, title: myTask.title }] });
+  assert.equal((await postJson('/tasks/' + entry.id + '/complete', {}, cookie)).response.status, 200);
+  assert.deepEqual((await v1('/widget/today', { cookie })).body.tasks, []);
 });

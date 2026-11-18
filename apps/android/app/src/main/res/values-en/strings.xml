@@ -196,4 +196,8 @@
     <string name="repeat_weekly">Weekly</string>
     <string name="repeat_monthly">Monthly</string>
     <string name="repeat_month_day">Day of the month</string>
+    <string name="widget_title">My tasks today</string>
+    <string name="widget_open">Open Sotovor</string>
+    <string name="widget_empty">You have no open tasks today.</string>
+    <string name="widget_done">Done</string>
 </resources>

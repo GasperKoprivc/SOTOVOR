@@ -60,7 +60,7 @@ data class Credentials(
 @Serializable data class PlanPreview(val changes: List<PlanChange>, val skipped: Int, val until: String, val signature: String)
 @Serializable data class PlanResult(val applied: Int, val conflicts: Int)
 @Serializable data class NotificationSettings(val assignments: Boolean, val reminders: Boolean, val swaps: Boolean)
-@Serializable data class PushDevice(val token: String, val platform: String, val appVersion: String, val locale: String)
+@Serializable data class PushDevice(val token: String, val platform: String, val appVersion: String, val locale: String, val widgetRefresh: Boolean = false)
 @Serializable data class DeviceId(val id: String)
 @Serializable data class Versions(val minSupported: String, val latest: String)
 
