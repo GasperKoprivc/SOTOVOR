@@ -56,16 +56,18 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - run: docker compose -p sotovor-quality -f compose.test.yaml up -d --build --wait --wait-timeout 180
+      - name: Build instrumented and production-shrunk test apps
+        working-directory: apps/android
+        run: ./gradlew assembleQa assembleDebugAndroidTest -PsotovorDebugUrl=http://10.0.2.2:3060/
       - uses: reactivecircus/android-emulator-runner@v2
         with:
+          working-directory: apps/android
           api-level: 36
           arch: x86_64
           target: google_apis
           profile: pixel_7
           disable-animations: true
           script: |
-            cd apps/android
-            ./gradlew assembleQa -PsotovorDebugUrl=http://10.0.2.2:3060/
             adb install -r app/build/outputs/apk/qa/app-qa.apk
             ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.r8=true -PsotovorDebugUrl=http://10.0.2.2:3060/
       - uses: actions/upload-artifact@v4
