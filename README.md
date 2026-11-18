@@ -22,6 +22,7 @@ Namenjen je vsakodnevnim stvarem: pospravljanju, nakupom, prevzemu otrok, druži
 - [Namizna aplikacija](#namizna-aplikacija)
 - [Zagon z Docker Compose](#zagon-z-docker-compose)
 - [Produkcijska namestitev](docs/DEPLOY.md)
+- [Objava namestitvenih paketov za stran Prenesi](docs/HUMAN_TASKS.md#publish-the-installers)
 - [Demo družina](#demo-družina)
 - [Povezava z WhatsAppom](#povezava-z-whatsappom)
 - [Dostop s telefona](#dostop-s-telefona)

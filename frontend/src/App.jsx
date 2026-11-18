@@ -384,6 +384,7 @@ export default function App() {
           </label>}
           <div className="hero-actions">
             <button className="primary" onClick={() => go('overview')}>{t('Odpri nadzorno ploščo')}</button>
+            <a className="soft-button" href="/prenesi">{t('Prenesi')}</a>
             {data.admin && <button className="soft-button" onClick={() => open('family')} disabled={busy}><Plus size={17} />{' '}{t('Nova družina')}</button>}
             <button className="soft-button" onClick={() => open('join')} disabled={busy}>{t('Pridruži se s povabilom')}</button>
           </div>

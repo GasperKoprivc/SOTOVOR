@@ -9,6 +9,7 @@ import { versionedErrors } from './api-errors.js';
 import { registerAppLinks } from './app-links.js';
 import { configurePush } from './push.js';
 import { scheduleNotifications } from './notifications.js';
+import { registerReleases, releaseConfiguration } from './releases.js';
 
 const host = process.env.SOTOVOR_HOST || '127.0.0.1';
 const port = Number(process.env.SOTOVOR_PORT || 3000);
@@ -26,6 +27,7 @@ app.use((_req, res, next) => {
 });
 const whatsapp = whatsappConfig();
 registerAppLinks(app);
+registerReleases(app, await releaseConfiguration());
 app.use('/api/v1', versionedErrors);
 app.get('/healthz', (_req, res) => res.set('Cache-Control', 'no-store').json({ status: 'ok' }));
 app.get('/readyz', async (_req, res) => {
@@ -54,6 +56,7 @@ app.use('/api/v1', json, createApi(database, { ...apiOptions, versioned: true, m
   latest: process.env.SOTOVOR_ANDROID_LATEST_VERSION,
 } }));
 app.use('/api', json, createApi(database, apiOptions));
+app.get('/prenesi', (_req, res) => res.sendFile('index.html', { root: dist }));
 app.use(express.static(dist));
 app.use(handleError);
 
