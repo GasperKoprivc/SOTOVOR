@@ -156,6 +156,29 @@ tail -n 50 "$HOME/backups/backup.log"
 
 Optionally set up an external HTTPS monitor for `/readyz` and a notification for failed checks. This is particularly useful when MongoDB is unavailable while Caddy still answers HTTPS.
 
+## Public downloads
+
+The public page is `/prenesi`. Set `SOTOVOR_RELEASE_GITHUB_TOKEN` in the VPS `.env` to a read-only Contents token for the private release repository, then recreate the app container. `SOTOVOR_RELEASE_REPOSITORY` defaults to `GasperKoprivc/SOTOVOR`. `SOTOVOR_GOOGLE_PLAY_URL` is optional. The server caches GitHub's latest stable release for ten minutes and streams only installers and updater metadata intended for distribution.
+
+During a GitHub outage, the server uses a cached release when available or reads `SOTOVOR_RELEASE_FALLBACK_JSON`. Set it to one line of single-quoted JSON in the VPS `.env`. Replace the illustrative URL, size and checksum with the mirror's real values. A direct Node deployment can use `SOTOVOR_RELEASE_FALLBACK_FILE` to read the same JSON from a file.
+
+```json
+{
+  "version": "0.1.0",
+  "publishedAt": "2026-11-18T12:00:00Z",
+  "downloads": {
+    "windows": {
+      "url": "https://downloads.example.com/Sotovor-0.1.0-windows-x64-setup.exe",
+      "size": 1048576,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "signed": false
+    }
+  }
+}
+```
+
+The releases workflow supplies the updater manifest, and fallback mirrors provide page downloads. Follow the [release setup](HUMAN_TASKS.md#publish-the-installers) before tagging.
+
 ## Alternative: managed container hosting and MongoDB Atlas
 
 Deploy the same Docker Hub image to a managed web service with automatic HTTPS. Configure `SOTOVOR_HOST=0.0.0.0`, the provider's port as `SOTOVOR_PORT`, and `SOTOVOR_PUBLIC_URL` as the HTTPS origin. Set `SOTOVOR_TRUST_PROXY=1` only if exactly one trusted proxy sits in front of the app and it cannot be bypassed. Set `SOTOVOR_REQUIRE_SMTP=1` and all SMTP values from the production example. Set `SOTOVOR_MONGO_URI` to the Atlas connection string for a scoped database user, and `SOTOVOR_DB` to the application database. Allow Atlas traffic only from the service's egress addresses or a private connection. Configure Atlas backups separately and use `/readyz` as the health check. The VPS Compose backup scripts specifically target the local Mongo container. [MongoDB Atlas connection setup](https://www.mongodb.com/docs/atlas/connect-to-database-deployment/)

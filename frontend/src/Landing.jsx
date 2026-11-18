@@ -6,6 +6,7 @@ import {
   Mic, Repeat2, UsersRound, X,
 } from 'lucide-react';
 import { BrandMark } from './Account.jsx';
+import { AndroidDownloadBanner } from './Downloads.jsx';
 import '@fontsource-variable/zalando-sans-expanded/wght.css';
 import '@fontsource-variable/inter/wght.css';
 import '@fontsource/ibm-plex-mono/latin-500.css';
@@ -121,11 +122,13 @@ export default function Landing({ signedIn, legacy, busy, error, onAuth, onEnter
     <header className="landing-header">
       <a className="landing-brand" href="#domov"><Mark /> <span>SOTOVOR</span></a>
       <nav aria-label={t('Predstavitev')}><a href="#funkcije">{t('Funkcije')}</a><a href="#naprave">{t('Aplikacije in naprava')}</a><a href="#zgodba">{t('Zakaj Sotovor')}</a><a href="#zacetek">{t('Kako začeti')}</a></nav>
+      <a className="header-download" href="/prenesi">{t('Prenesi')}</a>
       <LanguageSelect />
       <button className="launch-button header-login" onClick={() => signedIn ? onEnter('profile') : setMode('login')}>
         {signedIn ? t('Odpri profil') : t('Prijava')} <ArrowUpRight size={16} />
       </button>
     </header>
+    <AndroidDownloadBanner />
     <main id="domov">
       <section className="landing-hero" aria-labelledby="hero-title">
         <div className="orbit-field">
@@ -204,7 +207,7 @@ export default function Landing({ signedIn, legacy, busy, error, onAuth, onEnter
         </div>
       </section>
     </main>
-    <footer className="landing-footer"><a className="landing-brand" href="#domov"><Mark /> SOTOVOR</a><a href="#domov">{t('Nazaj na vrh')}{' '}<ArrowUpRight size={16} /></a></footer>
+    <footer className="landing-footer"><a className="landing-brand" href="#domov"><Mark /> SOTOVOR</a><a href="/prenesi">{t('Prenesi')}</a><a href="#domov">{t('Nazaj na vrh')}{' '}<ArrowUpRight size={16} /></a></footer>
     {mode && <AuthDialog {...{ mode, legacy, busy, error, onAuth }} onMode={setMode} />}
   </div>;
 }

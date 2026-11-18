@@ -3,10 +3,16 @@ import { useSyncExternalStore } from 'react';
 import App from './App.jsx';
 import { EmailVerificationPage, getVerificationToken } from './EmailVerification.jsx';
 import PasswordReset from './PasswordReset.jsx';
+import Downloads from './Downloads.jsx';
 import { getLanguage, subscribe, t } from './i18n.js';
 import './styles.css';
 
 function updateDocumentLanguage() {
+  if (location.pathname.replace(/\/$/, '') === '/prenesi') {
+    document.documentElement.lang = 'sl';
+    document.title = 'Prenesi Sotovor';
+    return;
+  }
   document.documentElement.lang = getLanguage();
   document.title = t('Sotovor · Družinski prostor');
 }
@@ -21,6 +27,7 @@ function subscribeToHash(listener) {
 
 function Root() {
   const fragment = useSyncExternalStore(subscribeToHash, () => location.hash);
+  if (location.pathname.replace(/\/$/, '') === '/prenesi') return <Downloads />;
   const passwordToken = new URLSearchParams(fragment.slice(1)).get('reset-password');
   if (passwordToken !== null) return <PasswordReset key={passwordToken} token={passwordToken} />;
   const token = getVerificationToken();

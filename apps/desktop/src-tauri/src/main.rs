@@ -2,9 +2,14 @@
 
 use sha2::{Digest, Sha256};
 use tauri::{webview::NewWindowResponse, Manager, Url, WebviewUrl, WebviewWindowBuilder};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
+use tauri_plugin_updater::UpdaterExt;
+
+const PRODUCTION_URL: Option<&str> = option_env!("SOTOVOR_BUILD_URL");
 
 fn server_url() -> Option<Url> {
-    let value = std::env::var("SOTOVOR_URL").unwrap_or_else(|_| "http://127.0.0.1:3000".into());
+    let value = std::env::var("SOTOVOR_URL")
+        .unwrap_or_else(|_| PRODUCTION_URL.unwrap_or("http://127.0.0.1:3000").into());
     let url = Url::parse(&value).ok()?;
     let loopback = matches!(url.host_str(), Some("127.0.0.1" | "localhost" | "[::1]"));
     let valid = (url.scheme() == "https" || (url.scheme() == "http" && loopback))
@@ -15,6 +20,24 @@ fn server_url() -> Option<Url> {
         && url.query().is_none()
         && url.fragment().is_none();
     valid.then_some(url)
+}
+
+async fn check_for_update(app: tauri::AppHandle, endpoint: Url) -> tauri_plugin_updater::Result<()> {
+    let updater = app.updater_builder().endpoints(vec![endpoint])?.build()?;
+    let Some(update) = updater.check().await? else {
+        return Ok(());
+    };
+    let accepted = app
+        .dialog()
+        .message(format!("Na voljo je Sotovor {}. Namestim posodobitev in znova zaženem aplikacijo?", update.version))
+        .title("Posodobitev Sotovora")
+        .buttons(MessageDialogButtons::YesNo)
+        .blocking_show();
+    if accepted {
+        update.download_and_install(|_, _| {}, || {}).await?;
+        app.restart();
+    }
+    Ok(())
 }
 
 fn is_browser_login(url: &Url) -> bool {
@@ -41,6 +64,8 @@ fn main() {
                 let _ = window.set_focus();
             }
         }))
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().pubkey(include_str!("../updater.pub").trim()).build())
         .setup(|app| {
             let Some(mut url) = server_url() else {
                 WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
@@ -48,6 +73,10 @@ fn main() {
                     .build()?;
                 return Ok(());
             };
+            let update_endpoint = PRODUCTION_URL
+                .and_then(|value| Url::parse(value).ok())
+                .filter(|production| production.scheme() == "https" && production == &url)
+                .and_then(|production| production.join("download/latest.json").ok());
             let origin = url.origin();
             let key = format!("{:x}", Sha256::digest(origin.ascii_serialization()));
             let data = app.path().app_local_data_dir()?.join("servers").join(key);
@@ -74,6 +103,14 @@ fn main() {
                 })
                 .on_new_window(|_, _| NewWindowResponse::Deny)
                 .build()?;
+            if let Some(endpoint) = update_endpoint {
+                let handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Err(error) = check_for_update(handle, endpoint).await {
+                        eprintln!("Preverjanje posodobitve ni uspelo: {error}");
+                    }
+                });
+            }
             Ok(())
         })
         .run(tauri::generate_context!())

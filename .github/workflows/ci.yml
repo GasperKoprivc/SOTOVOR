@@ -38,6 +38,8 @@ jobs:
           node --check backend/src/recurrence.js
           node --check backend/src/whatsapp.js
           node --check scripts/start.js
+      - name: Check the shared app version
+        run: npm run version:sync -- --check
       - name: Test API with MongoDB
         run: npm test
         env:
