@@ -310,6 +310,14 @@ export function createApi(database, {
   });
 
   shopping.register(router);
+  if (versioned) router.get('/widget/today', async (req, res) => {
+    const householdId = req.household._id;
+    await materializeOccurrences(entries, householdId);
+    const tasks = await entries.find({ householdId, kind: 'task', archivedAt: null, completedAt: null,
+      assigneeId: req.member.id, dueOn: householdDay(),
+    }, { projection: { title: 1 } }).sort({ _id: 1 }).limit(20).toArray();
+    res.json({ householdId: String(householdId), tasks: tasks.map(task => ({ id: String(task._id), title: task.title })) });
+  });
   registerTaskDetails(router, database, taskCommentNotice(database, push));
 
   function requireAdmin(req) {

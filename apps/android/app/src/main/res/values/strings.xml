@@ -196,4 +196,8 @@
     <string name="repeat_weekly">Tedensko</string>
     <string name="repeat_monthly">Mesečno</string>
     <string name="repeat_month_day">Dan v mesecu</string>
+    <string name="widget_title">Moja opravila danes</string>
+    <string name="widget_open">Odpri Sotovor</string>
+    <string name="widget_empty">Danes nimaš odprtih opravil.</string>
+    <string name="widget_done">Končano</string>
 </resources>

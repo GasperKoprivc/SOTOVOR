@@ -50,7 +50,29 @@ class FamilyRepository @Inject constructor(
         }
     }
 
-    suspend fun switch(id: String) = context.settings.edit { it[activeHousehold] = id }
+    suspend fun switch(id: String) {
+        context.settings.edit { it[activeHousehold] = id }
+        TodayWidgetWork.refresh(context)
+    }
+
+    suspend fun widgetTasks(): WidgetTasks? {
+        val session = store.current()?.sessionId ?: return null
+        val selected = context.settings.data.first()[activeHousehold]
+        val tasks = try {
+            api.widgetTasks(selected)
+        } catch (error: HttpException) {
+            if (selected == null || error.code() != 403) throw error
+            api.widgetTasks(null)
+        }
+        return tasks.takeIf {
+            store.current()?.sessionId == session && context.settings.data.first()[activeHousehold] == selected
+        }
+    }
+
+    suspend fun widgetComplete(household: String, task: String) {
+        val snapshot = widgetTasks() ?: return
+        if (snapshot.householdId == household && snapshot.tasks.any { it.id == task }) api.taskAction(household, task, "complete")
+    }
     suspend fun create(name: String, members: Int) = switch(api.createFamily(NewFamily(name, members)).householdId)
     suspend fun join(invite: String) = switch(api.joinFamily(Invitation(invite.trim())).householdId)
     suspend fun resend() = api.resend()
@@ -80,6 +102,7 @@ class FamilyRepository @Inject constructor(
 
     suspend fun remove(household: String, entry: Entry) = api.removeEntry(household, entry.id, Version(entry.version))
     suspend fun act(household: String, id: String, action: String) = api.taskAction(household, id, action)
+        .also { TodayWidgetWork.refresh(context) }
     suspend fun notices(household: String, cursor: String?) = api.notices(household, cursor)
     suspend fun readNotice(household: String, id: String) = api.readNotice(household, id)
     suspend fun devices() = api.sessions()

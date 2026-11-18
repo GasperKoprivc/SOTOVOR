@@ -3,6 +3,22 @@ info: {title: Sotovor native API, version: 1.0.0}
 servers: [{url: /api/v1}]
 security: [{bearer: []}, {browserSession: []}]
 paths:
+  /widget/today:
+    get:
+      summary: List the selected member's open tasks due today for the Android widget
+      parameters:
+        - $ref: '#/components/parameters/ShoppingHousehold'
+      responses:
+        '200':
+          description: Up to twenty of the member's current tasks, using Europe/Ljubljana dates
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [householdId, tasks]
+                properties:
+                  householdId: {type: string}
+                  tasks: {type: array, items: {type: object, required: [id, title], properties: {id: {type: string}, title: {type: string}}}}
   /rewards:
     parameters:
       - $ref: '#/components/parameters/ShoppingHousehold'
@@ -571,7 +587,7 @@ components:
     Notification: {"type":"object","required":["id","type","target","createdAt","readAt"],"properties":{"id":{"type":"string","pattern":"^[0-9a-f]{24}$"},"type":{"type":"string","enum":["assignment","deadline","overdue","swap","member_joined","task_comment"]},"target":{"type":"object","required":["screen","householdId"],"properties":{"screen":{"type":"string","enum":["task","family"]},"householdId":{"type":"string","pattern":"^[0-9a-f]{24}$"},"entryId":{"type":"string","pattern":"^[0-9a-f]{24}$"}}},"createdAt":{"type":"string","format":"date-time"},"readAt":{"type":"string","format":"date-time","nullable":true}}}
     NotificationPage: {"type":"object","required":["items","nextCursor"],"properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/Notification"}},"nextCursor":{"type":"string","pattern":"^[0-9a-f]{24}$","nullable":true}}}
     Settings: {"type":"object","required":["assignments","reminders","swaps"],"properties":{"assignments":{"type":"boolean"},"reminders":{"type":"boolean"},"swaps":{"type":"boolean"}}}
-    Device: {"type":"object","required":["token","platform","appVersion","locale"],"properties":{"token":{"type":"string","maxLength":4096},"platform":{"type":"string","enum":["android"]},"appVersion":{"type":"string"},"locale":{"type":"string","maxLength":35}}}
+    Device: {"type":"object","required":["token","platform","appVersion","locale"],"properties":{"token":{"type":"string","maxLength":4096},"platform":{"type":"string","enum":["android"]},"appVersion":{"type":"string"},"locale":{"type":"string","maxLength":35},"widgetRefresh":{"type":"boolean","default":false,"description":"Deliver a data message so the Android client can refresh its widget."}}}
     DeviceId: {"type":"object","required":["id"],"properties":{"id":{"type":"string","pattern":"^[0-9a-f]{24}$"}}}
     MinVersion: {"type":"object","required":["minSupported","latest"],"properties":{"minSupported":{"type":"string"},"latest":{"type":"string"}}}
     MemberPlanning: {"type":"object","required":["familyRole","availability"],"properties":{"familyRole":{"type":"string","enum":["father","mother","guardian","child","other"]},"availability":{"type":"string","enum":["available","sick","unavailable"]},"unavailableUntil":{"type":"string","format":"date","nullable":true}}}

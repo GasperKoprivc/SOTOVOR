@@ -63,7 +63,7 @@ class NativePush @Inject constructor(
         if (!available || !permissionGranted(context)) return
         scope.launch {
             if (store.current() != null) runCatching {
-                api.pushDevice(PushDevice(token, "android", BuildConfig.VERSION_NAME, Locale.getDefault().toLanguageTag()))
+                api.pushDevice(PushDevice(token, "android", BuildConfig.VERSION_NAME, Locale.getDefault().toLanguageTag(), widgetRefresh = true))
             }
         }
     }
@@ -80,6 +80,7 @@ class SotovorMessaging : FirebaseMessagingService() {
     override fun onNewToken(token: String) = push.register(token)
 
     override fun onMessageReceived(message: RemoteMessage) {
+        TodayWidgetWork.refresh(this)
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
         if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) return
@@ -98,7 +99,7 @@ class SotovorMessaging : FirebaseMessagingService() {
         val notification = NotificationCompat.Builder(this, channel)
             .setSmallIcon(R.drawable.notification_icon)
             .setContentTitle(getString(R.string.app_name))
-            .setContentText(message.notification?.body ?: getString(R.string.notifications))
+            .setContentText(message.data["body"] ?: message.notification?.body ?: getString(R.string.notifications))
             .setContentIntent(pending).setAutoCancel(true)
             .build()
         NotificationManagerCompat.from(this).notify(id, notification)

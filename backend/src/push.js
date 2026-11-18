@@ -34,12 +34,13 @@ export function pushDelivery({ accounts, devices, mobileSessions }, send, onErro
         try {
           const path = new URLSearchParams({ householdId: target.householdId, ...(target.entryId ? { entryId: target.entryId } : {}) });
           const labels = device.locale.startsWith('sl') ? titles : englishTitles;
-          await send({
-            token: device.token,
-            notification: { title: 'Sotovor', body: labels[type] },
-            data: { type, deepLink: 'sotovor://' + target.screen + '?' + path },
-            android: { notification: { channelId: type === 'shopping' ? 'shopping' : type === 'swap' ? 'swaps' : ['deadline', 'overdue'].includes(type) ? 'reminders' : 'assignments' } },
-          });
+          const body = labels[type];
+          const data = { type, deepLink: 'sotovor://' + target.screen + '?' + path };
+          const channelId = type === 'shopping' ? 'shopping' : type === 'swap' ? 'swaps' :
+            ['deadline', 'overdue'].includes(type) ? 'reminders' : 'assignments';
+          await send(device.widgetRefresh
+            ? { token: device.token, data: { ...data, body }, android: { priority: 'high' } }
+            : { token: device.token, data, notification: { title: 'Sotovor', body }, android: { notification: { channelId } } });
         } catch (error) {
           if (unregistered.has(error.code)) await devices.deleteOne({ _id: device._id, token: device.token, updatedAt: device.updatedAt });
           else onError();
