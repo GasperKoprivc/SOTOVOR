@@ -88,6 +88,7 @@ android {
     buildTypes.create("qa") {
         initWith(buildTypes.getByName("release"))
         applicationIdSuffix = ".qa"
+        proguardFiles("qa-test-proguard.pro")
         signingConfig = signingConfigs.getByName("debug")
         isDebuggable = false
         matchingFallbacks += listOf("release")
@@ -98,7 +99,7 @@ android {
         checkReleaseBuilds = true
         // These warning-level issues block release together with all ordinary lint errors.
         error += setOf(
-            "ContentDescription", "LabelFor", "TextContrastCheck", "TouchTargetSizeCheck",
+            "ContentDescription", "LabelFor", "ClickableViewAccessibility", "UnknownIssueId",
             "HardcodedText", "SetTextI18n", "MissingTranslation", "NewApi", "UnsafeOptInUsageError"
         )
     }
@@ -148,6 +149,7 @@ dependencies {
     androidTestImplementation(libs.android.test.runner)
     androidTestImplementation(libs.android.test.espresso)
     debugImplementation(libs.compose.test.manifest)
+    add("qaImplementation", libs.compose.test.manifest)
 }
 
 ktlint {

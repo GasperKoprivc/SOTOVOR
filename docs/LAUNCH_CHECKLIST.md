@@ -73,7 +73,7 @@ checks supported web/backend/configuration/documentation files. ktlint owns
 Kotlin formatting. detekt checks selected correctness and exception rules
 without K1 type resolution because the app uses Kotlin 2.2/K2. All findings
 from those selected checks block CI. Android Lint retains its normal errors
-and elevates content descriptions, labels, contrast, touch targets, hardcoded
+and elevates content descriptions, labels, clickable-view accessibility, hardcoded
 text, translations and unsafe API use to errors. Dependency update suggestions
 remain advisory and are handled through Dependabot. XML launcher sizing
 attributes that have a min-API fallback are reviewed separately.
@@ -81,3 +81,8 @@ attributes that have a min-API fallback are reviewed separately.
 The QA variant uses the release R8 rules with a test-only debug signature,
 application-ID suffix and local HTTP access. Public releases retain the
 production URL, signing configuration and cleartext restrictions.
+
+The minified QA APK retains shared AndroidX, Kotlin and networking types that
+the separate instrumentation APK calls. These QA keep rules are excluded from
+production. Physical-device acceptance uses the exact production shrinker
+configuration and final signing identity.

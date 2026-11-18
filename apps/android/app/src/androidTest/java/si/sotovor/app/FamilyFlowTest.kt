@@ -1,8 +1,11 @@
 package si.sotovor.app
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.os.SystemClock
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDisplayed
@@ -73,8 +76,17 @@ class FamilyFlowTest {
         click("Opravila")
         click("Dodaj opravilo")
         compose.onNodeWithText("Naslov").performTextInput("Native quality task")
+        val ui = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        ui.executeShellCommand("pm grant ${compose.activity.packageName} android.permission.RECORD_AUDIO")
+        click("Posnemi bele�ko")
+        // MediaRecorder needs real elapsed time to write an audio sample.
+        SystemClock.sleep(1_200)
+        click("Ustavi snemanje")
         click("Shrani")
         click("Native quality task")
+        click("Predvajaj posnetek")
+        waitFor("Ustavi predvajanje")
+        click("Ustavi predvajanje")
         click("Prevzemi")
         compose.waitForIdle()
         waitFor("Native quality task")
@@ -105,8 +117,21 @@ class FamilyFlowTest {
         val dashboardRequest = Request.Builder().url(BuildConfig.BASE_URL + "api/v1/dashboard")
             .header("Authorization", "Bearer $access").build()
         client.newCall(dashboardRequest).execute().use { response ->
-            val entries = Json.parseToJsonElement(checkNotNull(response.body).string()).jsonObject.getValue("entries").jsonArray
-            check(entries.any { it.jsonObject["title"]?.jsonPrimitive?.content == "Native quality event" })
+            val dashboard = Json.parseToJsonElement(checkNotNull(response.body).string()).jsonObject
+            val entries = dashboard.getValue("entries").jsonArray
+            val event = entries.first { it.jsonObject["title"]?.jsonPrimitive?.content == "Native quality event" }.jsonObject
+            val household = dashboard.getValue("household").jsonObject.getValue("id").jsonPrimitive.content
+            val eventId = event.getValue("id").jsonPrimitive.content
+            compose.runOnUiThread {
+                compose.activity.startActivity(
+                    Intent(
+                        Intent.ACTION_VIEW,
+                        Uri.parse("sotovor://task?householdId=$household&entryId=$eventId")
+                    )
+                        .setPackage(compose.activity.packageName).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                )
+            }
+            waitFor("Podrobnosti vnosa")
             check(
                 entries.any {
                     it.jsonObject["title"]?.jsonPrimitive?.content == "Native quality task" &&
