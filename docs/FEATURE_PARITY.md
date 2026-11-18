@@ -98,3 +98,8 @@ share the language and theme controls. Android has Slovenian and English in
 the Android resources and includes the same theme choices. A German account
 preference displays English on Android. Saving preferences while signed in
 shares them across clients. The public download page remains Slovenian.
+
+## iPhone and iPad
+
+The responsive web app is available today. The [iOS options evaluation](IOS_OPTIONS.md)
+covers a future installable web app or native client.
