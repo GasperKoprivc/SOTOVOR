@@ -61,8 +61,9 @@ jobs:
         run: ./gradlew assembleQa assembleDebugAndroidTest -PsotovorDebugUrl=http://10.0.2.2:3060/
       - name: Reserve disk and memory for the API 36 emulator
         run: |
-          # This disposable job needs Kotlin/Java, not the hosted .NET, GHC or NDK toolchains.
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android/sdk/ndk
+          # This disposable job needs Kotlin/Java; other preinstalled toolchains are unused.
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android/sdk/ndk \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/powershell
           docker builder prune --all --force
           apps/android/gradlew -p apps/android --stop
           df -h /
