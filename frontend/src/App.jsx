@@ -74,6 +74,7 @@ function EntryDialog({ initialKind, initialDate, entry, permissions, members, bu
           allDay, startTime: allDay ? null : values.startTime,
           durationMinutes: allDay || !values.durationMinutes ? null : Number(values.durationMinutes),
         } : {}),
+        ...(kind === 'task' && editContent ? { estimatedMinutes: values.estimatedMinutes ? Number(values.estimatedMinutes) : null } : {}),
         title: editContent ? values.title : entry.title, category: editContent ? values.category : entry.category,
         assigneeId: editContent ? values.assigneeId || null : entry.assigneeId,
         repeatDays: editContent ? Number(values.repeatDays || 0) : entry.repeatDays ?? 0,
@@ -102,6 +103,8 @@ function EntryDialog({ initialKind, initialDate, entry, permissions, members, bu
         <option value="">{t('Na voljo za prevzem')}</option>
         {members.filter(member => !member.inactive).map(member => <option key={member.id} value={member.id}>{member.name}</option>)}
       </select></label>}
+      {kind === 'task' && <label>{t('Ocena trajanja (minute)')}<input name="estimatedMinutes" type="number" min="1" max="1440"
+        defaultValue={entry?.estimatedMinutes ?? ''} readOnly={!editContent} /></label>}
       {kind === 'task' && editContent && <div className="fields">
         <label>{t('Ponovi čez dni')}<input name="repeatDays" type="number" min="0" max="3660" required value={repeatDays} onChange={event => setRepeatDays(event.target.value)} /></label>
         <label>{t('Opomni dni pred rokom')}<input name="reminderDays" type="number" min="0" max="30" defaultValue={entry?.reminderDays ?? 2} required /></label>

@@ -180,4 +180,6 @@
     <string name="task_your_comment">Tvoj komentar</string>
     <string name="task_add_comment">Objavi komentar</string>
     <string name="task_new_comment">Nov komentar pri opravilu</string>
+    <string name="task_estimated_minutes">Ocena trajanja (minute)</string>
+    <string name="plan_weighted_minutes">Obremenitev temelji na ocenjenih minutah. Opravilo brez ocene šteje 30 minut.</string>
 </resources>

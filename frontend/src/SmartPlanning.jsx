@@ -13,6 +13,7 @@ export default function SmartPlanning({ busy, onPreview, onApply }) {
         <p>{t('Sotovor predlaga dodelitve glede na vloge, odsotnost in obremenitev članov.')}</p></div>
       <Sparkles size={22} aria-hidden="true" />
     </div>
+    <p>{t('Obremenitev temelji na ocenjenih minutah. Opravilo brez ocene šteje 30 minut.')}</p>
     <p className="muted">{t('Predlog zajame naslednjih 7 dni, zamujena opravila in opravila brez roka. Bolnih in odsotnih članov v tem času ne obremenjuje.')}</p>
     <label className="check-field family-switch"><input type="checkbox" checked={rebalance} disabled={busy} onChange={event => {
       setRebalance(event.target.checked); setPlan(null);

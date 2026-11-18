@@ -6,7 +6,7 @@
 | Event time and duration | All-day or timed events with optional duration | Editor and weekly time blocks | Editor and weekly time blocks |
 | Private calendar subscription | Private ICS, rotate and revoke | Calendar subscription controls | Subscription controls and add an event to the phone calendar |
 | Task checklists and comments | Family-scoped details and comment notifications | Task details dialog | Details inside task editor |
-| Task duration and planner weighting | Planned | Planned | Planned |
+| Task duration and planner weighting | Optional estimate and minute-weighted planning | Task editor and planner guidance | Task editor and planner guidance |
 | Points and rewards | Planned | Planned | Planned |
 | Weekly and monthly recurrence | Planned | Planned | Planned |
 | Today widget | Planned | Planned | Planned |
@@ -52,3 +52,10 @@ Open the details of an existing task. All family members can comment and use
 the checklist while the task is open. Completed tasks keep a read-only
 checklist and still accept comments. Other family members with assignment
 notifications enabled receive comment alerts.
+
+## Estimated task duration
+
+Set an optional estimate in the task editor. The planner uses 30 minutes for
+tasks without an estimate and one quarter of the estimate for recent completed
+work. It keeps availability, age-appropriate categories, and the existing
+planning window. Recurring copies keep the estimate.

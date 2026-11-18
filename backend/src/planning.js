@@ -1,5 +1,6 @@
 export const familyRoles = new Set(['father', 'mother', 'guardian', 'child', 'other']);
 export const availabilityStates = new Set(['available', 'sick', 'unavailable']);
+const estimate = task => task.estimatedMinutes ?? 30;
 const childCategories = new Set(['dom', 'druzina', 'drugo']);
 
 export function isDay(value) {
@@ -36,15 +37,15 @@ export function planTasks(tasks, people, today, rebalance) {
   for (const task of tasks) {
     const assigned = byId.get(task.assigneeId);
     if (task.completedAt) {
-      if (assigned && task.completedAt.toISOString().slice(0, 10) >= since) assigned.load += 0.25;
+      if (assigned && task.completedAt.toISOString().slice(0, 10) >= since) assigned.load += estimate(task) / 4;
     } else if ((!task.dueOn || task.dueOn <= until) && (rebalance || !assigned)) {
       candidates.push(task);
     } else if (assigned) {
-      assigned.load += 1;
+      assigned.load += estimate(task);
     }
   }
   candidates.sort((a, b) => (a.dueOn || '9999').localeCompare(b.dueOn || '9999') ||
-    String(a._id).localeCompare(String(b._id)));
+    estimate(b) - estimate(a) || String(a._id).localeCompare(String(b._id)));
 
   const changes = [];
   let skipped = 0;
@@ -54,10 +55,11 @@ export function planTasks(tasks, people, today, rebalance) {
       skipped++;
       continue;
     }
-    eligible.sort((a, b) => (a.load + 1) / a.capacity - (b.load + 1) / b.capacity ||
+    const effort = estimate(task);
+    eligible.sort((a, b) => (a.load + effort) / a.capacity - (b.load + effort) / b.capacity ||
       Number(b.id === task.assigneeId) - Number(a.id === task.assigneeId) || a.load - b.load || a.id.localeCompare(b.id));
     const next = eligible[0];
-    next.load++;
+    next.load += effort;
     if (next.id !== task.assigneeId) {
       changes.push({
         id: String(task._id), title: task.title, assigneeId: next.id, assigneeName: next.name,

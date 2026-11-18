@@ -180,4 +180,6 @@
     <string name="task_your_comment">Your comment</string>
     <string name="task_add_comment">Post comment</string>
     <string name="task_new_comment">New task comment</string>
+    <string name="task_estimated_minutes">Estimated duration (minutes)</string>
+    <string name="plan_weighted_minutes">Workload uses estimated minutes. Tasks without an estimate count as 30 minutes.</string>
 </resources>
