@@ -4,6 +4,7 @@ import android.os.SystemClock
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Direction
+import androidx.test.uiautomator.StaleObjectException
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import java.io.File
@@ -72,20 +73,35 @@ class R8FlowTest {
         post("households", """{"householdName":"R8 family","expectedMembers":2}""", access)
 
         fun click(label: String) {
-            repeat(8) {
-                val target = device.findObjects(By.text(label)).mapNotNull { text ->
-                    var node = text
-                    while (!node.isClickable && node.parent != null) node = node.parent
-                    node.takeIf { it.isClickable }
-                }.lastOrNull()
-                if (target != null) {
-                    target.click()
-                    device.waitForIdle()
-                    return
+            val deadline = SystemClock.uptimeMillis() + 15_000
+            while (SystemClock.uptimeMillis() < deadline) {
+                device.waitForIdle(1_000)
+                try {
+                    val labels = device.findObjects(By.text(label))
+                    val labelVisible = labels.any { it.visibleBounds.height() > 0 }
+                    val target = labels.mapNotNull { text ->
+                        var node = text
+                        while (!node.isClickable) {
+                            val parent = node.parent ?: break
+                            node = parent
+                        }
+                        node.takeIf { it.isClickable && it.isEnabled && it.visibleBounds.height() > 0 }
+                    }.lastOrNull()
+                    if (target != null) {
+                        target.click()
+                        device.waitForIdle(1_000)
+                        return
+                    }
+                    if (!labelVisible) {
+                        // Never swipe the horizontal tabs while a navigation transition is pending.
+                        device.findObjects(By.scrollable(true))
+                            .lastOrNull { it.visibleBounds.height() > device.displayHeight / 4 }
+                            ?.scroll(Direction.DOWN, 0.7f)
+                    }
+                } catch (_: StaleObjectException) {
+                    // Compose replaced a node during a server-backed refresh; query the new tree.
                 }
-                val scroll = device.findObjects(By.scrollable(true)).lastOrNull()
-                scroll?.scroll(Direction.DOWN, 0.7f)
-                device.wait(Until.hasObject(By.text(label)), 1_000)
+                SystemClock.sleep(100)
             }
             error("R8 UI control was unavailable: $label")
         }
@@ -104,10 +120,12 @@ class R8FlowTest {
         val fields = device.findObjects(By.clazz("android.widget.EditText"))
         check(fields.size == 2)
         fields[0].text = email
-        fields[1].text = password
+        device.waitForIdle()
+        device.findObjects(By.clazz("android.widget.EditText"))[1].text = password
         click("Prijava")
         shown("Opravila")
         click("Opravila")
+        shown("Išči po naslovu")
         click("Dodaj opravilo")
         check(device.wait(Until.hasObject(By.clazz("android.widget.EditText")), 10_000))
         device.findObjects(By.clazz("android.widget.EditText"))[0].text = "R8 voice task"
@@ -116,6 +134,7 @@ class R8FlowTest {
         SystemClock.sleep(1_500)
         click("Ustavi snemanje")
         click("Shrani")
+        check(device.wait(Until.gone(By.text("Shrani")), 10_000))
         shown("R8 voice task")
         click("R8 voice task")
         click("Predvajaj posnetek")
