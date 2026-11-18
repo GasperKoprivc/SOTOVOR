@@ -1,5 +1,6 @@
 import java.net.URI
 import java.util.Properties
+import groovy.json.JsonSlurper
 
 plugins {
     alias(libs.plugins.android.application)
@@ -30,8 +31,18 @@ fun url(property: String, fallback: String, allowHttp: Boolean): String {
 val debugUrl = url("sotovorDebugUrl", "http://10.0.2.2:3000/", true)
 val releaseUrl = url("sotovorReleaseUrl", "https://sotovor.example.com/", false)
 val updateUrl = providers.gradleProperty("sotovorUpdateUrl").orNull ?: local.getProperty("sotovorUpdateUrl")
-    ?: "https://play.google.com/store/apps/details?id=si.sotovor.app"
+    ?: releaseUrl + "prenesi"
 require(URI(updateUrl).scheme == "https" && URI(updateUrl).host != null && '"' !in updateUrl) { "Invalid sotovorUpdateUrl" }
+val rootManifest = JsonSlurper().parse(rootProject.file("../../package.json")) as Map<*, *>
+val sotovorVersion = rootManifest["version"].toString()
+require(Regex("^(0|[1-9]\\d*)\\.(0|[1-9]\\d?)\\.(0|[1-9]\\d?)$").matches(sotovorVersion)) { "Invalid package.json version" }
+val (major, minor, patch) = sotovorVersion.split('.').map(String::toLong)
+val derivedVersionCode = major * 10000 + minor * 100 + patch
+require(derivedVersionCode in 1..2100000000L) { "Invalid Android versionCode" }
+val signing = listOf("ANDROID_KEYSTORE_FILE", "ANDROID_KEYSTORE_PASSWORD", "ANDROID_KEY_ALIAS", "ANDROID_KEY_PASSWORD")
+    .map { providers.environmentVariable(it).orNull.orEmpty() }
+val signedRelease = signing.all { it.isNotBlank() }
+require(signedRelease || signing.all { it.isBlank() }) { "Configure all four Android signing values or leave all of them empty." }
 
 android {
     namespace = "si.sotovor.app"
@@ -40,18 +51,27 @@ android {
         applicationId = "si.sotovor.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = derivedVersionCode.toInt()
+        versionName = sotovorVersion
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("boolean", "FIREBASE_CONFIGURED", firebaseConfigured.toString())
         buildConfigField("String", "PUBLIC_URL", "\"$releaseUrl\"")
         buildConfigField("String", "UPDATE_URL", "\"$updateUrl\"")
         manifestPlaceholders["inviteHost"] = URI(releaseUrl).host
     }
+    signingConfigs {
+        if (signedRelease) create("production") {
+            storeFile = file(signing[0])
+            storePassword = signing[1]
+            keyAlias = signing[2]
+            keyPassword = signing[3]
+        }
+    }
     buildTypes {
         debug { buildConfigField("String", "BASE_URL", "\"$debugUrl\"") }
         release {
             buildConfigField("String", "BASE_URL", "\"$releaseUrl\"")
+            if (signedRelease) signingConfig = signingConfigs.getByName("production")
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }

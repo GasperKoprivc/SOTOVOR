@@ -21,18 +21,18 @@ Jezik lahko izbereš že v oknu za prijavo. Privzeta je angleščina, na voljo s
 Po gradnji je izvršljiva datoteka v `src-tauri/target/release/sotovor.exe`. Za lokalno uporabo naj `start.bat` najprej zažene strežnik. Za izdelavo namestitvenega paketa Windows iz mape `src-tauri` uporabi:
 
 ```powershell
-npx.cmd --yes @tauri-apps/cli@2 build --bundles nsis
+npx.cmd --yes @tauri-apps/cli@2.12.5 build --bundles nsis
 ```
 
-Paket NSIS je v `src-tauri/target/release/bundle/nsis`. Za distribucijo namestitveni paket ustrezno podpiši.
+Paket NSIS je v `src-tauri/target/release/bundle/nsis`. Namesti se za trenutnega uporabnika, pri manjkajočem WebView2 pa zažene Microsoftov spletni bootstrapper.
 
 ## Objava
 
-Spletni in namizni odjemalec naj kažeta na isti Sotovor Express strežnik. Ta potrebuje frontend iz iste različice, API za namizno prijavo in MongoDB z obstojnim volumnom. Na odjemalcu zaženi aplikacijo s spremenljivko `SOTOVOR_URL`, ki vsebuje osnovni HTTPS naslov objavljenega Sotovora:
+Spletni in namizni odjemalec uporabljata isti Sotovor Express strežnik. GitHub Actions pri gradnji namestitvenega programa v aplikacijo vpiše produkcijski HTTPS naslov iz `SOTOVOR_PRODUCTION_URL`. Ob zagonu odjemalec preveri digitalno podpisane posodobitve in potrdi namestitev z uporabnikom. Med razvojem lahko za zagon uporabiš `SOTOVOR_URL`:
 
 ```powershell
 $env:SOTOVOR_URL = 'https://sotovor.example.com'
 .\src-tauri\target\release\sotovor.exe
 ```
 
-Lokalni privzeti naslov je `http://127.0.0.1:3000`. Za druga lokalna vrata najprej zaženi strežnik, nato nastavi `SOTOVOR_URL` na njegov naslov. Družine, opravila in koledar so skupni vsem odjemalcem, ki uporabljajo isti strežnik in račun. Prenosnega paketa in lokalnih datotek MongoDB ne dodajaj v Git.
+Lokalna gradnja privzeto uporablja `http://127.0.0.1:3000`. Za izdajo spremeni različico v korenskem `package.json` in zaženi `npm run version:sync`. Postopek objave in ključev je v [navodilih za izdajo](../../docs/HUMAN_TASKS.md#publish-the-installers).

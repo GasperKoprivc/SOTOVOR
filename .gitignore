@@ -14,6 +14,8 @@ apps/android/.kotlin/
 apps/android/**/build/
 apps/android/local.properties
 apps/android/app/google-services.json
+apps/desktop/src-tauri/tauri.release.json
+release-assets/
 dist/
 apps/desktop/src-tauri/target/
 apps/desktop/src-tauri/gen/
