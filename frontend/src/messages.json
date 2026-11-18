@@ -1,4 +1,8 @@
 {
+  "Ves dan": {"en": "All day", "de": "Ganztägig"},
+  "Začetek": {"en": "Start time", "de": "Beginn"},
+  "Trajanje (minute)": {"en": "Duration (minutes)", "de": "Dauer (Minuten)"},
+  "Izberi veljaven začetni čas in trajanje do 1440 minut.": {"en": "Choose a valid start time and a duration of up to 1440 minutes.", "de": "Wähle eine gültige Startzeit und eine Dauer von bis zu 1440 Minuten."},
   "Nakupi": {"en": "Shopping", "de": "Einkauf"},
   "Skupni nakupovalni seznam": {"en": "Shared shopping list", "de": "Gemeinsame Einkaufsliste"},
   "Izdelek": {"en": "Item", "de": "Artikel"},

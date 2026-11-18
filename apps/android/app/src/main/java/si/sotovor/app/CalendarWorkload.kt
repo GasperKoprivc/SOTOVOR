@@ -1,9 +1,13 @@
 package si.sotovor.app
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -62,7 +66,7 @@ fun CalendarPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVi
             Row(Modifier.fillMaxWidth()) {
                 repeat(7) { column ->
                     val date = monday.plusDays((row * 7 + column).toLong())
-                    val hasItem = workspace.entries.any { it.dueOn == date.toString() }
+                    val hasItem = workspace.entries.any { it.dueOn == date.toString() || eventBlock(it, date) != null }
                     val description = date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL))
                     TextButton(
                         onClick = { selected = date.toString() },
@@ -79,11 +83,49 @@ fun CalendarPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVi
             OutlinedButton(onClick = { model.edit(EntryEditor("event", day = selected)) }) { Text(stringResource(R.string.add_event)) }
             OutlinedButton(onClick = { model.edit(EntryEditor("task", day = selected)) }) { Text(stringResource(R.string.add_task)) }
         }
-        val matches = workspace.entries.filter { it.dueOn == selected }
-        if (matches.isEmpty()) Text(stringResource(R.string.no_entries))
-        matches.forEach { EntryCard(it, workspace, model) { model.edit(EntryEditor(it.kind, it)) } }
+        val visibleDays = if (monthly) listOf(day) else (0L..6L).map(monday::plusDays)
+        var found = false
+        visibleDays.forEach { date ->
+            val matches = workspace.entries.map { it to eventBlock(it, date) }
+                .filter { (entry, block) -> entry.dueOn == date.toString() || block != null }
+                .sortedBy { (_, block) -> block?.start ?: -1 }
+            if (matches.isNotEmpty()) {
+                found = true
+                if (!monthly) Text(date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)),
+                    style = MaterialTheme.typography.titleMedium)
+            }
+            matches.forEach { (entry, block) ->
+                if (block == null) EntryCard(entry, workspace, model) { model.edit(EntryEditor(entry.kind, entry)) }
+                else Card(
+                    onClick = { model.edit(EntryEditor(entry.kind, entry)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                ) {
+                    Column(Modifier.padding(12.dp)) {
+                        val time = eventClock(block.start) + (block.end?.let { " – " + eventClock(it) } ?: "")
+                        Text(time, style = MaterialTheme.typography.labelLarge)
+                        Text(entry.title, style = MaterialTheme.typography.titleMedium)
+                    }
+                }
+            }
+        }
+        if (!found) Text(stringResource(R.string.no_entries))
     }
 }
+
+internal data class EventBlock(val start: Int, val end: Int?)
+
+internal fun eventBlock(entry: Entry, day: LocalDate): EventBlock? {
+    val time = entry.startTime ?: return null
+    val date = entry.dueOn ?: return null
+    val start = time.substringBefore(':').toInt() * 60 + time.substringAfter(':').toInt()
+    val end = entry.durationMinutes?.plus(start)
+    if (date == day.toString()) return EventBlock(start, end?.coerceAtMost(1440))
+    if (end != null && end > 1440 && date == day.minusDays(1).toString()) return EventBlock(0, end - 1440)
+    return null
+}
+
+internal fun eventClock(minutes: Int): String = "%02d:%02d".format(Locale.ROOT, minutes / 60, minutes % 60)
 
 @Composable
 fun WorkloadPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceViewModel) {

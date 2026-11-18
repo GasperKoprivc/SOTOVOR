@@ -162,4 +162,7 @@
     <string name="shopping_bought_by">Kupil/a: %1$s</string>
     <string name="shopping_remove_item">Odstrani %1$s</string>
     <string name="shopping_remove">Odstrani</string>
+    <string name="event_all_day">Ves dan</string>
+    <string name="event_start">Začetek: %1$s</string>
+    <string name="event_duration">Trajanje (minute)</string>
 </resources>

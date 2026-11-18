@@ -54,6 +54,7 @@ function Dialog({ title, onClose, children }) {
 
 function EntryDialog({ initialKind, initialDate, entry, permissions, members, busy, error, onSave, onRemove, onClose }) {
   const [kind, setKind] = useState(initialKind);
+  const [allDay, setAllDay] = useState(!entry?.startTime);
   const [repeatDays, setRepeatDays] = useState(String(entry?.repeatDays ?? 0));
   const [removing, setRemoving] = useState(false);
   const [voice, setVoice] = useState(null);
@@ -67,6 +68,10 @@ function EntryDialog({ initialKind, initialDate, entry, permissions, members, bu
       const values = Object.fromEntries(new FormData(event.currentTarget));
       onSave({
         kind, dueOn: moveDate ? values.dueOn || null : entry.dueOn,
+        ...(kind === 'event' && editContent ? {
+          allDay, startTime: allDay ? null : values.startTime,
+          durationMinutes: allDay || !values.durationMinutes ? null : Number(values.durationMinutes),
+        } : {}),
         title: editContent ? values.title : entry.title, category: editContent ? values.category : entry.category,
         assigneeId: editContent ? values.assigneeId || null : entry.assigneeId,
         repeatDays: editContent ? Number(values.repeatDays || 0) : entry.repeatDays ?? 0,
@@ -84,6 +89,13 @@ function EntryDialog({ initialKind, initialDate, entry, permissions, members, bu
           {Object.entries(categories).map(([key, label]) => <option key={key} value={key}>{t(label)}</option>)}
         </select></label>
       </div>
+      {kind === 'event' && <label className="check-field">
+        <input type="checkbox" checked={allDay} disabled={!editContent} onChange={event => setAllDay(event.target.checked)} /> {t('Ves dan')}
+      </label>}
+      {kind === 'event' && !allDay && <div className="fields">
+        <label>{t('Začetek')}<input name="startTime" type="time" defaultValue={entry?.startTime ?? '09:00'} readOnly={!editContent} required /></label>
+        <label>{t('Trajanje (minute)')}<input name="durationMinutes" type="number" min="1" max="1440" defaultValue={entry?.durationMinutes ?? ''} readOnly={!editContent} /></label>
+      </div>}
       {kind === 'task' && <label>{t('Dodeli članu')}<select name="assigneeId" disabled={!editContent} defaultValue={entry?.assigneeId ?? ''}>
         <option value="">{t('Na voljo za prevzem')}</option>
         {members.filter(member => !member.inactive).map(member => <option key={member.id} value={member.id}>{member.name}</option>)}

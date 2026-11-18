@@ -7,6 +7,7 @@ import { registerNotificationRoutes } from './notifications.js';
 import { registerPasswordReset } from './password-reset.js';
 import { registerAccountData } from './account-data.js';
 import { createShoppingList } from './shopping.js';
+import { eventTiming, timingOf } from './event-timing.js';
 import { taskFilters } from './task-filters.js';
 import { Router } from 'express';
 import { Binary, ObjectId } from 'mongodb';
@@ -140,7 +141,7 @@ export function createApi(database, {
   const entryProjection = { householdId: 0, nextOccurrence: 0, whatsappMessageId: 0, 'voice.bytes': 0 };
   function publicEntry({ _id, ...item }, household) {
     return {
-      id: String(_id), ...item, version: item.version ?? 0,
+      id: String(_id), ...item, ...(item.kind === 'event' ? timingOf(item) : {}), version: item.version ?? 0,
       assigneeId: !item.completedAt && household.members.some(person => person.inactive && person.id === item.assigneeId)
         ? null : item.assigneeId,
     };
@@ -408,7 +409,7 @@ export function createApi(database, {
     res.json({ ok: true });
   });
 
-  function entryFields(req) {
+  function entryFields(req, previous) {
     const { kind, dueOn = null, category = 'drugo', repeatDays = 0, rotate = false, reminderDays = 2 } = req.body;
     if (kind !== 'task' && kind !== 'event') throw new HttpError(400, 'Izberi opravilo ali dogodek.');
     const title = requiredText(req.body.title, 160, 'Naslov');
@@ -427,7 +428,7 @@ export function createApi(database, {
     if (assigneeId !== null && !req.household.members.some(member => member.id === assigneeId && !member.inactive)) {
       throw new HttpError(400, 'Izberi člana tega prostora.');
     }
-    return { kind, title, dueOn, category, assigneeId, repeatDays, rotate, reminderDays };
+    return { kind, title, dueOn, category, assigneeId, repeatDays, rotate, reminderDays, ...eventTiming(req.body, previous) };
   }
 
   if (versioned) {
@@ -476,7 +477,7 @@ export function createApi(database, {
     if (req.body.version !== (entry.version ?? 0)) {
       throw new HttpError(409, 'Vnos se je spremenil. Zapri obrazec in ga znova odpri.');
     }
-    const fields = action === 'remove' ? { archivedAt: new Date() } : entryFields(req);
+    const fields = action === 'remove' ? { archivedAt: new Date() } : entryFields(req, entry);
     if (action === 'edit' && fields.kind !== entry.kind) throw new HttpError(400, 'Vrste vnosa ni mogoče spremeniti.');
     if (action === 'edit' && fields.dueOn !== entry.dueOn && !rights.move) {
       throw new HttpError(403, 'Nimaš dovoljenja za premikanje datumov.');
@@ -484,7 +485,7 @@ export function createApi(database, {
     if (action === 'edit' && !rights.edit) {
       for (const [key, value] of Object.entries(fields)) {
         const original = key === 'assigneeId' && req.household.members.some(person => person.id === entry.assigneeId && person.inactive)
-          ? null : entry[key] ?? { repeatDays: 0, rotate: false, reminderDays: 2, assigneeId: null }[key];
+          ? null : entry[key] ?? { repeatDays: 0, rotate: false, reminderDays: 2, assigneeId: null, ...(entry.kind === 'event' ? timingOf(entry) : {}) }[key];
         if (key !== 'dueOn' && value !== original) {
           throw new HttpError(403, 'Dovoljenje velja samo za spremembo datuma.');
         }

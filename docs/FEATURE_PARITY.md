@@ -3,7 +3,7 @@
 | Feature | Backend / OpenAPI | Web and Tauri | Android |
 | --- | --- | --- | --- |
 | Shared shopping list | Family API and WhatsApp quick add | Add, check, uncheck, remove, live updates | Add, check, uncheck, remove, optional FCM alerts |
-| Event time and duration | Planned | Planned | Planned |
+| Event time and duration | All-day or timed events with optional duration | Editor and weekly time blocks | Editor and weekly time blocks |
 | Private calendar subscription | Planned | Planned | Planned |
 | Task checklists and comments | Planned | Planned | Planned |
 | Task duration and planner weighting | Planned | Planned | Planned |
@@ -25,3 +25,12 @@ After pairing the family through the existing WhatsApp integration, send
 deliveries. With Firebase configured, Android members can individually enable
 shopping notifications in the shopping screen and grant OS notification access.
 Alerts point to the family list and omit item names.
+
+## Event time and duration
+
+Choose **Ves dan** to keep a date-only event. Turn it off to pick a start time
+and optionally give the event a duration in minutes. The week view sorts timed
+events by start time and shows the continuation on the following day for
+overnight events. Times are stored as Europe/Ljubljana local wall time. Older
+clients can edit an event without overwriting its timing when they omit the new
+fields; existing date-only entries are displayed as all-day.

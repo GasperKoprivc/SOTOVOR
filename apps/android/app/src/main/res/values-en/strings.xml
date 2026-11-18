@@ -162,4 +162,7 @@
     <string name="shopping_bought_by">Bought by %1$s</string>
     <string name="shopping_remove_item">Remove %1$s</string>
     <string name="shopping_remove">Remove</string>
+    <string name="event_all_day">All day</string>
+    <string name="event_start">Start time: %1$s</string>
+    <string name="event_duration">Duration (minutes)</string>
 </resources>

@@ -586,3 +586,32 @@ test('shopping state is family scoped, preserves buyer attribution, and invalida
     await reader.cancel();
   }
 });
+
+test('events support all-day and timed schedules without dropping legacy timing on edit', async () => {
+  const created = await postJson('/households', { householdName: 'Koledar', memberName: 'Ana' });
+  const scope = { cookie: sessionCookie(created.response), household: created.data.householdId };
+  const event = { kind: 'event', title: 'Nočni dogodek', dueOn: '2028-02-06' };
+  const create = body => v1('/entries', { ...scope, method: 'POST', body });
+  const empty = await create(event);
+  assert.equal(empty.status, 201);
+  assert.equal(empty.body.entries[0].allDay, true);
+  assert.equal(empty.body.entries[0].startTime, null);
+  const timed = await create({ ...event, allDay: false, startTime: '23:40', durationMinutes: 50 });
+  assert.equal(timed.status, 201);
+  const id = timed.body.entries.find(item => item.startTime === '23:40').id;
+  const path = '/entries/' + id;
+  const read = async () => (await v1(path, scope)).body;
+  const edit = body => v1(path + '/edit', { ...scope, method: 'POST', body: { ...event, ...body } });
+  assert.equal((await read()).durationMinutes, 50);
+  assert.equal((await edit({ title: 'Nov naslov', version: 0 })).status, 200);
+  assert.equal((await read()).startTime, '23:40');
+  assert.equal((await edit({ allDay: true, startTime: null, durationMinutes: null, version: 1 })).status, 200);
+  assert.equal((await read()).allDay, true);
+  assert.equal((await read()).durationMinutes, null);
+  for (const invalid of [
+    { allDay: false }, { startTime: '24:01' }, { startTime: '8:00' },
+    { allDay: true, startTime: '09:00' }, { durationMinutes: 10 },
+    { startTime: '09:00', durationMinutes: 0 }, { startTime: '09:00', durationMinutes: 1441 },
+    { startTime: '09:00', durationMinutes: 2.5 }, { kind: 'task', startTime: '09:00' },
+  ]) assert.equal((await create({ ...event, ...invalid })).status, 400);
+});

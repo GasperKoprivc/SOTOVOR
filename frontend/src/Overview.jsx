@@ -1,3 +1,4 @@
+import { clockTime, eventBlock } from './event-time.js';
 import { t } from './i18n.js';
 import { useState } from 'react';
 import {
@@ -116,7 +117,9 @@ export function Calendar({ entries, today, compact, onOpen, onAdd, onEdit }) {
   const monday = addDays(now, -((now.getDay() + 6) % 7) + offset * 7);
   const sunday = addDays(monday, 6);
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
-  const week = entries.filter(entry => entry.dueOn && entry.dueOn >= dateKey(monday) && entry.dueOn <= dateKey(sunday));
+  const firstDate = dateKey(monday);
+  const lastDate = dateKey(sunday);
+  const week = entries.filter(entry => entry.dueOn && ((entry.dueOn >= firstDate && entry.dueOn <= lastDate) || eventBlock(entry, firstDate)));
   const rangeStart = shortDate.format(monday) + (monday.getFullYear() !== sunday.getFullYear() ? ` ${monday.getFullYear()}` : '');
   return <section className={`panel calendar ${compact ? 'compact' : ''}`}>
     <div className="panel-heading">
@@ -130,12 +133,15 @@ export function Calendar({ entries, today, compact, onOpen, onAdd, onEdit }) {
     <ol className="week">
       {days.map(day => {
         const key = dateKey(day);
-        const items = week.filter(entry => entry.dueOn === key);
+        const items = week.map(entry => ({ entry, block: eventBlock(entry, key) }))
+          .filter(({ entry, block }) => entry.dueOn === key || block)
+          .sort((a, b) => (a.block?.start ?? -1) - (b.block?.start ?? -1));
         return <li key={key} className={key === today ? 'today' : ''}>
           <span>{weekday.format(day)}</span><strong>{day.getDate()}</strong>
           {compact ? <span className={items.length ? 'day-dot' : 'day-dot empty-dot'} /> :
-            <ul className="day-entries">{items.map(entry => <li key={entry.id} className={entry.kind}>
-              <span>{entry.kind === 'event' ? t('Dogodek') : entry.completedAt ? t('Zaključeno') : t('Opravilo')}</span>
+            <ul className="day-entries">{items.map(({ entry, block }) => <li key={entry.id} className={entry.kind + (block ? ' timed-event' : '')}>
+              <span>{block ? clockTime(block.start) + (block.end === null ? '' : ' – ' + clockTime(block.end))
+                : entry.kind === 'event' ? t('Ves dan') : entry.completedAt ? t('Zaključeno') : t('Opravilo')}</span>
               {entry.completedAt || !onEdit ? entry.title : <button className="calendar-edit" onClick={() => onEdit(entry)} aria-label={t("Uredi %0", entry.title)}>{entry.title}</button>}
               {entry.voice && (window.sotovorDesktop
                 ? <audio className="voice-link desktop-audio" controls preload="none" src={voiceUrl(entry.id)} aria-label={t("Glasovna beležka: %0", entry.title)} />
