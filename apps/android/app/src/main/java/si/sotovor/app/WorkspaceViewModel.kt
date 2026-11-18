@@ -333,6 +333,7 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
         val settings = repository.saveSettings(value)
         mutable.update { it.copy(notificationSettings = settings) }
     }
+    suspend fun transcribe(id: String) = repository.transcribe(checkNotNull(household()), id)
     suspend fun audio(id: String) = repository.downloadVoice(checkNotNull(household()), id)
 
     private suspend fun load() {

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import Transcription from './Transcription.jsx';
 import { request } from './data.js';
 import { errorText, t } from './i18n.js';
 
-export default function TaskDetails({ task, householdId }) {
+export default function TaskDetails({ task, householdId, transcriptionEnabled }) {
   const [details, setDetails] = useState(null);
   const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');
@@ -30,6 +31,7 @@ export default function TaskDetails({ task, householdId }) {
   }
 
   return <div className="task-details">
+    {task.voice && transcriptionEnabled && <Transcription entryId={task.id} />}
     {problem && <p role="alert">{problem}</p>}
     {!details && !problem && <p role="status">{t('Nalaganje seznama …')}</p>}
     {details && <>

@@ -55,6 +55,8 @@ class FamilyRepository @Inject constructor(
         TodayWidgetWork.refresh(context)
     }
 
+    suspend fun transcribe(household: String, id: String) = api.transcribe(household, id)
+
     suspend fun widgetTasks(): WidgetTasks? {
         val session = store.current()?.sessionId ?: return null
         val selected = context.settings.data.first()[activeHousehold]

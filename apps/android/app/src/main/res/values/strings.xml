@@ -200,4 +200,10 @@
     <string name="widget_open">Odpri Sotovor</string>
     <string name="widget_empty">Danes nimaš odprtih opravil.</string>
     <string name="widget_done">Končano</string>
+    <string name="transcription_title">Glas v besedilo</string>
+    <string name="transcription_privacy">Če nadaljuješ, bo posnetek poslan nastavljenemu ponudniku za prepis.</string>
+    <string name="transcription_working">Prepisovanje …</string>
+    <string name="transcription_submit">Prepiši posnetek</string>
+    <string name="transcription_empty">V posnetku ni bilo prepoznanega besedila.</string>
+    <string name="transcription_failed">Prepis trenutno ni na voljo.</string>
 </resources>

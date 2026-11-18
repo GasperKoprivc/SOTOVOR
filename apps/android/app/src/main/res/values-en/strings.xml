@@ -200,4 +200,10 @@
     <string name="widget_open">Open Sotovor</string>
     <string name="widget_empty">You have no open tasks today.</string>
     <string name="widget_done">Done</string>
+    <string name="transcription_title">Voice to text</string>
+    <string name="transcription_privacy">Continuing sends the recording to the configured transcription provider.</string>
+    <string name="transcription_working">Transcribing …</string>
+    <string name="transcription_submit">Transcribe recording</string>
+    <string name="transcription_empty">No speech was recognised in the recording.</string>
+    <string name="transcription_failed">Transcription is currently unavailable.</string>
 </resources>

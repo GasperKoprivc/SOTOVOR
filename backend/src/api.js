@@ -3,6 +3,7 @@ import { parseBuffer } from 'music-metadata';
 import { HttpError, handleError } from './api-errors.js';
 import { bearerSession, hash, registerMobileAuth, validId } from './mobile-auth.js';
 import { pageOf } from './paging.js';
+import { registerTranscription } from './transcription.js';
 import { registerRewards } from './rewards.js';
 import { registerTaskDetails } from './task-details.js';
 import { registerNotificationRoutes, taskCommentNotice } from './notifications.js';
@@ -65,7 +66,7 @@ async function parseVoice(voice, versioned) {
 }
 
 export function createApi(database, {
-  shopping = createShoppingList(database), push, versioned = false, mobileOptions = {}, whatsappEnabled = false, verificationMail, reportMailFailure = () => console.error('Verification email delivery failed.'),
+  shopping = createShoppingList(database), push, transcription, versioned = false, mobileOptions = {}, whatsappEnabled = false, verificationMail, reportMailFailure = () => console.error('Verification email delivery failed.'),
 } = {}) {
   const { households, entries, accounts, sessions, desktopLinks } = database;
   const router = Router();
@@ -169,6 +170,7 @@ export function createApi(database, {
       admin,
       permissions: access(household, member),
       leaveRequested: Boolean(member.leaveRequestedAt),
+      transcriptionEnabled: Boolean(transcription),
       whatsapp: { enabled: whatsappEnabled, linked: Boolean(household.whatsappSender) },
       household: { id: String(household._id), name: household.name, expectedMembers: household.expectedMembers ?? null,
         ...(admin ? { inviteCode: household.inviteCode } : {}) },
@@ -310,6 +312,7 @@ export function createApi(database, {
   });
 
   shopping.register(router);
+  registerTranscription(router, database, transcription);
   if (versioned) router.get('/widget/today', async (req, res) => {
     const householdId = req.household._id;
     await materializeOccurrences(entries, householdId);

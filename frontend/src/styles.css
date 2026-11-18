@@ -280,3 +280,5 @@ dialog .invite-label { margin-bottom: .8rem; }
 
 .day-entries .timed-event { border-inline-start: 3px solid var(--accent); }
 .day-entries .timed-event > span { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.transcript { white-space: pre-wrap; overflow-wrap: anywhere; }
