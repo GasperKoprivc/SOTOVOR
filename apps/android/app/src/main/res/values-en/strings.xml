@@ -206,4 +206,9 @@
     <string name="transcription_submit">Transcribe recording</string>
     <string name="transcription_empty">No speech was recognised in the recording.</string>
     <string name="transcription_failed">Transcription is currently unavailable.</string>
+    <string name="appearance_language">Language</string>
+    <string name="appearance_theme">Appearance</string>
+    <string name="appearance_dark">Dark mode</string>
+    <string name="appearance_light">Light mode</string>
+    <string name="appearance_system">System appearance</string>
 </resources>

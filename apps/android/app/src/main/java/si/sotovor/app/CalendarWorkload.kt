@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -36,6 +37,7 @@ import java.util.Locale
 fun CalendarPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceViewModel) {
     var selected by rememberSaveable { mutableStateOf(today().toString()) }
     var monthly by rememberSaveable { mutableStateOf(true) }
+    val locale = LocalConfiguration.current.locales[0]
     val day = LocalDate.parse(selected)
     val start = if (monthly) day.withDayOfMonth(1) else day
     val monday = start.minusDays((start.dayOfWeek.value - 1).toLong())
@@ -51,7 +53,7 @@ fun CalendarPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVi
             FilterChip(monthly, { monthly = true }, { Text(stringResource(R.string.month)) })
             FilterChip(!monthly, { monthly = false }, { Text(stringResource(R.string.week)) })
         }
-        Text(day.format(DateTimeFormatter.ofPattern("LLLL yyyy", Locale.getDefault())), style = MaterialTheme.typography.headlineSmall)
+        Text(day.format(DateTimeFormatter.ofPattern("LLLL yyyy", locale)), style = MaterialTheme.typography.headlineSmall)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             TextButton(onClick = { shift(-1) }) { Text(stringResource(R.string.previous)) }
             TextButton(onClick = { selected = today().toString() }) { Text(stringResource(R.string.today)) }
@@ -59,7 +61,7 @@ fun CalendarPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVi
         }
         Row(Modifier.fillMaxWidth()) {
             repeat(7) { index ->
-                Text(monday.plusDays(index.toLong()).format(DateTimeFormatter.ofPattern("EEEEE", Locale.getDefault())),
+                Text(monday.plusDays(index.toLong()).format(DateTimeFormatter.ofPattern("EEEEE", locale)),
                     modifier = Modifier.weight(1f))
             }
         }
@@ -68,7 +70,7 @@ fun CalendarPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVi
                 repeat(7) { column ->
                     val date = monday.plusDays((row * 7 + column).toLong())
                     val hasItem = workspace.entries.any { it.dueOn == date.toString() || eventBlock(it, date) != null }
-                    val description = date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL))
+                    val description = date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale))
                     TextButton(
                         onClick = { selected = date.toString() },
                         modifier = Modifier.weight(1f).sizeIn(minHeight = 48.dp).semantics { contentDescription = description }
@@ -79,7 +81,7 @@ fun CalendarPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVi
                 }
             }
         }
-        Text(day.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)), style = MaterialTheme.typography.titleLarge)
+        Text(day.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale)), style = MaterialTheme.typography.titleLarge)
         if (workspace.permissions.create) {
             OutlinedButton(onClick = { model.edit(EntryEditor("event", day = selected)) }) { Text(stringResource(R.string.add_event)) }
             OutlinedButton(onClick = { model.edit(EntryEditor("task", day = selected)) }) { Text(stringResource(R.string.add_task)) }
@@ -92,7 +94,7 @@ fun CalendarPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVi
                 .sortedBy { (_, block) -> block?.start ?: -1 }
             if (matches.isNotEmpty()) {
                 found = true
-                if (!monthly) Text(date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)),
+                if (!monthly) Text(date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale)),
                     style = MaterialTheme.typography.titleMedium)
             }
             matches.forEach { (entry, block) ->

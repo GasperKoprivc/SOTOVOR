@@ -53,6 +53,7 @@ interface SotovorApi {
     @POST("tasks/{id}/checklist") suspend fun addCheck(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Body input: ChecklistInput): TaskDetails
     @PUT("tasks/{id}/checklist/{item}") suspend fun checkItem(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Path("item") item: String, @Body input: ChecklistCheck): TaskDetails
     @POST("tasks/{id}/comments") suspend fun addComment(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Body input: CommentInput): TaskDetails
+    @PUT("me/appearance") suspend fun saveAppearance(@Body appearance: Appearance): Appearance
     @GET("widget/today") suspend fun widgetTasks(@Header("X-Sotovor-Household") household: String?): WidgetTasks
     @GET("rewards") suspend fun rewards(@Header("X-Sotovor-Household") household: String): Rewards
     @PUT("rewards") suspend fun saveRewards(@Header("X-Sotovor-Household") household: String, @Body input: RewardSettings): Ok

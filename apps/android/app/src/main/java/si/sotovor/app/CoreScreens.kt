@@ -50,7 +50,7 @@ fun today(): LocalDate = LocalDate.now(ZoneId.of("Europe/Ljubljana"))
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CoreWorkspace(workspace: Workspace, state: WorkspaceState, model: WorkspaceViewModel, push: NativePush) {
+fun CoreWorkspace(workspace: Workspace, state: WorkspaceState, model: WorkspaceViewModel, push: NativePush, appearance: Appearance = Appearance()) {
     val household = workspace.household ?: return
     val tabs = listOf(R.string.overview, R.string.tasks, R.string.calendar, R.string.workload, R.string.notifications, R.string.profile, R.string.shopping_tab)
     var tab by rememberSaveable(household.id) { mutableIntStateOf(0) }
@@ -114,7 +114,7 @@ fun CoreWorkspace(workspace: Workspace, state: WorkspaceState, model: WorkspaceV
                     else model.edit(EntryEditor(target.kind, target))
                 }
                 6 -> ShoppingPage(household.id, state, model, push)
-                5 -> ProfilePage(workspace, state, model)
+                5 -> ProfilePage(workspace, state, model, appearance)
             }
         }
     }

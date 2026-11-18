@@ -1,4 +1,5 @@
 import { t, errorText } from './i18n.js';
+import ThemeSelect from './ThemeSelect.jsx';
 import LanguageSelect from './LanguageSelect.jsx';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -113,7 +114,7 @@ export function AuthDialog({ mode, legacy, busy, error, onAuth, onMode }) {
   </dialog>;
 }
 
-export default function Landing({ signedIn, legacy, busy, error, onAuth, onEnter, onJoin, startWithInvite }) {
+export default function Landing({ signedIn, legacy, busy, error, onAuth, onEnter, onJoin, startWithInvite, onLanguage, onTheme }) {
   const [mode, setMode] = useState(startWithInvite ? 'login' : null);
   const [active, setActive] = useState(0);
   const [motion, setMotion] = useState(true);
@@ -123,7 +124,7 @@ export default function Landing({ signedIn, legacy, busy, error, onAuth, onEnter
       <a className="landing-brand" href="#domov"><Mark /> <span>SOTOVOR</span></a>
       <nav aria-label={t('Predstavitev')}><a href="#funkcije">{t('Funkcije')}</a><a href="#naprave">{t('Aplikacije in naprava')}</a><a href="#zgodba">{t('Zakaj Sotovor')}</a><a href="#zacetek">{t('Kako začeti')}</a></nav>
       <a className="header-download" href="/prenesi">{t('Prenesi')}</a>
-      <LanguageSelect />
+      <div className="landing-appearance"><LanguageSelect onChange={onLanguage} /><ThemeSelect onChange={onTheme} /></div>
       <button className="launch-button header-login" onClick={() => signedIn ? onEnter('profile') : setMode('login')}>
         {signedIn ? t('Odpri profil') : t('Prijava')} <ArrowUpRight size={16} />
       </button>

@@ -3,6 +3,7 @@ package si.sotovor.app
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
+import android.content.res.Configuration
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -62,8 +63,6 @@ import java.util.concurrent.TimeUnit
 private val widgetSnapshot = stringPreferencesKey("today_snapshot")
 private val householdKey = ActionParameters.Key<String>("household")
 private val taskKey = ActionParameters.Key<String>("task")
-private val heading = TextStyle(color = ColorProvider(Color(0xFFFDF5EC)), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-private val text = TextStyle(color = ColorProvider(Color(0xFFFDF5EC)), fontSize = 13.sp)
 
 class TodayWidget : GlanceAppWidget() {
     override val stateDefinition = PreferencesGlanceStateDefinition
@@ -80,8 +79,19 @@ class TodayWidget : GlanceAppWidget() {
 
 @Composable
 private fun TodayWidgetContent(snapshot: WidgetTasks?) {
-    val context = LocalContext.current
-    Column(GlanceModifier.fillMaxSize().background(Color(0xFF1D3836)).padding(12.dp)) {
+    val base = LocalContext.current
+    val appearance = readAppearance(base)
+    val context = appearanceContext(base, appearance.language)
+    val dark = when (appearance.theme) {
+        "light" -> false
+        "system" -> context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        else -> true
+    }
+    val ink = ColorProvider(if (dark) Color(0xFFFDF5EC) else Color(0xFF192B2A))
+    val heading = TextStyle(color = ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+    val text = TextStyle(color = ink, fontSize = 13.sp)
+    val background = if (dark) Color(0xFF1D3836) else Color(0xFFF6F4EE)
+    Column(GlanceModifier.fillMaxSize().background(background).padding(12.dp)) {
         Text(context.getString(R.string.widget_title), style = heading,
             modifier = GlanceModifier.clickable(actionStartActivity<MainActivity>()))
         if (snapshot == null || snapshot.tasks.isEmpty()) {

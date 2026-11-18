@@ -3,6 +3,7 @@ import { parseBuffer } from 'music-metadata';
 import { HttpError, handleError } from './api-errors.js';
 import { bearerSession, hash, registerMobileAuth, validId } from './mobile-auth.js';
 import { pageOf } from './paging.js';
+import { registerAppearance } from './appearance.js';
 import { registerTranscription } from './transcription.js';
 import { registerRewards } from './rewards.js';
 import { registerTaskDetails } from './task-details.js';
@@ -133,6 +134,7 @@ export function createApi(database, {
   });
 
   registerCalendarSettings(router, database);
+  registerAppearance(router, database);
 
   registerDesktopAuth(router, {
     desktopLinks, hash,

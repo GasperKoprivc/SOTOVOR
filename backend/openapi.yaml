@@ -3,6 +3,19 @@ info: {title: Sotovor native API, version: 1.0.0}
 servers: [{url: /api/v1}]
 security: [{bearer: []}, {browserSession: []}]
 paths:
+  /me/appearance:
+    get:
+      summary: Read effective language and theme preferences for this account
+      responses:
+        '200': {description: Preferences, content: {application/json: {schema: {$ref: '#/components/schemas/Appearance'}}}}
+        '401': {description: Sign in required}
+    put:
+      summary: Save language and theme preferences for this account
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/Appearance'}}}}
+      responses:
+        '200': {description: Saved preferences, content: {application/json: {schema: {$ref: '#/components/schemas/Appearance'}}}}
+        '400': {description: Unsupported language or theme}
+        '401': {description: Sign in required}
   /entries/{id}/transcription:
     post:
       summary: Send the selected voice note to the configured transcription provider on request
@@ -534,6 +547,12 @@ components:
     bearer: {type: http, scheme: bearer, bearerFormat: opaque}
     browserSession: {type: apiKey, in: cookie, name: sotovor_session}
   schemas:
+    Appearance:
+      type: object
+      required: [language, theme]
+      properties:
+        language: {type: string, enum: [sl, en, de], default: sl}
+        theme: {type: string, enum: [dark, light, system], default: dark}
     Recurrence:
       type: object
       nullable: true
@@ -576,7 +595,7 @@ components:
     PersonalExport: {type: object, required: [profile, registeredAt, spaces], properties: {profile: {$ref: '#/components/schemas/Account'}, registeredAt: {type: string, format: date-time}, spaces: {type: array, items: {$ref: '#/components/schemas/Space'}}}}
     Error: {"type":"object","required":["error"],"properties":{"error":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string"},"message":{"type":"string"}}}}}
     Ok: {"type":"object","required":["ok"],"properties":{"ok":{"type":"boolean"}}}
-    Account: {"type":"object","required":["firstName","lastName","email","phone"],"properties":{"firstName":{"type":"string","maxLength":40},"lastName":{"type":"string","maxLength":50},"email":{"type":"string","maxLength":254,"format":"email"},"phone":{"type":"string","maxLength":25},"emailVerificationPending":{"type":"boolean"}}}
+    Account: {"type":"object","required":["firstName","lastName","email","phone"],"properties":{"firstName":{"type":"string","maxLength":40},"lastName":{"type":"string","maxLength":50},"email":{"type":"string","maxLength":254,"format":"email"},"phone":{"type":"string","maxLength":25},"appearance":{"$ref":"#/components/schemas/Appearance"},"emailVerificationPending":{"type":"boolean"}}}
     Registration: {"type":"object","required":["firstName","lastName","email","phone","password"],"properties":{"firstName":{"type":"string","maxLength":40},"lastName":{"type":"string","maxLength":50},"email":{"type":"string","maxLength":254,"format":"email"},"phone":{"type":"string","maxLength":25},"password":{"type":"string","maxLength":128,"minLength":10}}}
     Login: {"type":"object","required":["email","password","deviceName"],"properties":{"email":{"type":"string","maxLength":254},"password":{"type":"string","maxLength":128},"deviceName":{"type":"string","maxLength":80}}}
     Refresh: {"type":"object","required":["refreshToken"],"properties":{"refreshToken":{"type":"string"}}}

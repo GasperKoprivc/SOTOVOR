@@ -11,7 +11,7 @@
 | Weekly and monthly recurrence | Successor on completion, with rotation | Task editor | Task editor |
 | Today widget | Member-scoped today endpoint and existing completion action | Android home-screen feature | Glance widget, open or complete, background refresh |
 | Voice transcription | Disabled by default, configurable provider | Voice notes in task details and entry editor | Voice notes in entry dialog |
-| English and dark mode | Planned | Planned | Planned |
+| English and dark mode | Account appearance preferences | Slovenian, English and German, light/dark/system | Slovenian and English, light/dark/system |
 
 ## Shared shopping list
 
@@ -90,3 +90,11 @@ transcription endpoint, model and optional bearer token. Choose a provider
 whose retention policy fits your deployment. Sotovor sends a recording only
 after the user requests a transcript and shows a privacy notice before the
 request. The response appears in the dialog and Sotovor does not store it.
+
+## Language and theme
+
+Slovenian and dark are the defaults for a fresh installation. Web and Tauri
+share the language and theme controls. Android has Slovenian and English in
+the Android resources and includes the same theme choices. A German account
+preference displays English on Android. Saving preferences while signed in
+shares them across clients. The public download page remains Slovenian.

@@ -805,3 +805,17 @@ test('transcription is opt-in and family-scoped; configured providers receive on
   });
   assert.equal(await provider.transcribe(Buffer.from(voice.data, 'base64'), voice.mime), 'Mock transcript');
 });
+
+test('appearance defaults to Slovenian and saves validated preferences per account', async () => {
+  const cookie = sessionCookie((await postJson('/households', { householdName: 'Appearance', memberName: 'Ana' })).response);
+  const path = '/me/appearance';
+  assert.equal((await v1(path)).status, 401);
+  assert.deepEqual((await v1(path, { cookie })).body, { language: 'sl', theme: 'dark' });
+  const save = body => v1(path, { cookie, method: 'PUT', body });
+  assert.equal((await save({ language: 'xx', theme: 'light' })).status, 400);
+  assert.equal((await save({ language: 'en', theme: 'blue' })).status, 400);
+  const preferences = { language: 'en', theme: 'light' };
+  assert.deepEqual((await save(preferences)).body, preferences);
+  assert.deepEqual((await v1(path, { cookie })).body, preferences);
+  assert.deepEqual((await dashboard(cookie)).data.profile.appearance, preferences);
+});

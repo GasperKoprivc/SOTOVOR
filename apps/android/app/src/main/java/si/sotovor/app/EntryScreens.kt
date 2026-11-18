@@ -26,13 +26,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.TextStyle
-import java.util.Locale
 
 @Composable
 fun <T> SelectField(label: String, current: T, options: List<Pair<T, String>>, enabled: Boolean = true, choose: (T) -> Unit) {
@@ -75,6 +75,7 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
     var startTime by rememberSaveable(original?.id) { mutableStateOf(original?.startTime ?: "09:00") }
     var duration by rememberSaveable(original?.id) { mutableStateOf(original?.durationMinutes?.toString().orEmpty()) }
     val context = LocalContext.current
+    val locale = LocalConfiguration.current.locales[0]
     var category by rememberSaveable(original?.id) { mutableStateOf(original?.category ?: "drugo") }
     var assigned by rememberSaveable(original?.id) { mutableStateOf(original?.assigneeId) }
     var repeatMode by rememberSaveable(original?.id) {
@@ -164,7 +165,7 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
                             Checkbox(code in weekdays, { checked ->
                                 weekdays = if (checked) weekdays + code else weekdays.replace(code.toString(), "")
                             }, enabled = canEdit && !state.busy)
-                            Text(DayOfWeek.of(day).getDisplayName(TextStyle.FULL, Locale.getDefault()))
+                            Text(DayOfWeek.of(day).getDisplayName(TextStyle.FULL, locale))
                         }
                     }
                     if (repeatMode == "monthly") InputField(R.string.repeat_month_day, monthDay, canEdit && !state.busy, KeyboardType.Number) {
