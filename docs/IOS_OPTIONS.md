@@ -1,0 +1,18 @@
+# iPhone and iPad options
+
+The responsive web client is the current iPhone and iPad entry point. Revisit
+installation after validating the core family flows and demand on iOS.
+
+| Option | What we can reuse | Work specific to iOS |
+| --- | --- | --- |
+| Minimal installable web app | The React UI, browser sign-in and existing API | Add a web app manifest and icons, then verify Add to Home Screen, signed-in sessions, microphone, calendar subscription and invite links in Safari. Evaluate push separately. [Apple's web push documentation](https://developer.apple.com/documentation/usernotifications/sending-web-push-notifications-in-web-apps-and-browsers) |
+| Kotlin Multiplatform with native SwiftUI | Extract portable models, API interfaces and date logic from Android. Keep Android Compose and use SwiftUI on iOS. | Replace Android-specific persistence and networking dependencies where needed. Build iOS UI, Keychain storage, Universal Links, audio, push and calendar integrations. [Kotlin code sharing](https://kotlinlang.org/docs/multiplatform/multiplatform-share-on-platforms.html) |
+| Kotlin and Compose Multiplatform | Share the extracted Kotlin core and portable Compose screens. The current Android screens need refactoring to move Android APIs behind adapters. | Keep platform adapters for authentication storage, notifications, calendar and widgets. Test screen layout, navigation and VoiceOver on a real device. [Compose platform support](https://kotlinlang.org/docs/multiplatform/supported-platforms.html) |
+| Standalone SwiftUI | Reuse the OpenAPI contract, backend and existing account data. | Implement and maintain Swift models and screens. Use Apple integrations directly for calendar, notifications and accessibility. [SwiftUI](https://developer.apple.com/xcode/swiftui/) |
+
+For a later test of home-screen access, start with the smallest installable web
+app. Keep private API responses out of any offline cache. If App Store
+distribution or native-only integrations become necessary, prototype one
+vertical slice with SwiftUI and a small shared Kotlin module before deciding
+how much code to share. Native builds need a macOS build environment and
+on-device testing.
