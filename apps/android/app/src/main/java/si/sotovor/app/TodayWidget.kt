@@ -31,6 +31,7 @@ import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
+import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
@@ -49,15 +50,16 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
+import java.io.IOException
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import retrofit2.HttpException
-import java.io.IOException
-import java.util.concurrent.TimeUnit
 
 @Serializable data class WidgetTask(val id: String, val title: String)
+
 @Serializable data class WidgetTasks(val householdId: String, val tasks: List<WidgetTask>)
 
 private val widgetSnapshot = stringPreferencesKey("today_snapshot")
@@ -92,22 +94,37 @@ private fun TodayWidgetContent(snapshot: WidgetTasks?) {
     val text = TextStyle(color = ink, fontSize = 13.sp)
     val background = if (dark) Color(0xFF1D3836) else Color(0xFFF6F4EE)
     Column(GlanceModifier.fillMaxSize().background(background).padding(12.dp)) {
-        Text(context.getString(R.string.widget_title), style = heading,
-            modifier = GlanceModifier.clickable(actionStartActivity<MainActivity>()))
+        Text(
+            context.getString(R.string.widget_title),
+            style = heading,
+            modifier = GlanceModifier.clickable(actionStartActivity<MainActivity>())
+        )
         if (snapshot == null || snapshot.tasks.isEmpty()) {
-            Text(context.getString(if (snapshot == null) R.string.widget_open else R.string.widget_empty), style = text,
-                modifier = GlanceModifier.padding(top = 8.dp).clickable(actionStartActivity<MainActivity>()))
+            Text(
+                context.getString(if (snapshot == null) R.string.widget_open else R.string.widget_empty),
+                style = text,
+                modifier = GlanceModifier.padding(top = 8.dp).clickable(actionStartActivity<MainActivity>())
+            )
         }
         snapshot?.tasks?.take(3)?.forEach { task ->
             val link = "sotovor://task?householdId=${snapshot.householdId}&entryId=${task.id}"
             val open = actionStartActivity<MainActivity>(actionParametersOf(ActionParameters.Key<String>("deepLink") to link))
             Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(task.title, style = text, maxLines = 1,
-                    modifier = GlanceModifier.defaultWeight().clickable(open).padding(vertical = 8.dp))
-                Text(context.getString(R.string.widget_done), style = text,
-                    modifier = GlanceModifier.clickable(actionRunCallback<CompleteWidgetTask>(
-                        actionParametersOf(householdKey to snapshot.householdId, taskKey to task.id)
-                    )).padding(8.dp))
+                Text(
+                    task.title,
+                    style = text,
+                    maxLines = 1,
+                    modifier = GlanceModifier.defaultWeight().height(48.dp).clickable(open).padding(vertical = 8.dp)
+                )
+                Text(
+                    context.getString(R.string.widget_done),
+                    style = text,
+                    modifier = GlanceModifier.height(48.dp).clickable(
+                        actionRunCallback<CompleteWidgetTask>(
+                            actionParametersOf(householdKey to snapshot.householdId, taskKey to task.id)
+                        )
+                    ).padding(8.dp)
+                )
             }
         }
     }

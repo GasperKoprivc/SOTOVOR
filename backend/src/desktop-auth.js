@@ -16,10 +16,16 @@ export function registerDesktopAuth(router, { desktopLinks, setDesktopSession, h
     if (!req.account) return res.status(401).json({ error: 'Najprej se prijavi v brskalniku.' });
     const { id } = req.body;
     if (!hex(id, 32)) return res.status(400).json({ error: 'Neveljavna povezava.' });
-    const approved = await desktopLinks.updateOne({
-      _id: id, accountId: { $exists: false }, expiresAt: { $gt: new Date() },
-    }, { $set: { accountId: req.account._id } });
-    if (!approved.matchedCount) return res.status(410).json({ error: 'Povezava je potekla ali je že uporabljena.' });
+    const approved = await desktopLinks.updateOne(
+      {
+        _id: id,
+        accountId: { $exists: false },
+        expiresAt: { $gt: new Date() },
+      },
+      { $set: { accountId: req.account._id } },
+    );
+    if (!approved.matchedCount)
+      return res.status(410).json({ error: 'Povezava je potekla ali je že uporabljena.' });
     res.json({ ok: true });
   });
 
@@ -34,7 +40,8 @@ export function registerDesktopAuth(router, { desktopLinks, setDesktopSession, h
       await setDesktopSession(req, res, approved.accountId);
       return res.json({ ok: true });
     }
-    if (await desktopLinks.findOne(condition, { projection: { _id: 1 } })) return res.status(202).json({ pending: true });
+    if (await desktopLinks.findOne(condition, { projection: { _id: 1 } }))
+      return res.status(202).json({ pending: true });
     res.status(410).json({ error: 'Povezava je potekla ali je že uporabljena.' });
   });
 }

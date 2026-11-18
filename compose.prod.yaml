@@ -7,12 +7,12 @@ services:
         condition: service_healthy
     environment:
       SOTOVOR_HOST: 0.0.0.0
-      SOTOVOR_PORT: "3000"
-      SOTOVOR_TRUST_PROXY: "1"
+      SOTOVOR_PORT: '3000'
+      SOTOVOR_TRUST_PROXY: '1'
       SOTOVOR_DB: ${SOTOVOR_DB:-sotovor}
       SOTOVOR_MONGO_URI: mongodb://${SOTOVOR_MONGO_APP_USER:-sotovor_app}:${SOTOVOR_MONGO_APP_PASSWORD:?Set SOTOVOR_MONGO_APP_PASSWORD}@mongo:27017/${SOTOVOR_DB:-sotovor}?authSource=${SOTOVOR_DB:-sotovor}
       SOTOVOR_PUBLIC_URL: https://${SOTOVOR_DOMAIN:?Set SOTOVOR_DOMAIN}
-      SOTOVOR_REQUIRE_SMTP: "1"
+      SOTOVOR_REQUIRE_SMTP: '1'
       SOTOVOR_SMTP_HOST: ${SOTOVOR_SMTP_HOST:?Set SOTOVOR_SMTP_HOST}
       SOTOVOR_SMTP_PORT: ${SOTOVOR_SMTP_PORT:-587}
       SOTOVOR_SMTP_USER: ${SOTOVOR_SMTP_USER:?Set SOTOVOR_SMTP_USER}
@@ -36,7 +36,13 @@ services:
       SOTOVOR_GOOGLE_PLAY_URL: ${SOTOVOR_GOOGLE_PLAY_URL:-}
       SOTOVOR_RELEASE_FALLBACK_JSON: ${SOTOVOR_RELEASE_FALLBACK_JSON:-}
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/readyz').then(r => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1))"]
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/readyz').then(r => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1))",
+        ]
       interval: 10s
       timeout: 4s
       retries: 6
@@ -44,9 +50,9 @@ services:
     networks: [web, database]
 
   mongo:
-    image: mongo:8.0
+    image: mongo:8.0.16
     restart: unless-stopped
-    command: ["mongod", "--auth", "--bind_ip_all"]
+    command: ['mongod', '--auth', '--bind_ip_all']
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${SOTOVOR_MONGO_ADMIN_USER:-sotovor_admin}
       MONGO_INITDB_ROOT_PASSWORD: ${SOTOVOR_MONGO_ADMIN_PASSWORD:?Set SOTOVOR_MONGO_ADMIN_PASSWORD}
@@ -71,7 +77,7 @@ services:
     networks: [database]
 
   caddy:
-    image: caddy:2-alpine
+    image: caddy:2.10.2-alpine
     restart: unless-stopped
     depends_on:
       app:
@@ -79,8 +85,8 @@ services:
     environment:
       SOTOVOR_DOMAIN: ${SOTOVOR_DOMAIN:?Set SOTOVOR_DOMAIN}
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data

@@ -17,14 +17,14 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class NativePush @Inject constructor(
@@ -38,12 +38,14 @@ class NativePush @Inject constructor(
     fun start() {
         if (!available) return
         val manager = context.getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannels(listOf(
-            channel("assignments", R.string.push_assignments),
-            channel("reminders", R.string.push_reminders),
-            channel("swaps", R.string.push_swaps),
-            channel("shopping", R.string.shopping_title)
-        ))
+        manager.createNotificationChannels(
+            listOf(
+                channel("assignments", R.string.push_assignments),
+                channel("reminders", R.string.push_reminders),
+                channel("swaps", R.string.push_swaps),
+                channel("shopping", R.string.shopping_title)
+            )
+        )
         scope.launch {
             store.sessions.map { it?.sessionId }.distinctUntilChanged().collect { if (it != null) requestToken() }
         }
@@ -61,16 +63,28 @@ class NativePush @Inject constructor(
     fun register(token: String) {
         if (!available || !permissionGranted(context)) return
         scope.launch {
-            if (store.current() != null) runCatching {
-                api.pushDevice(PushDevice(token, "android", BuildConfig.VERSION_NAME, androidLocale(readAppearance(context).language).toLanguageTag(), widgetRefresh = true))
+            if (store.current() != null) {
+                runCatching {
+                    api.pushDevice(
+                        PushDevice(
+                            token,
+                            "android",
+                            BuildConfig.VERSION_NAME,
+                            androidLocale(readAppearance(context).language).toLanguageTag(),
+                            widgetRefresh = true
+                        )
+                    )
+                }
             }
         }
     }
 }
 
-internal fun permissionGranted(context: Context) =
-    (Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) &&
-        NotificationManagerCompat.from(context).areNotificationsEnabled()
+internal fun permissionGranted(context: Context) = (
+    Build.VERSION.SDK_INT < 33 ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    ) &&
+    NotificationManagerCompat.from(context).areNotificationsEnabled()
 
 @AndroidEntryPoint
 class SotovorMessaging : FirebaseMessagingService() {
@@ -81,7 +95,10 @@ class SotovorMessaging : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         TodayWidgetWork.refresh(this)
         if (Build.VERSION.SDK_INT >= 33 &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
         if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) return
         val deepLink = message.data["deepLink"]
         if (parseNativeLink(deepLink) == null) return

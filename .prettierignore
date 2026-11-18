@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+**/build
+**/dist
+**/target
+**/.gradle
+data
+package-lock.json
+apps/android
+apps/desktop/src-tauri
+frontend/public/showcase

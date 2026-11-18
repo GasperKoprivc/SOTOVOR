@@ -1,17 +1,17 @@
 # Feature parity
 
-| Feature | Backend / OpenAPI | Web and Tauri | Android |
-| --- | --- | --- | --- |
-| Shared shopping list | Family API and WhatsApp quick add | Add, check, uncheck, remove, live updates | Add, check, uncheck, remove, optional FCM alerts |
-| Event time and duration | All-day or timed events with optional duration | Editor and weekly time blocks | Editor and weekly time blocks |
-| Private calendar subscription | Private ICS, rotate and revoke | Calendar subscription controls | Subscription controls and add an event to the phone calendar |
-| Task checklists and comments | Family-scoped details and comment notifications | Task details dialog | Details inside task editor |
-| Task duration and planner weighting | Optional estimate and minute-weighted planning | Task editor and planner guidance | Task editor and planner guidance |
-| Points and rewards | Admin-controlled rewards and child scores | Task editor and reward thresholds | Task editor and reward thresholds |
-| Weekly and monthly recurrence | Successor on completion, with rotation | Task editor | Task editor |
-| Today widget | Member-scoped today endpoint and existing completion action | Android home-screen feature | Glance widget, open or complete, background refresh |
-| Voice transcription | Disabled by default, configurable provider | Voice notes in task details and entry editor | Voice notes in entry dialog |
-| English and dark mode | Account appearance preferences | Slovenian, English and German, light/dark/system | Slovenian and English, light/dark/system |
+| Feature                             | Backend / OpenAPI                                           | Web and Tauri                                    | Android                                                      |
+| ----------------------------------- | ----------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------ |
+| Shared shopping list                | Family API and WhatsApp quick add                           | Add, check, uncheck, remove, live updates        | Add, check, uncheck, remove, optional FCM alerts             |
+| Event time and duration             | All-day or timed events with optional duration              | Editor and weekly time blocks                    | Editor and weekly time blocks                                |
+| Private calendar subscription       | Private ICS, rotate and revoke                              | Calendar subscription controls                   | Subscription controls and add an event to the phone calendar |
+| Task checklists and comments        | Family-scoped details and comment notifications             | Task details dialog                              | Details inside task editor                                   |
+| Task duration and planner weighting | Optional estimate and minute-weighted planning              | Task editor and planner guidance                 | Task editor and planner guidance                             |
+| Points and rewards                  | Admin-controlled rewards and child scores                   | Task editor and reward thresholds                | Task editor and reward thresholds                            |
+| Weekly and monthly recurrence       | Successor on completion, with rotation                      | Task editor                                      | Task editor                                                  |
+| Today widget                        | Member-scoped today endpoint and existing completion action | Android home-screen feature                      | Glance widget, open or complete, background refresh          |
+| Voice transcription                 | Disabled by default, configurable provider                  | Voice notes in task details and entry editor     | Voice notes in entry dialog                                  |
+| English and dark mode               | Account appearance preferences                              | Slovenian, English and German, light/dark/system | Slovenian and English, light/dark/system                     |
 
 ## Shared shopping list
 

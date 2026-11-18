@@ -30,24 +30,49 @@ export function DesktopSignIn() {
     }
   }
 
-  return <main className="profile-shell desktop-access">
-    <Brand />
-    <LanguageSelect />
-    <section className="panel account-card">
-      <Monitor size={22} aria-hidden="true" />
-      <h1>{t('Sotovor za računalnik')}</h1>
-      <p>{t('Prijava se odpre v privzetem brskalniku. Po potrditvi se družinski prostor odpre v tem oknu.')}</p>
-      {waiting ? <>
-        <p role="status">{code ? <>{t('V brskalniku potrdi kodo')} <strong className="desktop-code">{code}</strong>.</> : t('Odpiram brskalnik …')}</p>
-        <button className="text-button" onClick={() => window.location.reload()}>{t('Prekliči povezovanje')}</button>
-      </> :
-        <div className="hero-actions">
-          <button className="primary" onClick={() => signIn('login')}>{t('Prijava v brskalniku')}{' '}<ArrowUpRight size={17} /></button>
-          <button className="soft-button" onClick={() => signIn('register')}>{t('Registracija')}{' '}<ArrowUpRight size={17} /></button>
-        </div>}
-      {error && <p className="error" role="alert">{errorText(error)}</p>}
-    </section>
-  </main>;
+  return (
+    <main className="profile-shell desktop-access">
+      <Brand />
+      <LanguageSelect />
+      <section className="panel account-card">
+        <Monitor size={22} aria-hidden="true" />
+        <h1>{t('Sotovor za računalnik')}</h1>
+        <p>
+          {t('Prijava se odpre v privzetem brskalniku. Po potrditvi se družinski prostor odpre v tem oknu.')}
+        </p>
+        {waiting ? (
+          <>
+            <p role="status">
+              {code ? (
+                <>
+                  {t('V brskalniku potrdi kodo')} <strong className="desktop-code">{code}</strong>.
+                </>
+              ) : (
+                t('Odpiram brskalnik …')
+              )}
+            </p>
+            <button className="text-button" onClick={() => window.location.reload()}>
+              {t('Prekliči povezovanje')}
+            </button>
+          </>
+        ) : (
+          <div className="hero-actions">
+            <button className="primary" onClick={() => signIn('login')}>
+              {t('Prijava v brskalniku')} <ArrowUpRight size={17} />
+            </button>
+            <button className="soft-button" onClick={() => signIn('register')}>
+              {t('Registracija')} <ArrowUpRight size={17} />
+            </button>
+          </div>
+        )}
+        {error && (
+          <p className="error" role="alert">
+            {errorText(error)}
+          </p>
+        )}
+      </section>
+    </main>
+  );
 }
 
 export function DesktopApproval({ profile, legacy, busy, error, onAuth, onLogout }) {
@@ -71,24 +96,48 @@ export function DesktopApproval({ profile, legacy, busy, error, onAuth, onLogout
     }
   }
 
-  return <main className="landing profile-shell desktop-access">
-    <Brand />
-    <LanguageSelect />
-    <section className="panel account-card">
-      <h1>{t('Poveži namizni Sotovor')}</h1>
-      {approved ? <p role="status">{t('Prijava je potrjena. Vrni se v namizno aplikacijo.')}</p> : <>
-        <p>{t('Potrdi samo, če namizno okno prikazuje isto kodo.')}</p>
-        <p><strong className="desktop-code">{code}</strong></p>
-        {profile ? <>
-          <p>{t('Prijavljen račun:')}{' '}<strong>{profile.email}</strong></p>
-          <div className="hero-actions">
-            <button className="primary" onClick={approve} disabled={submitting}>{t('Potrdi povezavo')}</button>
-            <button className="text-button" onClick={onLogout} disabled={busy || submitting}>{t('Zamenjaj račun')}</button>
-          </div>
-        </> : <button className="soft-button" onClick={() => setMode('login')}>{t('Prijava')}</button>}
-        {problem && <p className="error" role="alert">{errorText(problem)}</p>}
-      </>}
-    </section>
-    {!profile && mode && <AuthDialog {...{ mode, legacy, busy, error, onAuth }} onMode={setMode} />}
-  </main>;
+  return (
+    <main className="landing profile-shell desktop-access">
+      <Brand />
+      <LanguageSelect />
+      <section className="panel account-card">
+        <h1>{t('Poveži namizni Sotovor')}</h1>
+        {approved ? (
+          <p role="status">{t('Prijava je potrjena. Vrni se v namizno aplikacijo.')}</p>
+        ) : (
+          <>
+            <p>{t('Potrdi samo, če namizno okno prikazuje isto kodo.')}</p>
+            <p>
+              <strong className="desktop-code">{code}</strong>
+            </p>
+            {profile ? (
+              <>
+                <p>
+                  {t('Prijavljen račun:')} <strong>{profile.email}</strong>
+                </p>
+                <div className="hero-actions">
+                  <button className="primary" onClick={approve} disabled={submitting}>
+                    {t('Potrdi povezavo')}
+                  </button>
+                  <button className="text-button" onClick={onLogout} disabled={busy || submitting}>
+                    {t('Zamenjaj račun')}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button className="soft-button" onClick={() => setMode('login')}>
+                {t('Prijava')}
+              </button>
+            )}
+            {problem && (
+              <p className="error" role="alert">
+                {errorText(problem)}
+              </p>
+            )}
+          </>
+        )}
+      </section>
+      {!profile && mode && <AuthDialog {...{ mode, legacy, busy, error, onAuth }} onMode={setMode} />}
+    </main>
+  );
 }

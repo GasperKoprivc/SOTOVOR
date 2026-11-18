@@ -7,10 +7,10 @@ services:
       mongodb:
         condition: service_healthy
     ports:
-      - "127.0.0.1:${SOTOVOR_PORT:-3000}:3000"
+      - '127.0.0.1:${SOTOVOR_PORT:-3000}:3000'
     environment:
       SOTOVOR_HOST: 0.0.0.0
-      SOTOVOR_PORT: "3000"
+      SOTOVOR_PORT: '3000'
       SOTOVOR_MONGO_URI: mongodb://mongodb:27017
       SOTOVOR_DB: ${SOTOVOR_DB:-sotovor}
       SOTOVOR_WHATSAPP_APP_SECRET: ${SOTOVOR_WHATSAPP_APP_SECRET:-}
@@ -18,14 +18,14 @@ services:
       SOTOVOR_WHATSAPP_PHONE_ID: ${SOTOVOR_WHATSAPP_PHONE_ID:-}
 
   mongodb:
-    image: mongo:8.0
+    image: mongo:8.0.16
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${SOTOVOR_MONGO_PORT:-27027}:27017"
+      - '127.0.0.1:${SOTOVOR_MONGO_PORT:-27027}:27017'
     volumes:
       - mongodb-data:/data/db
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
       interval: 5s
       timeout: 5s
       retries: 12

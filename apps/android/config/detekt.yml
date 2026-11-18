@@ -1,0 +1,29 @@
+build:
+  maxIssues: 0
+config:
+  validation: true
+# Formatting belongs to ktlint. Select correctness rules that work without K1
+# type resolution, because this project uses Kotlin 2.2 and the K2 compiler.
+potential-bugs:
+  active: true
+  Deprecation: { active: true }
+  EqualsAlwaysReturnsTrueOrFalse: { active: true }
+  ExplicitGarbageCollectionCall: { active: true }
+  InvalidRange: { active: true }
+  IteratorHasNextCallsNextMethod: { active: true }
+  IteratorNotThrowingNoSuchElementException: { active: true }
+  UnconditionalJumpStatementInLoop: { active: true }
+  UnreachableCode: { active: true }
+exceptions:
+  active: true
+  ExceptionRaisedInUnexpectedLocation: { active: true }
+  InstanceOfCheckForException: { active: true }
+  ReturnFromFinally: { active: true }
+style:
+  active: true
+  ForbiddenComment:
+    active: true
+    comments: ['STOPSHIP:']
+  ForbiddenMethodCall:
+    active: true
+    methods: ['java.lang.System.exit']

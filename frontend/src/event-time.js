@@ -11,6 +11,6 @@ export function eventBlock(entry, day) {
 }
 
 export function clockTime(minutes) {
-  const pad = value => String(value).padStart(2, '0');
+  const pad = (value) => String(value).padStart(2, '0');
   return pad(Math.floor(minutes / 60)) + ':' + pad(minutes % 60);
 }

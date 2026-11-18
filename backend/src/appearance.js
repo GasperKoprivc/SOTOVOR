@@ -12,7 +12,10 @@ export function registerAppearance(router, { accounts }) {
       throw new HttpError(400, 'Izberi veljaven jezik in videz.');
     }
     const appearance = { language, theme };
-    const result = await accounts.updateOne({ _id: req.account._id, deletionFamilyIds: { $exists: false } }, { $set: { appearance } });
+    const result = await accounts.updateOne(
+      { _id: req.account._id, deletionFamilyIds: { $exists: false } },
+      { $set: { appearance } },
+    );
     if (!result.matchedCount) throw new HttpError(401, 'Najprej se prijavi.');
     res.json(appearance);
   });

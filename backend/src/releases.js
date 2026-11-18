@@ -17,15 +17,31 @@ function assetNames(version) {
 
 function releaseShape(release) {
   const version = versions.exec(release?.tag_name)?.[1];
-  if (!version || release.draft || release.prerelease || !Number.isFinite(Date.parse(release.published_at))) return null;
+  if (!version || release.draft || release.prerelease || !Number.isFinite(Date.parse(release.published_at)))
+    return null;
   const names = assetNames(version);
   const allowed = new Set([...Object.values(names), 'latest.json', 'SHA256SUMS.txt']);
-  const assets = new Map((release.assets ?? []).filter(asset =>
-    allowed.has(asset.name) && Number.isSafeInteger(asset.id) && asset.id > 0 &&
-      asset.state === 'uploaded' && Number.isSafeInteger(asset.size) && asset.size > 0
-  ).map(asset => [asset.name, asset]));
-  return { version, names, tag: release.tag_name, assets, publishedAt: release.published_at,
-    windowsSigned: (release.body ?? '').includes('<!-- sotovor-windows-authenticode -->') };
+  const assets = new Map(
+    (release.assets ?? [])
+      .filter(
+        (asset) =>
+          allowed.has(asset.name) &&
+          Number.isSafeInteger(asset.id) &&
+          asset.id > 0 &&
+          asset.state === 'uploaded' &&
+          Number.isSafeInteger(asset.size) &&
+          asset.size > 0,
+      )
+      .map((asset) => [asset.name, asset]),
+  );
+  return {
+    version,
+    names,
+    tag: release.tag_name,
+    assets,
+    publishedAt: release.published_at,
+    windowsSigned: (release.body ?? '').includes('<!-- sotovor-windows-authenticode -->'),
+  };
 }
 
 function staticRelease(fallback) {
@@ -35,9 +51,20 @@ function staticRelease(fallback) {
   for (const platform of platforms) {
     const asset = fallback.downloads?.[platform];
     const url = URL.parse(asset?.url ?? '');
-    if (url?.protocol === 'https:' && !url.username && !url.password && sha256.test(asset?.sha256) &&
-        Number.isSafeInteger(asset.size) && asset.size > 0) {
-      downloads[platform] = { url: url.href, sha256: asset.sha256, size: asset.size, signed: asset.signed === true };
+    if (
+      url?.protocol === 'https:' &&
+      !url.username &&
+      !url.password &&
+      sha256.test(asset?.sha256) &&
+      Number.isSafeInteger(asset.size) &&
+      asset.size > 0
+    ) {
+      downloads[platform] = {
+        url: url.href,
+        sha256: asset.sha256,
+        size: asset.size,
+        signed: asset.signed === true,
+      };
     }
   }
   return { version, publishedAt: fallback.publishedAt, downloads };
@@ -47,20 +74,34 @@ export async function releaseConfiguration(env = process.env) {
   const repo = env.SOTOVOR_RELEASE_REPOSITORY || 'GasperKoprivc/SOTOVOR';
   if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) throw new Error('Invalid SOTOVOR_RELEASE_REPOSITORY.');
   const play = URL.parse(env.SOTOVOR_GOOGLE_PLAY_URL || '');
-  if (env.SOTOVOR_GOOGLE_PLAY_URL && (play?.origin !== 'https://play.google.com' || play.username || play.password)) {
+  if (
+    env.SOTOVOR_GOOGLE_PLAY_URL &&
+    (play?.origin !== 'https://play.google.com' || play.username || play.password)
+  ) {
     throw new Error('SOTOVOR_GOOGLE_PLAY_URL must point to Google Play.');
   }
   return {
-    repo, token: env.SOTOVOR_RELEASE_GITHUB_TOKEN, playUrl: play?.href ?? null,
-    fallback: env.SOTOVOR_RELEASE_FALLBACK_JSON ? JSON.parse(env.SOTOVOR_RELEASE_FALLBACK_JSON) :
-      env.SOTOVOR_RELEASE_FALLBACK_FILE ? JSON.parse(await readFile(env.SOTOVOR_RELEASE_FALLBACK_FILE, 'utf8')) : null,
+    repo,
+    token: env.SOTOVOR_RELEASE_GITHUB_TOKEN,
+    playUrl: play?.href ?? null,
+    fallback: env.SOTOVOR_RELEASE_FALLBACK_JSON
+      ? JSON.parse(env.SOTOVOR_RELEASE_FALLBACK_JSON)
+      : env.SOTOVOR_RELEASE_FALLBACK_FILE
+        ? JSON.parse(await readFile(env.SOTOVOR_RELEASE_FALLBACK_FILE, 'utf8'))
+        : null,
   };
 }
 
-export function registerReleases(app, { repo, token, playUrl = null, fallback, fetcher = fetch, clock = Date.now, ttl = 600_000 }) {
+export function registerReleases(
+  app,
+  { repo, token, playUrl = null, fallback, fetcher = fetch, clock = Date.now, ttl = 600_000 },
+) {
   const upstream = `https://api.github.com/repos/${repo}/releases`;
   const staticData = staticRelease(fallback);
-  const headers = { 'X-GitHub-Api-Version': '2022-11-28', ...(token ? { Authorization: 'Bearer ' + token } : {}) };
+  const headers = {
+    'X-GitHub-Api-Version': '2022-11-28',
+    ...(token ? { Authorization: 'Bearer ' + token } : {}),
+  };
   const retained = new Map();
   let cached = null;
   let expires = 0;
@@ -70,7 +111,8 @@ export function registerReleases(app, { repo, token, playUrl = null, fallback, f
     const rangeHeaders = { 'Accept-Encoding': 'identity', ...(range ? { Range: range } : {}) };
     let reply = await fetcher(upstream + '/assets/' + asset.id, {
       headers: { ...headers, ...rangeHeaders, Accept: 'application/octet-stream' },
-      signal, redirect: 'manual',
+      signal,
+      redirect: 'manual',
     });
     if (reply.status === 302) {
       const location = URL.parse(reply.headers.get('location') ?? '');
@@ -85,7 +127,8 @@ export function registerReleases(app, { repo, token, playUrl = null, fallback, f
 
   async function probe() {
     const response = await fetcher(upstream + '/latest', {
-      headers: { ...headers, Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(5000),
+      headers: { ...headers, Accept: 'application/vnd.github+json' },
+      signal: AbortSignal.timeout(5000),
     });
     if (!response.ok) throw new Error('GitHub release unavailable');
     const release = releaseShape(await response.json());
@@ -101,7 +144,9 @@ export function registerReleases(app, { repo, token, playUrl = null, fallback, f
             if (match) sums.set(match[2], match[1].toLowerCase());
           }
         }
-      } catch { /* GitHub's per-asset digest can also supply the checksum. */ }
+      } catch {
+        /* GitHub's per-asset digest can also supply the checksum. */
+      }
     }
     const downloads = {};
     for (const [platform, name] of Object.entries(release.names)) {
@@ -110,34 +155,45 @@ export function registerReleases(app, { repo, token, playUrl = null, fallback, f
       const digest = asset.digest?.startsWith('sha256:') ? asset.digest.slice(7) : sums.get(name);
       if (!sha256.test(digest)) continue;
       downloads[platform] = {
-        url: `/download/releases/${release.tag}/${name}`, size: asset.size, sha256: digest.toLowerCase(),
+        url: `/download/releases/${release.tag}/${name}`,
+        size: asset.size,
+        sha256: digest.toLowerCase(),
         signed: platform === 'android' || (platform === 'windows' && release.windowsSigned),
       };
     }
     retained.set(release.tag, release);
     if (retained.size > 3) retained.delete(retained.keys().next().value);
     return {
-      version: release.version, publishedAt: release.publishedAt, downloads,
+      version: release.version,
+      publishedAt: release.publishedAt,
+      downloads,
       updater: release.assets.has('latest.json') ? `/download/releases/${release.tag}/latest.json` : null,
     };
   }
 
   function latest() {
     if (clock() < expires) return Promise.resolve(cached);
-    pending ??= probe().then(data => data ?? cached ?? staticData)
-      .catch(() => cached ?? staticData).then(data => {
+    pending ??= probe()
+      .then((data) => data ?? cached ?? staticData)
+      .catch(() => cached ?? staticData)
+      .then((data) => {
         cached = data;
         expires = clock() + (data ? ttl : Math.min(ttl, 60_000));
         return data;
-      }).finally(() => { pending = undefined; });
+      })
+      .finally(() => {
+        pending = undefined;
+      });
     return pending;
   }
 
   app.get('/api/releases/latest', async (_req, res) => {
     const release = await latest();
     res.set('Cache-Control', 'public, max-age=60').json({
-      version: release?.version ?? null, publishedAt: release?.publishedAt ?? null,
-      downloads: release?.downloads ?? {}, playUrl,
+      version: release?.version ?? null,
+      publishedAt: release?.publishedAt ?? null,
+      downloads: release?.downloads ?? {},
+      playUrl,
     });
   });
 
@@ -153,7 +209,8 @@ export function registerReleases(app, { repo, token, playUrl = null, fallback, f
   app.get('/download/releases/:tag/:name', async (req, res) => {
     const { tag, name } = req.params;
     const version = versions.exec(tag)?.[1];
-    if (!version || ![...Object.values(assetNames(version)), 'latest.json'].includes(name)) return res.sendStatus(404);
+    if (!version || ![...Object.values(assetNames(version)), 'latest.json'].includes(name))
+      return res.sendStatus(404);
     if (!retained.has(tag)) await latest();
     const asset = retained.get(tag)?.assets.get(name);
     if (!asset) return res.sendStatus(404);
@@ -162,10 +219,16 @@ export function registerReleases(app, { repo, token, playUrl = null, fallback, f
     res.once('close', stop);
     try {
       const range = /^bytes=\d*-\d*$/.test(req.get('range') ?? '') ? req.get('range') : undefined;
-      const reply = await openAsset(asset, AbortSignal.any([controller.signal, AbortSignal.timeout(180_000)]), range);
+      const reply = await openAsset(
+        asset,
+        AbortSignal.any([controller.signal, AbortSignal.timeout(180_000)]),
+        range,
+      );
       if (reply.status === 416) return res.sendStatus(416);
       if (!reply.ok || !reply.body) return res.sendStatus(502);
-      res.status(reply.status).set('Content-Type', name === 'latest.json' ? 'application/json' : 'application/octet-stream');
+      res
+        .status(reply.status)
+        .set('Content-Type', name === 'latest.json' ? 'application/json' : 'application/octet-stream');
       for (const field of ['content-length', 'content-range', 'accept-ranges']) {
         const value = reply.headers.get(field);
         if (value) res.set(field, value);

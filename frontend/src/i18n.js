@@ -14,7 +14,7 @@ try {
 }
 
 export const getLanguage = () => language;
-export const subscribe = listener => {
+export const subscribe = (listener) => {
   listeners.add(listener);
   return () => listeners.delete(listener);
 };
@@ -27,7 +27,7 @@ export function setLanguage(next) {
   } catch {
     // Keep the selection for this page.
   }
-  listeners.forEach(listener => listener());
+  listeners.forEach((listener) => listener());
 }
 
 export function t(message, ...values) {
@@ -37,10 +37,17 @@ export function t(message, ...values) {
 }
 
 export function errorText(message) {
-  const length = /^(Ime|Priimek|E-pošta|Telefon|Koda povabila|Ime prostora|Naslov) mora imeti od 1 do (\d+) znakov\.$/.exec(message);
-  if (length) return t('%0 mora imeti od 1 do %1 znakov.', t(length[1] === 'Telefon' ? 'Telefonska številka' : length[1]), length[2]);
-  return Object.hasOwn(messages, message) ? t(message) :
-    t('Prišlo je do napake. Poskusi znova.');
+  const length =
+    /^(Ime|Priimek|E-pošta|Telefon|Koda povabila|Ime prostora|Naslov) mora imeti od 1 do (\d+) znakov\.$/.exec(
+      message,
+    );
+  if (length)
+    return t(
+      '%0 mora imeti od 1 do %1 znakov.',
+      t(length[1] === 'Telefon' ? 'Telefonska številka' : length[1]),
+      length[2],
+    );
+  return Object.hasOwn(messages, message) ? t(message) : t('Prišlo je do napake. Poskusi znova.');
 }
 
 export function localizedDate(options) {

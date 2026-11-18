@@ -34,21 +34,21 @@ Namenjen je vsakodnevnim stvarem: pospravljanju, nakupom, prevzemu otrok, druži
 
 ## Kaj Sotovor že omogoča
 
-| Področje | Kaj je na voljo |
-| --- | --- |
-| **Računi** | Registracija, prijava, odjava in prikaz osebnih podatkov v profilu. |
-| **Jezik vmesnika** | Angleščina (privzeto), slovenščina in nemščina v spletnem in namiznem odjemalcu. |
-| **Družinski prostori** | Ustvarjanje družin, povabila s kodo ali povezavo in preklapljanje med prostori. |
-| **Člani in pravice** | Skrbniško upravljanje članov, dovoljenj, družinskih vlog, bolezni in odsotnosti. |
-| **Opravila** | Dodajanje, urejanje, roki, kategorije, dodeljevanje, prevzem, prošnja za zamenjavo in zaključevanje. |
-| **Ponavljanje** | Naslednje opravilo po zaključku in izbirna rotacija odgovornega člana. |
-| **Koledar** | Mesečni in tedenski pogled dogodkov ter opravil z datumom. |
-| **Pregled dela** | Osebni kazalniki, filtri, iskanje in primerjava odprtih ter zaključenih opravil po članih. |
-| **Pametna razporeditev** | Lokalni predlog dodelitev, pregled predloga in skrbniška potrditev. |
-| **Obvestila** | Dodelitve, opomniki za roke in prošnje za zamenjavo znotraj aplikacije. |
-| **Glasovne beležke** | Snemanje do 30 sekund ob dodajanju opravila ali dogodka in predvajanje članom prostora. |
-| **WhatsApp** | Neobvezna povezava številke za ustvarjanje opravil in dogodkov iz besedilnih sporočil. |
-| **Odjemalci in zagon** | Splet, Windows Tauri, lokalni zaganjalniki in Docker Compose. |
+| Področje                 | Kaj je na voljo                                                                                      |
+| ------------------------ | ---------------------------------------------------------------------------------------------------- |
+| **Računi**               | Registracija, prijava, odjava in prikaz osebnih podatkov v profilu.                                  |
+| **Jezik vmesnika**       | Angleščina (privzeto), slovenščina in nemščina v spletnem in namiznem odjemalcu.                     |
+| **Družinski prostori**   | Ustvarjanje družin, povabila s kodo ali povezavo in preklapljanje med prostori.                      |
+| **Člani in pravice**     | Skrbniško upravljanje članov, dovoljenj, družinskih vlog, bolezni in odsotnosti.                     |
+| **Opravila**             | Dodajanje, urejanje, roki, kategorije, dodeljevanje, prevzem, prošnja za zamenjavo in zaključevanje. |
+| **Ponavljanje**          | Naslednje opravilo po zaključku in izbirna rotacija odgovornega člana.                               |
+| **Koledar**              | Mesečni in tedenski pogled dogodkov ter opravil z datumom.                                           |
+| **Pregled dela**         | Osebni kazalniki, filtri, iskanje in primerjava odprtih ter zaključenih opravil po članih.           |
+| **Pametna razporeditev** | Lokalni predlog dodelitev, pregled predloga in skrbniška potrditev.                                  |
+| **Obvestila**            | Dodelitve, opomniki za roke in prošnje za zamenjavo znotraj aplikacije.                              |
+| **Glasovne beležke**     | Snemanje do 30 sekund ob dodajanju opravila ali dogodka in predvajanje članom prostora.              |
+| **WhatsApp**             | Neobvezna povezava številke za ustvarjanje opravil in dogodkov iz besedilnih sporočil.               |
+| **Odjemalci in zagon**   | Splet, Windows Tauri, lokalni zaganjalniki in Docker Compose.                                        |
 
 ## Funkcionalnosti podrobneje
 
@@ -80,12 +80,12 @@ Vsak prostor ima svoje člane, opravila, dogodke in nastavitve. Njegov ustvarjal
 
 V **Profilu** skrbnik vidi aktivne člane in njihovo število glede na načrtovano velikost družine. Člana lahko odstrani, obravnava prošnjo za izstop in mu ločeno nastavi štiri pravice:
 
-| Pravica | Kaj dovoljuje |
-| --- | --- |
-| Dodaja vnose | Ustvarjanje opravil in dogodkov. |
-| Ureja vsebino | Spreminjanje vsebine vnosa, kategorije in drugih nastavitev. |
-| Premika datume | Spreminjanje datuma dogodka oziroma roka opravila. |
-| Odstranjuje vnose | Odstranjevanje opravil in dogodkov. |
+| Pravica           | Kaj dovoljuje                                                |
+| ----------------- | ------------------------------------------------------------ |
+| Dodaja vnose      | Ustvarjanje opravil in dogodkov.                             |
+| Ureja vsebino     | Spreminjanje vsebine vnosa, kategorije in drugih nastavitev. |
+| Premika datume    | Spreminjanje datuma dogodka oziroma roka opravila.           |
+| Odstranjuje vnose | Odstranjevanje opravil in dogodkov.                          |
 
 Nov navaden član ima privzeto dovoljeno dodajanje vnosov; urejanje, premikanje datumov in odstranjevanje mu omogoči skrbnik. Prevzem prostega opravila, prošnja za zamenjavo in zaključek lastnega opravila so ločena dejanja.
 
@@ -143,11 +143,11 @@ Primer: opravilo »Odnesi smeti« z intervalom treh dni in rotacijo po zaključk
 
 Koledar poveže **dogodke** in **opravila z rokom**. Dogodek zahteva datum; opravilo ga lahko nima.
 
-| Pogled | Uporaba |
-| --- | --- |
-| **Mesec** | Pregled meseca; klik na dan odpre seznam njegovih opravil in dogodkov. |
-| **Teden** | Vnosi po dnevih od ponedeljka do nedelje, premik med tedni in vrnitev na danes. |
-| **Ta teden na nadzorni plošči** | Hiter pregled dni z vnosi in njihovega skupnega števila. |
+| Pogled                          | Uporaba                                                                         |
+| ------------------------------- | ------------------------------------------------------------------------------- |
+| **Mesec**                       | Pregled meseca; klik na dan odpre seznam njegovih opravil in dogodkov.          |
+| **Teden**                       | Vnosi po dnevih od ponedeljka do nedelje, premik med tedni in vrnitev na danes. |
+| **Ta teden na nadzorni plošči** | Hiter pregled dni z vnosi in njihovega skupnega števila.                        |
 
 V koledarju lahko glede na pravice dodajaš dogodke in urejaš vnose. Pri dodajanju iz izbranega dne se datum že izpolni. Opravila brez roka ostanejo v seznamu opravil.
 
@@ -213,12 +213,12 @@ $env:SOTOVOR_WEB_ONLY = '1'
 
 Za ustavitev pritisni **Ctrl+C** v zagonskem oknu.
 
-| Lokalni vir | Privzeta lokacija |
-| --- | --- |
+| Lokalni vir               | Privzeta lokacija       |
+| ------------------------- | ----------------------- |
 | Spletna aplikacija in API | `http://127.0.0.1:3000` |
-| Projektni MongoDB | `127.0.0.1:27027` |
-| Podatki lokalne baze | `data/mongodb` |
-| Dnevnik MongoDB | `data/mongodb.log` |
+| Projektni MongoDB         | `127.0.0.1:27027`       |
+| Podatki lokalne baze      | `data/mongodb`          |
+| Dnevnik MongoDB           | `data/mongodb.log`      |
 
 Zaganjalnik poišče `mongod` v običajni namestitveni mapi ali sistemski poti. Za drugo lokacijo nastavi `SOTOVOR_MONGOD` na absolutno pot do `mongod.exe`.
 
@@ -276,10 +276,10 @@ Za javno namestitev z domensko HTTPS povezavo, SMTP potrditvijo e-pošte in dnev
 
 V nastavitvah GitHub Actions nastavi secrets:
 
-| Secret | Vsebina |
-| --- | --- |
-| `DOCKERHUB_USERNAME` | Uporabniško ime Docker Hub. |
-| `DOCKERHUB_TOKEN` | Dostopni token z dovoljenjem za zapis v `gasperkoprivc/sotovor`. |
+| Secret               | Vsebina                                                          |
+| -------------------- | ---------------------------------------------------------------- |
+| `DOCKERHUB_USERNAME` | Uporabniško ime Docker Hub.                                      |
+| `DOCKERHUB_TOKEN`    | Dostopni token z dovoljenjem za zapis v `gasperkoprivc/sotovor`. |
 
 Token sodi v GitHub secrets, ne v repozitorij ali `.env`. CI pri testiranju uporablja začasno MongoDB storitev.
 
@@ -300,12 +300,12 @@ npm.cmd run seed:demo -- 2026-11
 
 November 2026 tako dobi 210 opravil. Ponovitev za isti mesec ne podvoji vnosov.
 
-| Oseba | Dostop | E-pošta za prijavo |
-| --- | --- | --- |
-| Ana Novak | Skrbnica | `ana@demo.sotovor.test` |
-| Matej Novak | Član | `matej@demo.sotovor.test` |
-| Luka Novak | Član | `luka@demo.sotovor.test` |
-| Ema Novak | Članica | `ema@demo.sotovor.test` |
+| Oseba       | Dostop   | E-pošta za prijavo        |
+| ----------- | -------- | ------------------------- |
+| Ana Novak   | Skrbnica | `ana@demo.sotovor.test`   |
+| Matej Novak | Član     | `matej@demo.sotovor.test` |
+| Luka Novak  | Član     | `luka@demo.sotovor.test`  |
+| Ema Novak   | Članica  | `ema@demo.sotovor.test`   |
 
 Vsi štirje računi uporabljajo skupno geslo, ki se ustvari lokalno v `data/demo-password.txt`.
 
@@ -323,9 +323,9 @@ Integracija je neobvezna in uporablja **Meta WhatsApp Cloud API**. Običajen lok
 
 Po povezavi so podprti naslednji vnosi:
 
-| Sporočilo | Rezultat |
-| --- | --- |
-| `Kupi mleko in kruh` | Novo nedodeljeno opravilo s tem naslovom. |
+| Sporočilo                             | Rezultat                                  |
+| ------------------------------------- | ----------------------------------------- |
+| `Kupi mleko in kruh`                  | Novo nedodeljeno opravilo s tem naslovom. |
 | `dogodek 2027-02-10 Družinsko kosilo` | Nov koledarski dogodek na navedeni datum. |
 
 Na družinski prostor je lahko povezana ena številka. Skrbnik jo lahko odklopi v istem meniju. Strežnik preverja podpis webhooka in preprečuje, da bi ista dostavljena sporočila ustvarila podvojene vnose.
@@ -347,14 +347,14 @@ Ta razvojni dostop uporablja HTTP. Za snemanje z mikrofonom na telefonu je potre
 
 Spletni in namizni odjemalec uporabljata skupni **Express API**, ki preverja sejo, članstvo in dovoljenja ter bere in zapisuje v **MongoDB**. Express hkrati streže zgrajeni React frontend. Razvojni Vite strežnik posreduje zahteve API-ja Expressu.
 
-| Del | Tehnologija oziroma naloga |
-| --- | --- |
-| Uporabniški vmesnik | React 19, Vite 8, CSS in ikone Lucide. |
-| Strežnik | Node.js 24+, Express 5 in moduli JavaScript ESM. |
-| Podatki | MongoDB in uradni gonilnik `mongodb`. |
-| Namizni odjemalec | Tauri 2, Rust in Windows WebView2. |
-| Preverjanja | Vgrajeni Node.js test runner, integracijski testi API-ja in gradnja Vite. |
-| Distribucija | Lokalni zaganjalniki, Docker Compose in GitHub Actions. |
+| Del                 | Tehnologija oziroma naloga                                                |
+| ------------------- | ------------------------------------------------------------------------- |
+| Uporabniški vmesnik | React 19, Vite 8, CSS in ikone Lucide.                                    |
+| Strežnik            | Node.js 24+, Express 5 in moduli JavaScript ESM.                          |
+| Podatki             | MongoDB in uradni gonilnik `mongodb`.                                     |
+| Namizni odjemalec   | Tauri 2, Rust in Windows WebView2.                                        |
+| Preverjanja         | Vgrajeni Node.js test runner, integracijski testi API-ja in gradnja Vite. |
+| Distribucija        | Lokalni zaganjalniki, Docker Compose in GitHub Actions.                   |
 
 ### Organizacija repozitorija
 
@@ -380,18 +380,18 @@ SOTOVOR/
 
 Ključne datoteke za nadaljnji razvoj:
 
-| Datoteka | Namen |
-| --- | --- |
-| [App.jsx](frontend/src/App.jsx) | Navigacija, stanje prostora, obrazci in povezovanje pogledov. |
-| [Overview.jsx](frontend/src/Overview.jsx) | Kazalniki, opravila, tedenski koledar in obremenitev. |
-| [MonthCalendar.jsx](frontend/src/MonthCalendar.jsx) | Mesečni koledar in podrobnosti dneva. |
-| [FamilySettings.jsx](frontend/src/FamilySettings.jsx) | Člani, dovoljenja, vloge in odsotnosti. |
-| [SmartPlanning.jsx](frontend/src/SmartPlanning.jsx) | Prikaz in potrditev predloga dodelitev. |
-| [api.js](backend/src/api.js) | API družin, opravil, dogodkov, pravic in glasovnih beležk. |
-| [planning.js](backend/src/planning.js) | Lokalni algoritem razporejanja. |
-| [recurrence.js](backend/src/recurrence.js) | Naslednje ponovitve in rotacija. |
-| [desktop-auth.js](backend/src/desktop-auth.js) | Povezava namizne prijave z brskalniško potrditvijo. |
-| [whatsapp.js](backend/src/whatsapp.js) | Preverjanje in obdelava webhookov WhatsApp. |
+| Datoteka                                              | Namen                                                         |
+| ----------------------------------------------------- | ------------------------------------------------------------- |
+| [App.jsx](frontend/src/App.jsx)                       | Navigacija, stanje prostora, obrazci in povezovanje pogledov. |
+| [Overview.jsx](frontend/src/Overview.jsx)             | Kazalniki, opravila, tedenski koledar in obremenitev.         |
+| [MonthCalendar.jsx](frontend/src/MonthCalendar.jsx)   | Mesečni koledar in podrobnosti dneva.                         |
+| [FamilySettings.jsx](frontend/src/FamilySettings.jsx) | Člani, dovoljenja, vloge in odsotnosti.                       |
+| [SmartPlanning.jsx](frontend/src/SmartPlanning.jsx)   | Prikaz in potrditev predloga dodelitev.                       |
+| [api.js](backend/src/api.js)                          | API družin, opravil, dogodkov, pravic in glasovnih beležk.    |
+| [planning.js](backend/src/planning.js)                | Lokalni algoritem razporejanja.                               |
+| [recurrence.js](backend/src/recurrence.js)            | Naslednje ponovitve in rotacija.                              |
+| [desktop-auth.js](backend/src/desktop-auth.js)        | Povezava namizne prijave z brskalniško potrditvijo.           |
+| [whatsapp.js](backend/src/whatsapp.js)                | Preverjanje in obdelava webhookov WhatsApp.                   |
 
 ### Shranjevanje in zaščita dostopa
 
@@ -403,20 +403,20 @@ Urejanje in odstranjevanje vnosov uporabljata preverjanje različic. Ponavljajo�
 
 Osnovni primer je v [.env.example](.env.example). Za začasno nastavitev v PowerShellu uporabi `$env:IME = 'vrednost'` pred zagonom.
 
-| Spremenljivka | Namen / privzeta vrednost |
-| --- | --- |
-| `SOTOVOR_HOST` | Naslov poslušanja API-ja; lokalno `127.0.0.1`. |
-| `SOTOVOR_PORT` | Vrata spletne aplikacije; `3000`. |
-| `SOTOVOR_MONGO_PORT` | Vrata projektnega lokalnega MongoDB; `27027`. |
-| `SOTOVOR_MONGOD` | Izbirna absolutna pot do programa `mongod.exe`. |
-| `SOTOVOR_MONGO_URI` | Povezava z MongoDB za neposredni zagon API-ja, teste in orodja; lokalni zaganjalnik API-ju nastavi svojo projektno povezavo. |
-| `SOTOVOR_DB` | Ime podatkovne baze; `sotovor`. |
-| `SOTOVOR_NO_BROWSER` | `1` prepreči samodejno odpiranje brskalnika. |
-| `SOTOVOR_WEB_ONLY` | `1` izbere samo spletni zagon prek `start.bat`. |
-| `SOTOVOR_URL` | Osnovni naslov strežnika za namizni odjemalec. |
-| `SOTOVOR_WHATSAPP_APP_SECRET` | Meta App Secret za preverjanje podpisa webhooka. |
-| `SOTOVOR_WHATSAPP_VERIFY_TOKEN` | Izbrana vrednost za preverjanje webhooka pri povezavi z Meto. |
-| `SOTOVOR_WHATSAPP_PHONE_ID` | ID poslovne številke WhatsApp. |
+| Spremenljivka                   | Namen / privzeta vrednost                                                                                                    |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `SOTOVOR_HOST`                  | Naslov poslušanja API-ja; lokalno `127.0.0.1`.                                                                               |
+| `SOTOVOR_PORT`                  | Vrata spletne aplikacije; `3000`.                                                                                            |
+| `SOTOVOR_MONGO_PORT`            | Vrata projektnega lokalnega MongoDB; `27027`.                                                                                |
+| `SOTOVOR_MONGOD`                | Izbirna absolutna pot do programa `mongod.exe`.                                                                              |
+| `SOTOVOR_MONGO_URI`             | Povezava z MongoDB za neposredni zagon API-ja, teste in orodja; lokalni zaganjalnik API-ju nastavi svojo projektno povezavo. |
+| `SOTOVOR_DB`                    | Ime podatkovne baze; `sotovor`.                                                                                              |
+| `SOTOVOR_NO_BROWSER`            | `1` prepreči samodejno odpiranje brskalnika.                                                                                 |
+| `SOTOVOR_WEB_ONLY`              | `1` izbere samo spletni zagon prek `start.bat`.                                                                              |
+| `SOTOVOR_URL`                   | Osnovni naslov strežnika za namizni odjemalec.                                                                               |
+| `SOTOVOR_WHATSAPP_APP_SECRET`   | Meta App Secret za preverjanje podpisa webhooka.                                                                             |
+| `SOTOVOR_WHATSAPP_VERIFY_TOKEN` | Izbrana vrednost za preverjanje webhooka pri povezavi z Meto.                                                                |
+| `SOTOVOR_WHATSAPP_PHONE_ID`     | ID poslovne številke WhatsApp.                                                                                               |
 
 ## Razvoj in preverjanja
 
@@ -430,13 +430,13 @@ Vite posreduje API klice Expressu na vratih 3000. Če uporabljaš druga vrata, n
 
 ### Lokalni ukazi
 
-| Ukaz | Namen |
-| --- | --- |
-| `npm.cmd ci` | Namestitev odvisnosti iz zaklenjenih različic. |
-| `npm.cmd run build` | Produkcijska gradnja React vmesnika. |
-| `npm.cmd test` | Integracijski testi API-ja z MongoDB. |
-| `npm.cmd run seed:demo` | Priprava demo družine za trenutni mesec. |
-| `npm.cmd run dev --workspace frontend` | Vite razvojni strežnik. |
+| Ukaz                                   | Namen                                          |
+| -------------------------------------- | ---------------------------------------------- |
+| `npm.cmd ci`                           | Namestitev odvisnosti iz zaklenjenih različic. |
+| `npm.cmd run build`                    | Produkcijska gradnja React vmesnika.           |
+| `npm.cmd test`                         | Integracijski testi API-ja z MongoDB.          |
+| `npm.cmd run seed:demo`                | Priprava demo družine za trenutni mesec.       |
+| `npm.cmd run dev --workspace frontend` | Vite razvojni strežnik.                        |
 
 V Windows PowerShellu uporabi `npm.cmd`, če pravilnik izvajanja blokira `npm.ps1`.
 

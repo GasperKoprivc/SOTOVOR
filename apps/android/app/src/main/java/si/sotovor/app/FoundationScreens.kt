@@ -45,7 +45,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
 @Composable
-fun SotovorNav(model: WorkspaceViewModel, push: NativePush, appearance: Appearance = Appearance(), changeAppearance: (Appearance) -> Unit = {}) {
+fun SotovorNav(
+    model: WorkspaceViewModel,
+    push: NativePush,
+    appearance: Appearance = Appearance(),
+    changeAppearance: (Appearance) -> Unit = {}
+) {
     val state by model.state.collectAsStateWithLifecycle()
     val upgrade by model.updateLevel.collectAsStateWithLifecycle()
     val nav = rememberNavController()
@@ -53,7 +58,10 @@ fun SotovorNav(model: WorkspaceViewModel, push: NativePush, appearance: Appearan
     LaunchedEffect(signedIn) {
         val current = nav.currentDestination?.route
         if (signedIn && current != "workspace") {
-            nav.navigate("workspace") { popUpTo("welcome") { inclusive = false }; launchSingleTop = true }
+            nav.navigate("workspace") {
+                popUpTo("welcome") { inclusive = false }
+                launchSingleTop = true
+            }
         } else if (!signedIn && current == "workspace") {
             nav.popBackStack("welcome", inclusive = false)
         }
@@ -65,26 +73,45 @@ fun SotovorNav(model: WorkspaceViewModel, push: NativePush, appearance: Appearan
     Column(Modifier.fillMaxSize().safeDrawingPadding()) {
         if (upgrade == UpdateLevel.OPTIONAL) UpdateNotice(required = false, dismiss = model::dismissUpdate)
         NavHost(navController = nav, startDestination = "welcome", modifier = Modifier.weight(1f)) {
-        composable("welcome") {
-            PanelScreen {
-                Image(painterResource(R.drawable.sotovor_mark), null, Modifier.size(80.dp))
-                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.displayMedium)
-                Text(stringResource(R.string.welcome_copy), style = MaterialTheme.typography.bodyLarge)
-                Status(state)
-                Button(enabled = !state.busy, onClick = { model.clearNotice(); nav.navigate("login") }) { Text(stringResource(R.string.sign_in)) }
-                OutlinedButton(enabled = !state.busy, onClick = { model.clearNotice(); nav.navigate("register") }) { Text(stringResource(R.string.register)) }
-                AppearanceControls(appearance, change = changeAppearance)
-                if (state.problemResource != null) TextButton(onClick = model::reload) { Text(stringResource(R.string.retry)) }
+            composable("welcome") {
+                PanelScreen {
+                    Image(painterResource(R.drawable.sotovor_mark), null, Modifier.size(80.dp))
+                    Text(stringResource(R.string.app_name), style = MaterialTheme.typography.displayMedium)
+                    Text(stringResource(R.string.welcome_copy), style = MaterialTheme.typography.bodyLarge)
+                    Status(state)
+                    Button(enabled = !state.busy, onClick = {
+                        model.clearNotice()
+                        nav.navigate("login")
+                    }) { Text(stringResource(R.string.sign_in)) }
+                    OutlinedButton(enabled = !state.busy, onClick = {
+                        model.clearNotice()
+                        nav.navigate("register")
+                    }) { Text(stringResource(R.string.register)) }
+                    AppearanceControls(appearance, change = changeAppearance)
+                    if (state.problemResource != null) TextButton(onClick = model::reload) { Text(stringResource(R.string.retry)) }
+                }
             }
-        }
-        composable("login") { AuthForm(false, state, model, { model.clearNotice(); nav.popBackStack() }) }
-        composable("register") { AuthForm(true, state, model, { model.clearNotice(); nav.popBackStack() }) }
-        composable("workspace") {
-            state.workspace?.let {
-                if (it.household == null) ProfilePage(it, state, model, appearance)
-                else CoreWorkspace(it, state, model, push, appearance)
+            composable("login") {
+                AuthForm(false, state, model, {
+                    model.clearNotice()
+                    nav.popBackStack()
+                })
             }
-        }
+            composable("register") {
+                AuthForm(true, state, model, {
+                    model.clearNotice()
+                    nav.popBackStack()
+                })
+            }
+            composable("workspace") {
+                state.workspace?.let {
+                    if (it.household == null) {
+                        ProfilePage(it, state, model, appearance)
+                    } else {
+                        CoreWorkspace(it, state, model, push, appearance)
+                    }
+                }
+            }
         }
     }
 }
@@ -94,7 +121,8 @@ fun PanelScreen(content: @Composable ColumnScope.() -> Unit) {
     Box(Modifier.fillMaxSize().safeDrawingPadding(), contentAlignment = Alignment.TopCenter) {
         Column(
             Modifier.widthIn(max = 600.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp), content = content
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            content = content
         )
     }
 }
@@ -110,7 +138,10 @@ fun Status(state: WorkspaceState) {
 @Composable
 fun Field(label: Int, value: String, change: (String) -> Unit, type: KeyboardType = KeyboardType.Text) {
     OutlinedTextField(
-        value, change, label = { Text(stringResource(label)) }, singleLine = true,
+        value,
+        change,
+        label = { Text(stringResource(label)) },
+        singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = type),
         visualTransformation = if (type == KeyboardType.Password) PasswordVisualTransformation() else VisualTransformation.None,
         modifier = Modifier.fillMaxWidth()
@@ -140,17 +171,22 @@ private fun AuthForm(register: Boolean, state: WorkspaceState, model: WorkspaceV
             enabled = !state.busy && email.isNotBlank() && password.isNotBlank() &&
                 (!register || (first.isNotBlank() && last.isNotBlank() && phone.isNotBlank() && password.length >= 10)),
             onClick = {
-                if (register) model.register(Registration(first.trim(), last.trim(), email.trim(), phone.trim(), password))
-                else model.signIn(email, password)
+                if (register) {
+                    model.register(Registration(first.trim(), last.trim(), email.trim(), phone.trim(), password))
+                } else {
+                    model.signIn(email, password)
+                }
             }
         ) { Text(stringResource(title)) }
-        if (!register) TextButton(onClick = {
-            try {
-                CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(BuildConfig.BASE_URL + "#reset-password"))
-            } catch (_: ActivityNotFoundException) {
-                browserUnavailable = true
-            }
-        }) { Text(stringResource(R.string.forgot_password)) }
+        if (!register) {
+            TextButton(onClick = {
+                try {
+                    CustomTabsIntent.Builder().build().launchUrl(context, Uri.parse(BuildConfig.BASE_URL + "#reset-password"))
+                } catch (_: ActivityNotFoundException) {
+                    browserUnavailable = true
+                }
+            }) { Text(stringResource(R.string.forgot_password)) }
+        }
         if (browserUnavailable) Text(stringResource(R.string.browser_unavailable))
         TextButton(onClick = back, enabled = !state.busy) { Text(stringResource(R.string.back)) }
     }
@@ -169,7 +205,10 @@ fun FamilyControls(workspace: Workspace, state: WorkspaceState, model: Workspace
     var familyName by rememberSaveable { mutableStateOf("") }
     var sizeText by rememberSaveable { mutableStateOf("4") }
     var code by rememberSaveable { mutableStateOf("") }
-    LaunchedEffect(workspace.household?.id) { mode = ""; code = "" }
+    LaunchedEffect(workspace.household?.id) {
+        mode = ""
+        code = ""
+    }
     LaunchedEffect(incoming, workspace.household?.id) {
         val invitation = incoming as? NativeLink.Invite ?: return@LaunchedEffect
         mode = "join"
@@ -186,18 +225,29 @@ fun FamilyControls(workspace: Workspace, state: WorkspaceState, model: Workspace
         if (workspace.spaces.size > 1) {
             Text(stringResource(R.string.switch_family), style = MaterialTheme.typography.titleMedium)
             workspace.spaces.forEach { space ->
-                if (space.id != workspace.household?.id) OutlinedButton(
-                    enabled = !state.busy, onClick = { model.switchFamily(space.id) }
-                ) { Text(space.name) }
+                if (space.id != workspace.household?.id) {
+                    OutlinedButton(
+                        enabled = !state.busy,
+                        onClick = { model.switchFamily(space.id) }
+                    ) { Text(space.name) }
+                }
             }
         }
         if (workspace.household == null || workspace.spaces.all { it.admin }) {
-            if (mode != "create") OutlinedButton(onClick = { mode = "create"; model.clearNotice() }, enabled = !state.busy) {
-                Text(stringResource(R.string.new_family))
+            if (mode != "create") {
+                OutlinedButton(onClick = {
+                    mode = "create"
+                    model.clearNotice()
+                }, enabled = !state.busy) {
+                    Text(stringResource(R.string.new_family))
+                }
             }
         }
         if (workspace.spaces.all { it.admin } && mode != "join") {
-            OutlinedButton(onClick = { mode = "join"; model.clearNotice() }, enabled = !state.busy) {
+            OutlinedButton(onClick = {
+                mode = "join"
+                model.clearNotice()
+            }, enabled = !state.busy) {
                 Text(stringResource(R.string.join_family))
             }
         }
@@ -206,8 +256,10 @@ fun FamilyControls(workspace: Workspace, state: WorkspaceState, model: Workspace
                 Field(R.string.family_name, familyName, { familyName = it })
                 Field(R.string.family_size, sizeText, { sizeText = it }, KeyboardType.Number)
                 val size = sizeText.toIntOrNull()
-                Button(enabled = !state.busy && familyName.isNotBlank() && size != null && size in 1..100,
-                    onClick = { size?.let { model.createFamily(familyName.trim(), it) } }) {
+                Button(
+                    enabled = !state.busy && familyName.isNotBlank() && size != null && size in 1..100,
+                    onClick = { size?.let { model.createFamily(familyName.trim(), it) } }
+                ) {
                     Text(stringResource(R.string.new_family))
                 }
             }
@@ -218,12 +270,20 @@ fun FamilyControls(workspace: Workspace, state: WorkspaceState, model: Workspace
                 }
             }
         }
-        if (mode.isNotEmpty()) TextButton(onClick = { mode = ""; model.clearLink() }, enabled = !state.busy) {
-            Text(stringResource(R.string.cancel))
+        if (mode.isNotEmpty()) {
+            TextButton(onClick = {
+                mode = ""
+                model.clearLink()
+            }, enabled = !state.busy) {
+                Text(stringResource(R.string.cancel))
+            }
         }
         if (workspace.household != null && !workspace.admin) {
-            if (workspace.leaveRequested) Text(stringResource(R.string.leave_requested))
-            else TextButton(onClick = model::leaveRequest, enabled = !state.busy) { Text(stringResource(R.string.request_leave)) }
+            if (workspace.leaveRequested) {
+                Text(stringResource(R.string.leave_requested))
+            } else {
+                TextButton(onClick = model::leaveRequest, enabled = !state.busy) { Text(stringResource(R.string.request_leave)) }
+            }
         }
         TextButton(onClick = model::signOut, enabled = !state.busy) { Text(stringResource(R.string.sign_out)) }
     }

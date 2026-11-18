@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       mongodb:
-        image: mongo:8.0
+        image: mongo:8.0.16
         ports:
           - 27017:27017
         options: >-
@@ -30,6 +30,12 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Lint and formatting
+        run: |
+          npm run lint
+          npm run format:check
+      - name: Dependency audit
+        run: npm audit --audit-level=high
       - name: Check JavaScript syntax
         run: |
           node --check backend/src/api.js

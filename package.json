@@ -3,13 +3,33 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24" },
-  "workspaces": ["backend", "frontend"],
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
   "scripts": {
     "version:sync": "node scripts/sync-version.js",
     "seed:demo": "node scripts/seed-demo.js",
     "build": "npm run build --workspace frontend",
     "test": "node --test backend/test/*.test.js",
-    "start": "node scripts/start.js"
+    "start": "node scripts/start.js",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test:e2e": "playwright test",
+    "test:load": "node scripts/load-test.js"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.65.1",
+    "autocannon": "^9.0.0",
+    "eslint": "^10.15.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1"
   }
 }

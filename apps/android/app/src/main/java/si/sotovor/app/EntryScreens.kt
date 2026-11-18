@@ -25,8 +25,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -56,7 +56,8 @@ fun <T> SelectField(label: String, current: T, options: List<Pair<T, String>>, e
 @Composable
 fun ConflictDialog(onRefresh: () -> Unit) {
     AlertDialog(
-        onDismissRequest = onRefresh, title = { Text(stringResource(R.string.entry_conflict)) },
+        onDismissRequest = onRefresh,
+        title = { Text(stringResource(R.string.entry_conflict)) },
         text = { Text(stringResource(R.string.entry_conflict_message)) },
         confirmButton = { TextButton(onClick = onRefresh) { Text(stringResource(R.string.reload)) } }
     )
@@ -107,8 +108,15 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
         AlertDialog(
             onDismissRequest = { if (!state.busy) deleting = false },
             title = { Text(stringResource(R.string.remove_entry)) },
-            text = { Column { Text(original.title); Status(state) } },
-            confirmButton = { TextButton(onClick = { model.remove(original) }, enabled = !state.busy) { Text(stringResource(R.string.remove_entry)) } },
+            text = {
+                Column {
+                    Text(original.title)
+                    Status(state)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { model.remove(original) }, enabled = !state.busy) { Text(stringResource(R.string.remove_entry)) }
+            },
             dismissButton = { TextButton(onClick = { deleting = false }, enabled = !state.busy) { Text(stringResource(R.string.cancel)) } }
         )
         return
@@ -116,12 +124,34 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
 
     AlertDialog(
         onDismissRequest = { if (!state.busy && !recording) model.edit(null) },
-        title = { Text(stringResource(if (original != null) R.string.entry_details else if (task) R.string.add_task else R.string.add_event)) },
+        title = {
+            Text(
+                stringResource(
+                    if (original !=
+                        null
+                    ) {
+                        R.string.entry_details
+                    } else if (task) {
+                        R.string.add_task
+                    } else {
+                        R.string.add_event
+                    }
+                )
+            )
+        },
         text = {
-            Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 InputField(R.string.title, title, canEdit && !state.busy) { title = it.take(160) }
                 InputField(R.string.date_format, date, canDate && !state.busy) { date = it.take(10) }
-                SelectField(stringResource(R.string.category), category, categories.map { it.key to stringResource(it.value) }, canEdit && !state.busy) {
+                SelectField(
+                    stringResource(R.string.category),
+                    category,
+                    categories.map { it.key to stringResource(it.value) },
+                    canEdit && !state.busy
+                ) {
                     category = it
                 }
                 if (!task) {
@@ -145,36 +175,64 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
                     }
                 }
                 if (task) {
-                    SelectField(stringResource(R.string.member), assigned,
-                        listOf(null to stringResource(R.string.unassigned)) + workspace.members.filterNot { it.inactive }.map { it.id to it.name },
-                        canEdit && !state.busy) { assigned = it }
-                    if (workspace.admin) InputField(R.string.reward_task_points, points, canEdit && !state.busy, KeyboardType.Number) {
-                        points = it.filter { digit -> digit in '0'..'9' }.take(4)
+                    SelectField(
+                        stringResource(R.string.member),
+                        assigned,
+                        listOf(null to stringResource(R.string.unassigned)) +
+                            workspace.members.filterNot { it.inactive }.map { it.id to it.name },
+                        canEdit && !state.busy
+                    ) { assigned = it }
+                    if (workspace.admin) {
+                        InputField(R.string.reward_task_points, points, canEdit && !state.busy, KeyboardType.Number) {
+                            points = it.filter { digit -> digit in '0'..'9' }.take(4)
+                        }
                     }
                     InputField(R.string.task_estimated_minutes, estimate, canEdit && !state.busy, KeyboardType.Number) {
                         estimate = it.filter { digit -> digit in '0'..'9' }.take(4)
                     }
-                    SelectField(stringResource(R.string.repeat_mode), repeatMode, listOf(
-                        "none" to stringResource(R.string.repeat_none), "interval" to stringResource(R.string.repeat_interval),
-                        "weekly" to stringResource(R.string.repeat_weekly), "monthly" to stringResource(R.string.repeat_monthly)
-                    ), canEdit && !state.busy) { repeatMode = it }
-                    if (repeatMode == "interval") InputField(R.string.repeat_days, repeat, canEdit && !state.busy, KeyboardType.Number) { repeat = it.take(4) }
-                    if (repeatMode == "weekly") (1..7).forEach { day ->
-                        val code = day.digitToChar()
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(code in weekdays, { checked ->
-                                weekdays = if (checked) weekdays + code else weekdays.replace(code.toString(), "")
-                            }, enabled = canEdit && !state.busy)
-                            Text(DayOfWeek.of(day).getDisplayName(TextStyle.FULL, locale))
+                    SelectField(
+                        stringResource(R.string.repeat_mode),
+                        repeatMode,
+                        listOf(
+                            "none" to stringResource(R.string.repeat_none),
+                            "interval" to stringResource(R.string.repeat_interval),
+                            "weekly" to stringResource(R.string.repeat_weekly),
+                            "monthly" to stringResource(R.string.repeat_monthly)
+                        ),
+                        canEdit && !state.busy
+                    ) { repeatMode = it }
+                    if (repeatMode ==
+                        "interval"
+                    ) {
+                        InputField(R.string.repeat_days, repeat, canEdit && !state.busy, KeyboardType.Number) {
+                            repeat =
+                                it.take(4)
                         }
                     }
-                    if (repeatMode == "monthly") InputField(R.string.repeat_month_day, monthDay, canEdit && !state.busy, KeyboardType.Number) {
-                        monthDay = it.filter(Char::isDigit).take(2)
+                    if (repeatMode == "weekly") {
+                        (1..7).forEach { day ->
+                            val code = day.digitToChar()
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(code in weekdays, { checked ->
+                                    weekdays = if (checked) weekdays + code else weekdays.replace(code.toString(), "")
+                                }, enabled = canEdit && !state.busy)
+                                Text(DayOfWeek.of(day).getDisplayName(TextStyle.FULL, locale))
+                            }
+                        }
+                    }
+                    if (repeatMode ==
+                        "monthly"
+                    ) {
+                        InputField(R.string.repeat_month_day, monthDay, canEdit && !state.busy, KeyboardType.Number) {
+                            monthDay = it.filter(Char::isDigit).take(2)
+                        }
                     }
                     InputField(R.string.remind_days, remind, canEdit && !state.busy, KeyboardType.Number) { remind = it.take(2) }
-                    if (repeatMode != "none") Row {
-                        Checkbox(rotate, { rotate = it }, enabled = canEdit && !state.busy)
-                        Text(stringResource(R.string.rotate_tasks))
+                    if (repeatMode != "none") {
+                        Row {
+                            Checkbox(rotate, { rotate = it }, enabled = canEdit && !state.busy)
+                            Text(stringResource(R.string.rotate_tasks))
+                        }
                     }
                 }
                 if (!task && original?.dueOn != null) AddToPhoneCalendar(original)
@@ -186,12 +244,20 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
                 }
                 Status(state)
                 if (open && task && original != null) {
-                    if (original.assigneeId == null) TextButton(onClick = { model.taskAction(original.id, "claim") }, enabled = !state.busy) {
-                        Text(stringResource(R.string.claim))
+                    if (original.assigneeId ==
+                        null
+                    ) {
+                        TextButton(onClick = { model.taskAction(original.id, "claim") }, enabled = !state.busy) {
+                            Text(stringResource(R.string.claim))
+                        }
                     }
                     if (original.assigneeId == workspace.memberId) {
-                        TextButton(onClick = { model.taskAction(original.id, "cover") }, enabled = !state.busy) { Text(stringResource(R.string.swap_notification)) }
-                        TextButton(onClick = { model.taskAction(original.id, "complete") }, enabled = !state.busy) { Text(stringResource(R.string.complete)) }
+                        TextButton(onClick = {
+                            model.taskAction(original.id, "cover")
+                        }, enabled = !state.busy) { Text(stringResource(R.string.swap_notification)) }
+                        TextButton(onClick = {
+                            model.taskAction(original.id, "complete")
+                        }, enabled = !state.busy) { Text(stringResource(R.string.complete)) }
                     }
                 }
                 if (open && workspace.permissions.remove && original != null) {
@@ -200,35 +266,49 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
             }
         },
         confirmButton = {
-            if (canEdit || canDate) TextButton(
-                enabled = !state.busy && !recording && title.isNotBlank() && validDate && validRepeat &&
-                    threshold in 0..30 && (!task || points.isEmpty() || (points.toIntOrNull() ?: 0) in 1..1000) && (!task || estimate.isEmpty() || (estimate.toIntOrNull() ?: 0) in 1..1440) && (task || allDay || duration.isEmpty() || (duration.toIntOrNull() ?: 0) in 1..1440) &&
-                    (date.isNotBlank() || (task && repeatMode == "none")),
-                onClick = {
-                    model.save(EntryInput(title.trim(), editor.kind, category, date.ifBlank { null }, assigned,
-                        size, repeatMode != "none" && rotate, threshold, voice = voice,
-                        allDay = if (task) null else allDay,
-                        startTime = startTime.takeIf { !task && !allDay },
-                        durationMinutes = duration.toIntOrNull()?.takeIf { !task && !allDay },
-                        estimatedMinutes = estimate.toIntOrNull()?.takeIf { task },
-                        points = points.toIntOrNull()?.takeIf { task },
-                        recurrence = when (repeatMode) {
-                            "weekly" -> Recurrence("weekly", weekdays.map(Char::digitToInt))
-                            "monthly" -> Recurrence("monthly", dayOfMonth = monthDay.toIntOrNull())
-                            else -> null
-                        }))
-                }
-            ) { Text(stringResource(R.string.save)) }
+            if (canEdit || canDate) {
+                TextButton(
+                    enabled = !state.busy && !recording && title.isNotBlank() && validDate && validRepeat &&
+                        threshold in 0..30 && (!task || points.isEmpty() || (points.toIntOrNull() ?: 0) in 1..1000) &&
+                        (!task || estimate.isEmpty() || (estimate.toIntOrNull() ?: 0) in 1..1440) &&
+                        (task || allDay || duration.isEmpty() || (duration.toIntOrNull() ?: 0) in 1..1440) &&
+                        (date.isNotBlank() || (task && repeatMode == "none")),
+                    onClick = {
+                        model.save(
+                            EntryInput(
+                                title.trim(), editor.kind, category, date.ifBlank { null }, assigned,
+                                size, repeatMode != "none" && rotate, threshold, voice = voice,
+                                allDay = if (task) null else allDay,
+                                startTime = startTime.takeIf { !task && !allDay },
+                                durationMinutes = duration.toIntOrNull()?.takeIf { !task && !allDay },
+                                estimatedMinutes = estimate.toIntOrNull()?.takeIf { task },
+                                points = points.toIntOrNull()?.takeIf { task },
+                                recurrence = when (repeatMode) {
+                                    "weekly" -> Recurrence("weekly", weekdays.map(Char::digitToInt))
+                                    "monthly" -> Recurrence("monthly", dayOfMonth = monthDay.toIntOrNull())
+                                    else -> null
+                                }
+                            )
+                        )
+                    }
+                ) { Text(stringResource(R.string.save)) }
+            }
         },
-        dismissButton = { TextButton(onClick = { model.edit(null) }, enabled = !state.busy && !recording) { Text(stringResource(R.string.cancel)) } }
+        dismissButton = {
+            TextButton(onClick = { model.edit(null) }, enabled = !state.busy && !recording) { Text(stringResource(R.string.cancel)) }
+        }
     )
 }
 
 @Composable
 private fun InputField(label: Int, value: String, enabled: Boolean, type: KeyboardType = KeyboardType.Text, change: (String) -> Unit) {
     OutlinedTextField(
-        value, change, label = { Text(stringResource(label)) }, singleLine = true,
-        enabled = enabled, keyboardOptions = KeyboardOptions(keyboardType = type),
+        value,
+        change,
+        label = { Text(stringResource(label)) },
+        singleLine = true,
+        enabled = enabled,
+        keyboardOptions = KeyboardOptions(keyboardType = type),
         modifier = Modifier.fillMaxWidth()
     )
 }

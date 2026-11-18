@@ -15,14 +15,16 @@ let stopping = false;
 function mongoExecutable() {
   if (process.env.SOTOVOR_MONGOD) return process.env.SOTOVOR_MONGOD;
   const base = join(process.env.ProgramFiles || 'C:/Program Files', 'MongoDB', 'Server');
-  const versions = existsSync(base) ? readdirSync(base).sort((a, b) => b.localeCompare(a, 'en', { numeric: true })) : [];
-  return versions.map(version => join(base, version, 'bin', 'mongod.exe')).find(existsSync) || 'mongod';
+  const versions = existsSync(base)
+    ? readdirSync(base).sort((a, b) => b.localeCompare(a, 'en', { numeric: true }))
+    : [];
+  return versions.map((version) => join(base, version, 'bin', 'mongod.exe')).find(existsSync) || 'mongod';
 }
 
 function isPortFree() {
   return new Promise((resolve, reject) => {
     const probe = createServer();
-    probe.once('error', error => error.code === 'EADDRINUSE' ? resolve(false) : reject(error));
+    probe.once('error', (error) => (error.code === 'EADDRINUSE' ? resolve(false) : reject(error)));
     probe.listen(port, '127.0.0.1', () => probe.close(() => resolve(true)));
   });
 }
@@ -31,18 +33,22 @@ function openBrowser(port) {
   if (stopping || process.platform !== 'win32' || process.env.SOTOVOR_NO_BROWSER === '1') return;
   if (!Number.isInteger(port) || port < 1 || port > 65535) return;
   const url = `http://127.0.0.1:${port}/`;
-  const browser = spawn('powershell.exe', [
-    '-NoProfile', '-NonInteractive', '-Command', `Start-Process -FilePath '${url}' -ErrorAction Stop`,
-  ], { stdio: ['ignore', 'ignore', 'inherit'], windowsHide: true });
+  const browser = spawn(
+    'powershell.exe',
+    ['-NoProfile', '-NonInteractive', '-Command', `Start-Process -FilePath '${url}' -ErrorAction Stop`],
+    { stdio: ['ignore', 'ignore', 'inherit'], windowsHide: true },
+  );
   const fallback = () => console.error(`Brskalnika ni bilo mogoče odpreti. Odpri ${url} ročno.`);
   browser.once('error', fallback);
-  browser.once('exit', code => { if (code !== 0) fallback(); });
+  browser.once('exit', (code) => {
+    if (code !== 0) fallback();
+  });
 }
 
 async function runningApp(port) {
   try {
     const result = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(1000) });
-    const health = result.ok && await result.json();
+    const health = result.ok && (await result.json());
     return health?.service === 'sotovor' ? health : null;
   } catch {
     return false;
@@ -53,10 +59,13 @@ function openDesktop(port) {
   if (stopping || process.platform !== 'win32' || process.env.SOTOVOR_DESKTOP !== '1') return;
   const executable = resolve('apps/desktop/src-tauri/target/release/sotovor.exe');
   const desktop = spawn(executable, [], {
-    detached: true, stdio: 'ignore',
+    detached: true,
+    stdio: 'ignore',
     env: { ...process.env, SOTOVOR_URL: process.env.SOTOVOR_URL || `http://127.0.0.1:${port}` },
   });
-  desktop.once('error', error => console.error(`Namiznega Sotovora ni bilo mogoče odpreti. ${error.message}`));
+  desktop.once('error', (error) =>
+    console.error(`Namiznega Sotovora ni bilo mogoče odpreti. ${error.message}`),
+  );
   desktop.unref();
 }
 
@@ -71,7 +80,9 @@ async function checkExistingMongo() {
   } finally {
     await client.close();
   }
-  throw new Error(`Vrata ${port} uporablja druga storitev. Nastavi SOTOVOR_MONGO_PORT na prosta vrata ali ustavi Compose.`);
+  throw new Error(
+    `Vrata ${port} uporablja druga storitev. Nastavi SOTOVOR_MONGO_PORT na prosta vrata ali ustavi Compose.`,
+  );
 }
 
 async function stop() {
@@ -97,7 +108,7 @@ process.once('SIGTERM', stop);
 try {
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Neveljavna vrata MongoDB.');
   const httpPort = Number(process.env.SOTOVOR_PORT || 3000);
-  const running = httpPort && await runningApp(httpPort);
+  const running = httpPort && (await runningApp(httpPort));
   if (running) {
     console.log(`Sotovor že teče na http://127.0.0.1:${httpPort}/`);
     openBrowser(httpPort);
@@ -106,20 +117,35 @@ try {
       console.error('Strežnik je starejše različice. Ustavi ga in ponovno zaženi start.bat.');
       process.exitCode = 1;
     }
-    if (!process.exitCode && process.platform === 'win32' && process.env.SOTOVOR_NO_BROWSER !== '1') process.exitCode = 10;
+    if (!process.exitCode && process.platform === 'win32' && process.env.SOTOVOR_NO_BROWSER !== '1')
+      process.exitCode = 10;
   } else {
     if (await isPortFree()) {
       mkdirSync(data, { recursive: true });
-      mongo = spawn(mongoExecutable(), [
-        '--bind_ip', '127.0.0.1', '--port', String(port), '--dbpath', data,
-        '--logpath', resolve('data/mongodb.log'), '--logappend',
-      ], { stdio: 'ignore' });
+      mongo = spawn(
+        mongoExecutable(),
+        [
+          '--bind_ip',
+          '127.0.0.1',
+          '--port',
+          String(port),
+          '--dbpath',
+          data,
+          '--logpath',
+          resolve('data/mongodb.log'),
+          '--logappend',
+        ],
+        { stdio: 'ignore' },
+      );
       let mongoError;
-      mongo.once('error', error => { mongoError = error; });
+      mongo.once('error', (error) => {
+        mongoError = error;
+      });
       const deadline = Date.now() + 25000;
       let connectionError;
       while (!stopping) {
-        if (mongoError?.code === 'ENOENT') throw new Error('Namesti MongoDB Community Server ali nastavi SOTOVOR_MONGOD.');
+        if (mongoError?.code === 'ENOENT')
+          throw new Error('Namesti MongoDB Community Server ali nastavi SOTOVOR_MONGOD.');
         if (mongoError || mongo.exitCode !== null || Date.now() > deadline) {
           throw new Error('MongoDB se ni zagnal. Preveri data/mongodb.log.', { cause: connectionError });
         }
@@ -148,11 +174,11 @@ try {
           openDesktop(port);
         }
       });
-      api.once('exit', code => {
+      api.once('exit', (code) => {
         if (!stopping) process.exitCode = code ?? 1;
         void stop();
       });
-      api.once('error', error => {
+      api.once('error', (error) => {
         console.error(error.message);
         process.exitCode = 1;
         void stop();

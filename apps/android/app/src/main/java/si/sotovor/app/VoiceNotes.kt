@@ -20,11 +20,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
+import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 
 private const val AUDIO_LIMIT = 2 * 1024 * 1024
 private data class Recording(val recorder: MediaRecorder, val file: File)
@@ -47,8 +47,11 @@ fun VoiceAttachment(value: Voice?, enabled: Boolean, onChange: (Voice?) -> Unit,
         scope.launch {
             try {
                 val attachment = withContext(Dispatchers.IO) {
-                    if (!stopped || current.file.length() !in 1L..AUDIO_LIMIT.toLong()) null
-                    else Voice("audio/mp4", Base64.encodeToString(current.file.readBytes(), Base64.NO_WRAP))
+                    if (!stopped || current.file.length() !in 1L..AUDIO_LIMIT.toLong()) {
+                        null
+                    } else {
+                        Voice("audio/mp4", Base64.encodeToString(current.file.readBytes(), Base64.NO_WRAP))
+                    }
                 }
                 if (attachment == null) error = R.string.voice_failed else onChange(attachment)
             } finally {
@@ -79,7 +82,10 @@ fun VoiceAttachment(value: Voice?, enabled: Boolean, onChange: (Voice?) -> Unit,
             recorder.setOutputFile(file.absolutePath)
             recorder.setOnInfoListener { _, what, _ ->
                 if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED ||
-                    what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED) finish()
+                    what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED
+                ) {
+                    finish()
+                }
             }
             recorder.setOnErrorListener { _, _, _ ->
                 finish()
@@ -113,8 +119,11 @@ fun VoiceAttachment(value: Voice?, enabled: Boolean, onChange: (Voice?) -> Unit,
         handling -> Text(stringResource(R.string.saving_recording))
         value != null -> TextButton(onClick = { onChange(null) }, enabled = enabled) { Text(stringResource(R.string.remove_recording)) }
         else -> TextButton(enabled = enabled, onClick = {
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) start()
-            else permission.launch(Manifest.permission.RECORD_AUDIO)
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                start()
+            } else {
+                permission.launch(Manifest.permission.RECORD_AUDIO)
+            }
         }) { Text(stringResource(R.string.record_voice)) }
     }
     error?.let { Text(stringResource(it)) }
@@ -149,7 +158,11 @@ fun VoicePlayback(id: String, model: WorkspaceViewModel) {
                     player.setDataSource(file.absolutePath)
                     player.setOnPreparedListener { it.start() }
                     player.setOnCompletionListener { release() }
-                    player.setOnErrorListener { _, _, _ -> failure = true; release(); true }
+                    player.setOnErrorListener { _, _, _ ->
+                        failure = true
+                        release()
+                        true
+                    }
                     player.prepareAsync()
                 } catch (error: CancellationException) {
                     throw error

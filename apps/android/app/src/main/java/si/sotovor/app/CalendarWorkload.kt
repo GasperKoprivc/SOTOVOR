@@ -61,8 +61,10 @@ fun CalendarPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVi
         }
         Row(Modifier.fillMaxWidth()) {
             repeat(7) { index ->
-                Text(monday.plusDays(index.toLong()).format(DateTimeFormatter.ofPattern("EEEEE", locale)),
-                    modifier = Modifier.weight(1f))
+                Text(
+                    monday.plusDays(index.toLong()).format(DateTimeFormatter.ofPattern("EEEEE", locale)),
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
         repeat(rows) { row ->
@@ -75,13 +77,18 @@ fun CalendarPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVi
                         onClick = { selected = date.toString() },
                         modifier = Modifier.weight(1f).sizeIn(minHeight = 48.dp).semantics { contentDescription = description }
                     ) {
-                        Text(date.dayOfMonth.toString() + if (hasItem) "•" else "",
-                            color = if (date == day) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary)
+                        Text(
+                            date.dayOfMonth.toString() + if (hasItem) "•" else "",
+                            color = if (date == day) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
         }
-        Text(day.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale)), style = MaterialTheme.typography.titleLarge)
+        Text(
+            day.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale)),
+            style = MaterialTheme.typography.titleLarge
+        )
         if (workspace.permissions.create) {
             OutlinedButton(onClick = { model.edit(EntryEditor("event", day = selected)) }) { Text(stringResource(R.string.add_event)) }
             OutlinedButton(onClick = { model.edit(EntryEditor("task", day = selected)) }) { Text(stringResource(R.string.add_task)) }
@@ -94,20 +101,27 @@ fun CalendarPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVi
                 .sortedBy { (_, block) -> block?.start ?: -1 }
             if (matches.isNotEmpty()) {
                 found = true
-                if (!monthly) Text(date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale)),
-                    style = MaterialTheme.typography.titleMedium)
+                if (!monthly) {
+                    Text(
+                        date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale)),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
             }
             matches.forEach { (entry, block) ->
-                if (block == null) EntryCard(entry, workspace, model) { model.edit(EntryEditor(entry.kind, entry)) }
-                else Card(
-                    onClick = { model.edit(EntryEditor(entry.kind, entry)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                ) {
-                    Column(Modifier.padding(12.dp)) {
-                        val time = eventClock(block.start) + (block.end?.let { " – " + eventClock(it) } ?: "")
-                        Text(time, style = MaterialTheme.typography.labelLarge)
-                        Text(entry.title, style = MaterialTheme.typography.titleMedium)
+                if (block == null) {
+                    EntryCard(entry, workspace, model) { model.edit(EntryEditor(entry.kind, entry)) }
+                } else {
+                    Card(
+                        onClick = { model.edit(EntryEditor(entry.kind, entry)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                    ) {
+                        Column(Modifier.padding(12.dp)) {
+                            val time = eventClock(block.start) + (block.end?.let { " – " + eventClock(it) } ?: "")
+                            Text(time, style = MaterialTheme.typography.labelLarge)
+                            Text(entry.title, style = MaterialTheme.typography.titleMedium)
+                        }
                     }
                 }
             }
@@ -151,9 +165,13 @@ internal fun calculateWorkload(workspace: Workspace, days: Int, now: Instant): L
     val since = if (days == 0) Instant.MIN else now.minus(days.toLong(), ChronoUnit.DAYS)
     return workspace.members.filterNot { it.inactive }.map { member ->
         val tasks = workspace.entries.filter { it.kind == "task" && it.assigneeId == member.id }
-        WorkloadRow(member.name, tasks.count { it.completedAt == null }, tasks.count { entry ->
-            entry.completedAt?.let { runCatching { !Instant.parse(it).isBefore(since) }.getOrDefault(false) } ?: false
-        })
+        WorkloadRow(
+            member.name,
+            tasks.count { it.completedAt == null },
+            tasks.count { entry ->
+                entry.completedAt?.let { runCatching { !Instant.parse(it).isBefore(since) }.getOrDefault(false) } ?: false
+            }
+        )
     }
 }
 

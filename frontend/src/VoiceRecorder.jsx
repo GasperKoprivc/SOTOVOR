@@ -11,36 +11,50 @@ export default function VoiceRecorder({ onChange, busy, setBusy }) {
   const control = useRef(null);
   const alive = useRef(true);
 
-  useEffect(() => () => {
-    alive.current = false;
-    control.current?.stop();
-  }, []);
-  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
+  useEffect(
+    () => () => {
+      alive.current = false;
+      control.current?.stop();
+    },
+    [],
+  );
+  useEffect(
+    () => () => {
+      if (preview) URL.revokeObjectURL(preview);
+    },
+    [preview],
+  );
 
   async function record() {
     setBusy(true);
     setStatus('');
     let stream;
     try {
-      const mime = formats.find(type => globalThis.MediaRecorder?.isTypeSupported(type));
+      const mime = formats.find((type) => globalThis.MediaRecorder?.isTypeSupported(type));
       if (!mime || !navigator.mediaDevices?.getUserMedia) {
         throw new Error('Za snemanje odpri Sotovor na tem računalniku ali prek HTTPS v podprtem brskalniku.');
       }
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       if (!alive.current) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
         return;
       }
       const recorder = new MediaRecorder(stream, { mimeType: mime, audioBitsPerSecond: 64000 });
       const chunks = [];
-      const stop = () => { if (recorder.state === 'recording') recorder.stop(); };
+      const stop = () => {
+        if (recorder.state === 'recording') recorder.stop();
+      };
       let timer;
       let failed = false;
-      recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
-      recorder.onerror = () => { failed = true; };
+      recorder.ondataavailable = (event) => {
+        if (event.data.size) chunks.push(event.data);
+      };
+      recorder.onerror = () => {
+        failed = true;
+      };
       recorder.onstop = () => {
         clearTimeout(timer);
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
         control.current = null;
         if (!alive.current) return;
         setRecording(false);
@@ -69,19 +83,45 @@ export default function VoiceRecorder({ onChange, busy, setBusy }) {
       control.current = { stop };
       setRecording(true);
     } catch (error) {
-      stream?.getTracks().forEach(track => track.stop());
+      stream?.getTracks().forEach((track) => track.stop());
       if (!alive.current) return;
       setStatus(error.name === 'NotAllowedError' ? 'Za snemanje dovoli dostop do mikrofona.' : error.message);
       setBusy(false);
     }
   }
 
-  return <div className="voice-field">
-    {recording ? <button type="button" className="soft-button" onClick={() => control.current?.stop()}><Square size={16} />{' '}{t('Ustavi snemanje')}</button> :
-      preview ? <><audio controls src={preview} aria-label={t('Predogled posnetka')} />
-        <button type="button" className="icon-button" aria-label={t('Odstrani posnetek')} onClick={() => { setPreview(''); onChange(null); }}><Trash2 size={16} /></button></> :
-        <button type="button" className="soft-button" disabled={busy} onClick={record}><Mic size={17} />{' '}{t('Posnemi beležko')}</button>}
-    {recording && <p role="status">{t('Snemam, največ 30 sekund.')}</p>}
-    {status && <p className="error" role="alert">{errorText(status)}</p>}
-  </div>;
+  return (
+    <div className="voice-field">
+      {recording ? (
+        <button type="button" className="soft-button" onClick={() => control.current?.stop()}>
+          <Square size={16} /> {t('Ustavi snemanje')}
+        </button>
+      ) : preview ? (
+        <>
+          <audio controls src={preview} aria-label={t('Predogled posnetka')} />
+          <button
+            type="button"
+            className="icon-button"
+            aria-label={t('Odstrani posnetek')}
+            onClick={() => {
+              setPreview('');
+              onChange(null);
+            }}
+          >
+            <Trash2 size={16} />
+          </button>
+        </>
+      ) : (
+        <button type="button" className="soft-button" disabled={busy} onClick={record}>
+          <Mic size={17} /> {t('Posnemi beležko')}
+        </button>
+      )}
+      {recording && <p role="status">{t('Snemam, največ 30 sekund.')}</p>}
+      {status && (
+        <p className="error" role="alert">
+          {errorText(status)}
+        </p>
+      )}
+    </div>
+  );
 }

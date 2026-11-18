@@ -26,17 +26,30 @@ export function EmailVerificationPage({ token }) {
     }
   }
 
-  return <main className="profile-shell">
-    <Brand />
-    <LanguageSelect />
-    <section className="panel account-card">
-      <h1>{t('Potrdi e-pošto')}</h1>
-      {verified ? <p role="status">{t('E-poštni naslov je potrjen.')}</p> :
-        <button className="primary family-switch" disabled={busy} onClick={confirm}>{t('Potrdi e-poštni naslov')}</button>}
-      {error && <p className="error" role="alert">{errorText(error)}</p>}
-      <a className="text-button" href="/">{t('Nazaj v Sotovor')}</a>
-    </section>
-  </main>;
+  return (
+    <main className="profile-shell">
+      <Brand />
+      <LanguageSelect />
+      <section className="panel account-card">
+        <h1>{t('Potrdi e-pošto')}</h1>
+        {verified ? (
+          <p role="status">{t('E-poštni naslov je potrjen.')}</p>
+        ) : (
+          <button className="primary family-switch" disabled={busy} onClick={confirm}>
+            {t('Potrdi e-poštni naslov')}
+          </button>
+        )}
+        {error && (
+          <p className="error" role="alert">
+            {errorText(error)}
+          </p>
+        )}
+        <a className="text-button" href="/">
+          {t('Nazaj v Sotovor')}
+        </a>
+      </section>
+    </main>
+  );
 }
 
 export function EmailVerificationReminder() {
@@ -58,10 +71,18 @@ export function EmailVerificationReminder() {
     }
   }
 
-  return <div className="family-switch">
-    <p>{t('Preveri pošto in potrdi svoj e-poštni naslov.')}</p>
-    <button type="button" className="soft-button" onClick={resend} disabled={busy}>{t('Ponovno pošlji povezavo')}</button>
-    {sent && <p role="status">{t('Povezava je poslana.')}</p>}
-    {error && <p className="error" role="alert">{errorText(error)}</p>}
-  </div>;
+  return (
+    <div className="family-switch">
+      <p>{t('Preveri pošto in potrdi svoj e-poštni naslov.')}</p>
+      <button type="button" className="soft-button" onClick={resend} disabled={busy}>
+        {t('Ponovno pošlji povezavo')}
+      </button>
+      {sent && <p role="status">{t('Povezava je poslana.')}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {errorText(error)}
+        </p>
+      )}
+    </div>
+  );
 }

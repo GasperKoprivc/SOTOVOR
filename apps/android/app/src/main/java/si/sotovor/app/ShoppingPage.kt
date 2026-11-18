@@ -63,7 +63,12 @@ fun ShoppingPage(household: String, state: WorkspaceState, model: WorkspaceViewM
                 Field(R.string.shopping_quantity, quantity, { if (it.length <= 40) quantity = it })
                 Button(
                     enabled = !state.busy && title.isNotBlank(),
-                    onClick = { model.addShopping(ShoppingInput(title.trim(), quantity.trim())) { title = ""; quantity = "" } }
+                    onClick = {
+                        model.addShopping(ShoppingInput(title.trim(), quantity.trim())) {
+                            title = ""
+                            quantity = ""
+                        }
+                    }
                 ) { Text(stringResource(R.string.shopping_add)) }
                 Status(state)
                 if (push.available && state.shoppingPush != null) {
@@ -71,7 +76,8 @@ fun ShoppingPage(household: String, state: WorkspaceState, model: WorkspaceViewM
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text(label, Modifier.weight(1f))
                         Switch(
-                            checked = state.shoppingPush, enabled = !state.busy,
+                            checked = state.shoppingPush,
+                            enabled = !state.busy,
                             modifier = Modifier.semantics { contentDescription = label },
                             onCheckedChange = { enabled ->
                                 if (enabled && Build.VERSION.SDK_INT >= 33 && !permissionGranted(context)) {
@@ -93,7 +99,9 @@ fun ShoppingPage(household: String, state: WorkspaceState, model: WorkspaceViewM
             HorizontalDivider()
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(
-                    checked, { model.checkShopping(item, it) }, enabled = !state.busy,
+                    checked,
+                    { model.checkShopping(item, it) },
+                    enabled = !state.busy,
                     modifier = Modifier.semantics { contentDescription = item.title }
                 )
                 Column(Modifier.weight(1f)) {
@@ -102,7 +110,8 @@ fun ShoppingPage(household: String, state: WorkspaceState, model: WorkspaceViewM
                     item.checkedByName?.let { Text(stringResource(R.string.shopping_bought_by, it)) }
                 }
                 TextButton(
-                    enabled = !state.busy, onClick = { model.removeShopping(item) },
+                    enabled = !state.busy,
+                    onClick = { model.removeShopping(item) },
                     modifier = Modifier.semantics { contentDescription = remove }
                 ) { Text(stringResource(R.string.shopping_remove)) }
             }

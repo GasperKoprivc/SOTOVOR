@@ -34,25 +34,47 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlinx.coroutines.flow.first
 
 val taskStates = linkedMapOf(
-    "all" to R.string.open, "mine" to R.string.mine, "available" to R.string.available,
-    "due" to R.string.due, "recurring" to R.string.recurring, "done" to R.string.done
+    "all" to R.string.open,
+    "mine" to R.string.mine,
+    "available" to R.string.available,
+    "due" to R.string.due,
+    "recurring" to R.string.recurring,
+    "done" to R.string.done
 )
 val categories = linkedMapOf(
-    "dom" to R.string.category_home, "druzina" to R.string.category_family, "opravki" to R.string.category_errands,
-    "zdravje" to R.string.category_health, "drugo" to R.string.category_other
+    "dom" to R.string.category_home,
+    "druzina" to R.string.category_family,
+    "opravki" to R.string.category_errands,
+    "zdravje" to R.string.category_health,
+    "drugo" to R.string.category_other
 )
 fun today(): LocalDate = LocalDate.now(ZoneId.of("Europe/Ljubljana"))
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CoreWorkspace(workspace: Workspace, state: WorkspaceState, model: WorkspaceViewModel, push: NativePush, appearance: Appearance = Appearance()) {
+fun CoreWorkspace(
+    workspace: Workspace,
+    state: WorkspaceState,
+    model: WorkspaceViewModel,
+    push: NativePush,
+    appearance: Appearance = Appearance()
+) {
     val household = workspace.household ?: return
-    val tabs = listOf(R.string.overview, R.string.tasks, R.string.calendar, R.string.workload, R.string.notifications, R.string.profile, R.string.shopping_tab)
+    val tabs =
+        listOf(
+            R.string.overview,
+            R.string.tasks,
+            R.string.calendar,
+            R.string.workload,
+            R.string.notifications,
+            R.string.profile,
+            R.string.shopping_tab
+        )
     var tab by rememberSaveable(household.id) { mutableIntStateOf(0) }
     var requestedFilter by remember { mutableStateOf(TaskFilters()) }
     val incoming by model.links.collectAsStateWithLifecycle()
@@ -62,7 +84,13 @@ fun CoreWorkspace(workspace: Workspace, state: WorkspaceState, model: WorkspaceV
             is NativeLink.Target -> {
                 model.state.first { !it.busy }
                 if (!link.shopping || household.id == link.household || workspace.spaces.none { it.id == link.household }) {
-                    tab = if (link.shopping) 6 else if (link.entry == null) 5 else 1
+                    tab = if (link.shopping) {
+                        6
+                    } else if (link.entry == null) {
+                        5
+                    } else {
+                        1
+                    }
                     model.openTarget(link)
                 } else {
                     model.switchFamily(link.household)
@@ -110,16 +138,22 @@ fun CoreWorkspace(workspace: Workspace, state: WorkspaceState, model: WorkspaceV
                 3 -> WorkloadPage(workspace, state, model)
                 4 -> NotificationPage(state, model, push) { item ->
                     val target = workspace.entries.find { it.id == item.target.entryId }
-                    if (target == null) tab = if (item.target.screen == "family") 5 else 1
-                    else model.edit(EntryEditor(target.kind, target))
+                    if (target == null) {
+                        tab = if (item.target.screen == "family") 5 else 1
+                    } else {
+                        model.edit(EntryEditor(target.kind, target))
+                    }
                 }
                 6 -> ShoppingPage(household.id, state, model, push)
                 5 -> ProfilePage(workspace, state, model, appearance)
             }
         }
     }
-    if (state.conflict) ConflictDialog(model::dismissConflict)
-    else state.editor?.let { editor -> EntryDialog(editor, workspace, state, model) }
+    if (state.conflict) {
+        ConflictDialog(model::dismissConflict)
+    } else {
+        state.editor?.let { editor -> EntryDialog(editor, workspace, state, model) }
+    }
 }
 
 @Composable
@@ -133,7 +167,13 @@ private fun DashboardPage(workspace: Workspace, state: WorkspaceState, model: Wo
     val metrics = listOf(
         Triple(R.string.mine, open.count { it.assigneeId == workspace.memberId }, "mine"),
         Triple(R.string.available, open.count { it.assigneeId == null }, "available"),
-        Triple(R.string.due, open.count { it.dueOn?.let { date -> date <= day.plusDays(it.reminderDays.toLong()).toString() } == true }, "due")
+        Triple(
+            R.string.due,
+            open.count {
+                it.dueOn?.let { date -> date <= day.plusDays(it.reminderDays.toLong()).toString() } == true
+            },
+            "due"
+        )
     )
     PanelScreen {
         Text(stringResource(R.string.greeting, workspace.profile.firstName), style = MaterialTheme.typography.headlineLarge)
@@ -159,8 +199,13 @@ private fun DashboardPage(workspace: Workspace, state: WorkspaceState, model: Wo
 }
 
 @Composable
-private fun TasksPage(state: WorkspaceState, workspace: Workspace, model: WorkspaceViewModel,
-                      filters: TaskFilters, onFilter: (TaskFilters) -> Unit) {
+private fun TasksPage(
+    state: WorkspaceState,
+    workspace: Workspace,
+    model: WorkspaceViewModel,
+    filters: TaskFilters,
+    onFilter: (TaskFilters) -> Unit
+) {
     var search by rememberSaveable(filters.state, filters.search) { mutableStateOf(filters.search) }
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -169,31 +214,43 @@ private fun TasksPage(state: WorkspaceState, workspace: Workspace, model: Worksp
         item {
             SectionTitle(R.string.tasks)
             Status(state)
-            if (workspace.permissions.create) Button(onClick = { model.edit(EntryEditor("task")) }) {
-                Text(stringResource(R.string.add_task))
+            if (workspace.permissions.create) {
+                Button(onClick = { model.edit(EntryEditor("task")) }) {
+                    Text(stringResource(R.string.add_task))
+                }
             }
             SelectField(stringResource(R.string.view), filters.state, taskStates.map { it.key to stringResource(it.value) }) {
                 onFilter(filters.copy(state = it, search = search))
             }
             Field(R.string.search, search, { search = it.take(160) })
-            SelectField(stringResource(R.string.category), filters.category,
-                listOf(null to stringResource(R.string.all_categories)) + categories.map { it.key to stringResource(it.value) }) {
+            SelectField(
+                stringResource(R.string.category),
+                filters.category,
+                listOf(null to stringResource(R.string.all_categories)) + categories.map { it.key to stringResource(it.value) }
+            ) {
                 onFilter(filters.copy(category = it, search = search))
             }
-            SelectField(stringResource(R.string.member), filters.assignee,
+            SelectField(
+                stringResource(R.string.member),
+                filters.assignee,
                 listOf(null to stringResource(R.string.all_members), "unassigned" to stringResource(R.string.unassigned)) +
-                    workspace.members.filterNot { it.inactive }.map { it.id to it.name }) {
+                    workspace.members.filterNot { it.inactive }.map { it.id to it.name }
+            ) {
                 onFilter(filters.copy(assignee = it, search = search))
             }
-            TextButton(enabled = !state.busy, onClick = { onFilter(filters.copy(search = search)) }) { Text(stringResource(R.string.apply_filters)) }
+            TextButton(enabled = !state.busy, onClick = {
+                onFilter(filters.copy(search = search))
+            }) { Text(stringResource(R.string.apply_filters)) }
             if (state.tasks.isEmpty() && !state.busy) Text(stringResource(R.string.no_tasks))
         }
         items(state.tasks, key = { it.id }) { entry ->
             EntryCard(entry, workspace, model) { model.edit(EntryEditor("task", entry)) }
         }
-        if (state.taskCursor != null) item {
-            OutlinedButton(onClick = { model.tasks(filters, more = true) }, enabled = !state.busy) {
-                Text(stringResource(R.string.load_more))
+        if (state.taskCursor != null) {
+            item {
+                OutlinedButton(onClick = { model.tasks(filters, more = true) }, enabled = !state.busy) {
+                    Text(stringResource(R.string.load_more))
+                }
             }
         }
     }
@@ -215,8 +272,20 @@ fun EntryCard(entry: Entry, workspace: Workspace, model: WorkspaceViewModel? = n
             val category = categories[entry.category]?.let { stringResource(it) }.orEmpty()
             val assignee = workspace.members.find { it.id == entry.assigneeId }?.name
                 ?: if (entry.kind == "task") stringResource(R.string.unassigned) else ""
-            Text(listOfNotNull(category, entry.dueOn, assignee,
-                if (entry.kind == "event" && entry.startTime == null) stringResource(R.string.event_all_day) else null).filter { it.isNotBlank() }.joinToString(" · "))
+            Text(
+                listOfNotNull(
+                    category,
+                    entry.dueOn,
+                    assignee,
+                    if (entry.kind == "event" &&
+                        entry.startTime == null
+                    ) {
+                        stringResource(R.string.event_all_day)
+                    } else {
+                        null
+                    }
+                ).filter { it.isNotBlank() }.joinToString(" · ")
+            )
             state?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.tertiary) }
             if (entry.voice != null && model != null) VoicePlayback(entry.id, model)
         }
@@ -224,8 +293,12 @@ fun EntryCard(entry: Entry, workspace: Workspace, model: WorkspaceViewModel? = n
 }
 
 private val notificationLabels = mapOf(
-    "assignment" to R.string.assigned_notification, "deadline" to R.string.due, "overdue" to R.string.overdue,
-    "swap" to R.string.swap_notification, "member_joined" to R.string.member_joined, "task_comment" to R.string.task_new_comment
+    "assignment" to R.string.assigned_notification,
+    "deadline" to R.string.due,
+    "overdue" to R.string.overdue,
+    "swap" to R.string.swap_notification,
+    "member_joined" to R.string.member_joined,
+    "task_comment" to R.string.task_new_comment
 )
 
 @Composable
@@ -240,20 +313,31 @@ private fun NotificationPage(state: WorkspaceState, model: WorkspaceViewModel, p
         items(state.notifications, key = { it.id }) { entry ->
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp)) {
-                    Text(stringResource(notificationLabels[entry.type] ?: R.string.notifications), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(notificationLabels[entry.type] ?: R.string.notifications),
+                        style = MaterialTheme.typography.titleMedium
+                    )
                     Text(entry.createdAt.take(10))
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         TextButton(onClick = {
                             if (entry.readAt == null) model.readNotice(entry)
                             open(entry)
                         }) { Text(stringResource(R.string.open_item)) }
-                        if (entry.readAt == null) TextButton(onClick = { model.readNotice(entry) }) { Text(stringResource(R.string.mark_read)) }
+                        if (entry.readAt ==
+                            null
+                        ) {
+                            TextButton(onClick = { model.readNotice(entry) }) { Text(stringResource(R.string.mark_read)) }
+                        }
                     }
                 }
             }
         }
-        if (state.noticeCursor != null) item {
-            OutlinedButton(onClick = { model.notifications(more = true) }, enabled = !state.busy) { Text(stringResource(R.string.load_more)) }
+        if (state.noticeCursor != null) {
+            item {
+                OutlinedButton(onClick = {
+                    model.notifications(more = true)
+                }, enabled = !state.busy) { Text(stringResource(R.string.load_more)) }
+            }
         }
     }
 }

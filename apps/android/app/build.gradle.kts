@@ -1,6 +1,6 @@
+import groovy.json.JsonSlurper
 import java.net.URI
 import java.util.Properties
-import groovy.json.JsonSlurper
 
 plugins {
     alias(libs.plugins.android.application)
@@ -8,6 +8,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.kapt)
+    id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
+    id("io.gitlab.arturbosch.detekt") version "1.23.8"
     alias(libs.plugins.hilt)
 }
 
@@ -23,9 +25,11 @@ val local = Properties().apply {
 fun url(property: String, fallback: String, allowHttp: Boolean): String {
     val value = providers.gradleProperty(property).orNull ?: local.getProperty(property) ?: fallback
     val parsed = URI(value)
-    require(parsed.host != null && (parsed.scheme == "https" || (allowHttp && parsed.scheme == "http")) &&
-        parsed.rawUserInfo == null && parsed.rawQuery == null && parsed.rawFragment == null &&
-        (parsed.rawPath.isNullOrEmpty() || parsed.rawPath == "/")) { "Invalid URL for $property" }
+    require(
+        parsed.host != null && (parsed.scheme == "https" || (allowHttp && parsed.scheme == "http")) &&
+            parsed.rawUserInfo == null && parsed.rawQuery == null && parsed.rawFragment == null &&
+            (parsed.rawPath.isNullOrEmpty() || parsed.rawPath == "/")
+    ) { "Invalid URL for $property" }
     return value.trimEnd('/') + "/"
 }
 val debugUrl = url("sotovorDebugUrl", "http://10.0.2.2:3000/", true)
@@ -60,13 +64,16 @@ android {
         manifestPlaceholders["inviteHost"] = URI(releaseUrl).host
     }
     signingConfigs {
-        if (signedRelease) create("production") {
-            storeFile = file(signing[0])
-            storePassword = signing[1]
-            keyAlias = signing[2]
-            keyPassword = signing[3]
+        if (signedRelease) {
+            create("production") {
+                storeFile = file(signing[0])
+                storePassword = signing[1]
+                keyAlias = signing[2]
+                keyPassword = signing[3]
+            }
         }
     }
+    bundle { language { enableSplit = false } }
     buildTypes {
         debug { buildConfigField("String", "BASE_URL", "\"$debugUrl\"") }
         release {
@@ -76,7 +83,29 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
-    buildFeatures { compose = true; buildConfig = true }
+    // The QA variant runs release R8 rules against the local test API.
+    testBuildType = providers.gradleProperty("sotovorTestBuildType").orElse("debug").get()
+    buildTypes.create("qa") {
+        initWith(buildTypes.getByName("release"))
+        applicationIdSuffix = ".qa"
+        signingConfig = signingConfigs.getByName("debug")
+        isDebuggable = false
+        matchingFallbacks += listOf("release")
+        buildConfigField("String", "BASE_URL", "\"$debugUrl\"")
+    }
+    lint {
+        abortOnError = true
+        checkReleaseBuilds = true
+        // These warning-level issues block release together with all ordinary lint errors.
+        error += setOf(
+            "ContentDescription", "LabelFor", "TextContrastCheck", "TouchTargetSizeCheck",
+            "HardcodedText", "SetTextI18n", "MissingTranslation", "NewApi", "UnsafeOptInUsageError"
+        )
+    }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -114,7 +143,35 @@ dependencies {
     testImplementation(libs.coroutines.test)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.test)
+    implementation("androidx.concurrent:concurrent-futures-ktx:1.3.0")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
     androidTestImplementation(libs.android.test.runner)
     androidTestImplementation(libs.android.test.espresso)
     debugImplementation(libs.compose.test.manifest)
+}
+
+ktlint {
+    version.set("1.7.1")
+    android.set(true)
+}
+
+detekt {
+    buildUponDefaultConfig = false
+    config.setFrom(rootProject.file("config/detekt.yml"))
+}
+
+tasks.register("dependencyInventory") {
+    group = "verification"
+    description = "Export the resolved release runtime dependencies for the OSV audit."
+    doLast {
+        val dependencies = configurations.getByName("releaseRuntimeClasspath")
+            .resolvedConfiguration.resolvedArtifacts
+            .map { it.moduleVersion.id }
+            .distinctBy { it.toString() }
+            .sortedBy { it.toString() }
+            .map { mapOf("name" to "${it.group}:${it.name}", "version" to it.version) }
+        val target = layout.buildDirectory.file("reports/dependency-inventory.json").get().asFile
+        target.parentFile.mkdirs()
+        target.writeText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(dependencies)))
+    }
 }

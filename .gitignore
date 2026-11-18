@@ -19,3 +19,7 @@ release-assets/
 dist/
 apps/desktop/src-tauri/target/
 apps/desktop/src-tauri/gen/
+
+playwright-report/
+test-results/
+quality-results/
