@@ -1,4 +1,13 @@
 {
+  "Podopravila": {"en": "Checklist", "de": "Checkliste"},
+  "Novo podopravilo": {"en": "New checklist item", "de": "Neuer Checklistenpunkt"},
+  "Dodaj podopravilo": {"en": "Add checklist item", "de": "Checklistenpunkt hinzufügen"},
+  "Komentarji": {"en": "Comments", "de": "Kommentare"},
+  "Tvoj komentar": {"en": "Your comment", "de": "Dein Kommentar"},
+  "Objavi komentar": {"en": "Post comment", "de": "Kommentar veröffentlichen"},
+  "Nov komentar pri opravilu": {"en": "New task comment", "de": "Neuer Aufgabenkommentar"},
+  "Podrobnosti": {"en": "Details", "de": "Details"},
+  "Besedilo je prazno ali predolgo.": {"en": "The text is empty or too long.", "de": "Der Text ist leer oder zu lang."},
   "Zasebna naročnina na koledar": {"en": "Private calendar subscription", "de": "Privates Kalenderabo"},
   "Kdor ima povezavo, lahko vidi dogodke in datirana opravila tvojih družin. Zamenjava povezave prekliče prejšnjo.": {"en": "Anyone with this link can see your families’ events and dated tasks. Replacing the link revokes the previous one.", "de": "Mit diesem Link sind Termine und datierte Aufgaben deiner Familien sichtbar. Ein neuer Link widerruft den alten."},
   "Zamenjaj povezavo": {"en": "Replace link", "de": "Link ersetzen"},

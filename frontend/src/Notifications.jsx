@@ -6,6 +6,7 @@ import { request } from './data.js';
 const settingsPath = '/v1/me/notification-settings';
 const labels = { assignments: 'Dodelitve', reminders: 'Opomniki', swaps: 'Zamenjave' };
 const noticeTypes = {
+  task_comment: ['Nov komentar pri opravilu', 'all'],
   assignment: ['Dodeljeno tebi', 'mine'], deadline: ['Opomnik za rok', 'due'],
   overdue: ['Rok je potekel', 'due'], swap: ['Išče se zamenjava', 'available'], member_joined: ['Nov družinski član', 'family'],
 };
@@ -79,7 +80,7 @@ export default function Notifications({ tasks, householdId, onView }) {
           <button className="notification-link" onClick={event => {
             event.currentTarget.closest('details').open = false;
             void markRead(id);
-            onView(filter);
+            onView(filter, type === 'task_comment' ? tasks.find(task => task.id === target.entryId) : null);
           }}><strong>{title}</strong>{title !== t(label) && <small>{t(label)}</small>}</button>
           <button className="icon-button" aria-label={t('Označi kot prebrano: %0', title)} onClick={() => void markRead(id)}><Check size={16} /></button>
         </li>;

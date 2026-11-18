@@ -2,10 +2,12 @@ import { hash } from './mobile-auth.js';
 import { readFile } from 'node:fs/promises';
 
 const titles = {
+  task_comment: 'Nov komentar pri opravilu',
   shopping: 'Nakupovalni seznam je posodobljen',
   assignment: 'Novo opravilo', deadline: 'Bliža se rok', overdue: 'Rok je potekel', swap: 'Išče se zamenjava', member_joined: 'Nov družinski član',
 };
 const englishTitles = {
+  task_comment: 'New task comment',
   shopping: 'Shopping list updated',
   assignment: 'New assignment', deadline: 'Deadline approaching', overdue: 'Task overdue', swap: 'Swap requested', member_joined: 'New family member',
 };

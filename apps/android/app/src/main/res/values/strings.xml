@@ -173,4 +173,11 @@
     <string name="calendar_share">Deli povezavo</string>
     <string name="calendar_add_phone">Dodaj v koledar telefona</string>
     <string name="calendar_app_unavailable">Aplikacija za koledar ni na voljo.</string>
+    <string name="task_checklist">Podopravila</string>
+    <string name="task_new_check">Novo podopravilo</string>
+    <string name="task_add_check">Dodaj podopravilo</string>
+    <string name="task_comments">Komentarji</string>
+    <string name="task_your_comment">Tvoj komentar</string>
+    <string name="task_add_comment">Objavi komentar</string>
+    <string name="task_new_comment">Nov komentar pri opravilu</string>
 </resources>

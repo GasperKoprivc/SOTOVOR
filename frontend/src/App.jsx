@@ -15,6 +15,7 @@ import FamilySettings from './FamilySettings.jsx';
 import { EmailVerificationReminder } from './EmailVerification.jsx';
 import CalendarSubscription from './CalendarSubscription.jsx';
 import MonthCalendar from './MonthCalendar.jsx';
+import TaskDetails from './TaskDetails.jsx';
 import ShoppingList from './ShoppingList.jsx';
 import SmartPlanning from './SmartPlanning.jsx';
 import { DesktopApproval, DesktopSignIn, desktopBridge, desktopLink } from './DesktopAccess.jsx';
@@ -317,7 +318,11 @@ export default function App() {
   const tasks = entries.filter(entry => entry.kind === 'task');
   const overview = page === 'overview';
   const canManage = permissions.edit || permissions.move || permissions.remove;
-  const taskPanel = <Tasks {...{ tasks, members, memberId, today, filter, busy }} onFilter={setFilter} onEdit={canManage ? edit : undefined}
+  function openDetails(task) {
+    setEditing(task);
+    setModal('task-details');
+  }
+  const taskPanel = <Tasks {...{ tasks, members, memberId, today, filter, busy }} onFilter={setFilter} onDetails={openDetails} onEdit={canManage ? edit : undefined}
     onAdd={permissions.create ? () => open('task') : undefined} onAction={(id, action) => run(async () => {
       setData(await request(`/tasks/${id}/${action}`, {}));
       setNotice({ claim: 'Opravilo je prevzeto.', cover: 'Opravilo je spet na voljo za prevzem.', complete: 'Opravilo je zaključeno.' }[action]);
@@ -336,7 +341,11 @@ export default function App() {
         <div className="top-actions">
           <LanguageSelect />
           <Notifications key={memberId} tasks={tasks} householdId={household.id}
-            onView={next => next === 'family' ? go('profile') : go('tasks', next)} />
+            onView={(next, task) => {
+              if (next === 'family') go('profile');
+              else go('tasks', next);
+              if (task) openDetails(task);
+            }} />
           {data.admin && data.whatsapp?.enabled && <button className="soft-button" onClick={() => open('whatsapp')}>WhatsApp</button>}
           {data.admin && <button className="soft-button" onClick={() => open('invite')}><UserRoundPlus size={17} />{' '}{t('Povabi člana')}</button>}
           <button className="soft-button" type="button" onClick={logout} disabled={busy}><LogOut size={17} />{' '}{t('Odjava')}</button>
@@ -458,6 +467,9 @@ export default function App() {
     </Dialog>}
     {modal === 'whatsapp' && <WhatsAppDialog linked={data.whatsapp.linked} onClose={() => setModal(null)}
       onUpdate={async () => setData(await request('/dashboard'))} />}
+    {modal === 'task-details' && <Dialog title={editing.title} onClose={() => setModal(null)}>
+      <TaskDetails key={editing.id} task={editing} householdId={household.id} />
+    </Dialog>}
     {['task', 'event', 'edit'].includes(modal) && <EntryDialog initialKind={modal === 'edit' ? editing.kind : modal} initialDate={entryDate}
       entry={modal === 'edit' ? editing : null} {...{ permissions, members, busy, error }}
       onClose={() => { if (!pending.current) { setModal(null); setError(''); } }}

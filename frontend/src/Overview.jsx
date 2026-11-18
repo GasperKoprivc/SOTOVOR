@@ -28,7 +28,7 @@ export function Metrics({ tasks, memberId, today, onFilter }) {
 
 const filters = { all: 'Odprta', mine: 'Moja', available: 'Za prevzem', due: 'Rok blizu', recurring: 'Ponavljajoča', done: 'Zaključena' };
 
-export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAction, busy, onAdd, onEdit }) {
+export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAction, busy, onAdd, onEdit, onDetails }) {
   const [pagination, setPagination] = useState({ filter, page: 1 });
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
@@ -88,6 +88,7 @@ export function Tasks({ tasks, members, memberId, today, filter, onFilter, onAct
         </div>
         <span className="tag">{t(categories[task.category])}</span>
         <div className="row-actions">
+          <button className="soft-button" onClick={() => onDetails(task)}>{t('Podrobnosti')}</button>
           {!task.completedAt && onEdit && <button className="icon-button" aria-label={t("Uredi %0", task.title)} onClick={() => onEdit(task)}><Pencil size={16} /></button>}
           {!task.completedAt && !task.assigneeId && <button className="soft-button" disabled={busy} onClick={() => onAction(task.id, 'claim')}>{t('Prevzemi')}</button>}
           {!task.completedAt && task.assigneeId === memberId && <>

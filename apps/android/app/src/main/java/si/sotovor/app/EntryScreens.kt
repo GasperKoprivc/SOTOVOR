@@ -137,6 +137,7 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
                     }
                 }
                 if (!task && original?.dueOn != null) AddToPhoneCalendar(original)
+                if (task && original != null) TaskDetailsPanel(original, state, model)
                 if (original == null) VoiceAttachment(voice, !state.busy, { voice = it }, { recording = it })
                 if (original?.voice != null) VoicePlayback(original.id, model)
                 Status(state)

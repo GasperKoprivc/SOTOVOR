@@ -19,6 +19,7 @@ data class WorkspaceState(
     val tasks: List<Entry> = emptyList(), val taskCursor: String? = null, val filters: TaskFilters = TaskFilters(),
     val notifications: List<Notice> = emptyList(), val noticeCursor: String? = null, val devices: List<DeviceSession>? = null,
     val editor: EntryEditor? = null, val conflict: Boolean = false, val export: String? = null,
+    val taskDetails: TaskDetails? = null,
     val calendarSubscription: CalendarSubscription? = null,
     val shopping: List<ShoppingItem>? = null, val shoppingPush: Boolean? = null,
     val plan: PlanPreview? = null, val notificationSettings: NotificationSettings? = null
@@ -73,6 +74,27 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
     fun signOut() = update {
         repository.logout()
         mutable.update { it.copy(workspace = null) }
+    }
+
+    fun taskDetails() = updateDetails(repository::taskDetails)
+
+    fun addCheck(title: String, saved: () -> Unit) = updateDetails { household, id ->
+        repository.addCheck(household, id, title).also { saved() }
+    }
+
+    fun checkItem(item: String, checked: Boolean) = updateDetails { household, id ->
+        repository.checkItem(household, id, item, checked)
+    }
+
+    fun addComment(text: String, saved: () -> Unit) = updateDetails { household, id ->
+        repository.addComment(household, id, text).also { saved() }
+    }
+
+    private fun updateDetails(action: suspend (String, String) -> TaskDetails) = update {
+        val household = household() ?: return@update
+        val task = mutable.value.editor?.entry?.takeIf { it.kind == "task" } ?: return@update
+        val details = action(household, task.id)
+        mutable.update { if (it.editor?.entry?.id == task.id) it.copy(taskDetails = details) else it }
     }
 
     fun calendarSubscription() = update {
@@ -135,7 +157,7 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
         }
     }
 
-    fun edit(editor: EntryEditor?) = mutable.update { it.copy(editor = editor, conflict = false) }
+    fun edit(editor: EntryEditor?) = mutable.update { it.copy(editor = editor, conflict = false, taskDetails = null) }
     fun dismissConflict() {
         edit(null)
         reload()

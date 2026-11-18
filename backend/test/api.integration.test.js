@@ -653,3 +653,32 @@ test('private ICS only exposes current memberships and revokes previous links', 
   assert.deepEqual((await v1(path, { ...scope, method: 'DELETE' })).body, { active: false });
   assert.equal((await read(newLink)).status, 404);
 });
+
+test('task details allow family collaboration and notify members other than the author', async () => {
+  const family = await postJson('/households', { householdName: 'Checklist', memberName: 'Ana' });
+  const owner = sessionCookie(family.response);
+  const { householdId } = family.data;
+  const { data: board } = await dashboard(owner, householdId);
+  const joined = await postJson('/households/join', { inviteCode: board.household.inviteCode, memberName: 'Bor' });
+  const member = sessionCookie(joined.response);
+  const other = sessionCookie((await postJson('/households', { householdName: 'Other', memberName: 'Other' })).response);
+  const created = await postJson('/entries', { kind: 'task', title: 'Plan', assigneeId: board.memberId }, owner);
+  const root = '/tasks/' + created.data.entries[0].id;
+  const scope = { cookie: member, household: householdId };
+  const write = (path, body, method = 'POST') => v1(root + path, { ...scope, body, method });
+  assert.equal((await v1(root + '/details', { cookie: other })).status, 404);
+  assert.deepEqual((await v1(root + '/details', scope)).body, { checklist: [], comments: [] });
+  assert.equal((await write('/comments', { text: ' ' })).status, 400);
+  const added = await write('/checklist', { title: 'Gather supplies' });
+  assert.equal(added.status, 201);
+  const item = added.body.checklist[0].id;
+  assert.equal((await write('/checklist/' + item, { checked: true }, 'PUT')).body.checklist[0].checked, true);
+  const comment = await write('/comments', { text: ' Ready ' });
+  assert.equal(comment.status, 201);
+  assert.equal(comment.body.comments[0].text, 'Ready');
+  assert.equal(comment.body.comments[0].authorName, 'Bor Test');
+  assert.equal((await v1('/notifications', { cookie: owner, household: householdId })).body.items[0].type, 'task_comment');
+  assert.equal((await v1('/notifications', scope)).body.items.length, 0);
+  assert.equal((await postJson(root + '/complete', {}, owner)).response.status, 200);
+  assert.equal((await write('/checklist', { title: 'Too late' })).status, 409);
+});

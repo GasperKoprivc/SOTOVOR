@@ -5,7 +5,7 @@
 | Shared shopping list | Family API and WhatsApp quick add | Add, check, uncheck, remove, live updates | Add, check, uncheck, remove, optional FCM alerts |
 | Event time and duration | All-day or timed events with optional duration | Editor and weekly time blocks | Editor and weekly time blocks |
 | Private calendar subscription | Private ICS, rotate and revoke | Calendar subscription controls | Subscription controls and add an event to the phone calendar |
-| Task checklists and comments | Planned | Planned | Planned |
+| Task checklists and comments | Family-scoped details and comment notifications | Task details dialog | Details inside task editor |
 | Task duration and planner weighting | Planned | Planned | Planned |
 | Points and rewards | Planned | Planned | Planned |
 | Weekly and monthly recurrence | Planned | Planned | Planned |
@@ -45,3 +45,10 @@ copies may remain in the external calendar's cache.
 
 On Android, open an event and choose **Dodaj v koledar telefona** to hand off
 a pre-filled event to an installed calendar app. The user confirms it there.
+
+## Task checklists and comments
+
+Open the details of an existing task. All family members can comment and use
+the checklist while the task is open. Completed tasks keep a read-only
+checklist and still accept comments. Other family members with assignment
+notifications enabled receive comment alerts.
