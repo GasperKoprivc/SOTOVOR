@@ -615,3 +615,41 @@ test('events support all-day and timed schedules without dropping legacy timing 
     { startTime: '09:00', durationMinutes: 2.5 }, { kind: 'task', startTime: '09:00' },
   ]) assert.equal((await create({ ...event, ...invalid })).status, 400);
 });
+
+test('private ICS only exposes current memberships and revokes previous links', async () => {
+  const create = async name => {
+    const result = await postJson('/households', { householdName: name, memberName: name });
+    return sessionCookie(result.response);
+  };
+  const owner = await create('Subscribed');
+  const other = await create('Unrelated');
+  const scope = { cookie: owner };
+  const path = '/calendar/subscription';
+  assert.equal((await v1(path)).status, 401);
+  assert.deepEqual((await v1(path, scope)).body, { active: false });
+  await postJson('/entries', { kind: 'task', title: 'Dated task', dueOn: '2028-09-15' }, owner);
+  await postJson('/entries', { kind: 'task', title: 'Undated task' }, owner);
+  await postJson('/entries', { kind: 'event', title: 'Outside event', dueOn: '2028-09-15' }, other);
+  await postJson('/entries', { kind: 'event', title: 'Č,;\\'.repeat(22), dueOn: '2028-09-15',
+    startTime: '23:30', durationMinutes: 120 }, owner);
+  const generate = () => v1(path, { ...scope, method: 'POST', body: {} });
+  const { status, body } = await generate();
+  assert.equal(status, 201);
+  assert.match(body.path, /^\/api\/v1\/calendar\/feed\/[0-9a-f]{64}\.ics$/);
+  assert.deepEqual((await v1(path, scope)).body, { active: true });
+  const read = (file = body.path) => fetch(new URL(file, apiUrl));
+  const result = await read();
+  assert.match(result.headers.get('content-type'), /^text\/calendar/);
+  assert.match(result.headers.get('cache-control'), /no-store/);
+  const ics = await result.text();
+  assert.match(ics, /BEGIN:VCALENDAR\r\n/);
+  assert.match(ics, /SUMMARY:Dated task\r\nDTSTART;VALUE=DATE:20280915/);
+  assert.match(ics, /DTSTART:20280915T213000Z\r\nDTEND:20280915T233000Z/);
+  assert.doesNotMatch(ics, /Undated task|Outside event/);
+  assert.ok(ics.split('\r\n').every(line => Buffer.byteLength(line) <= 75));
+  const newLink = (await generate()).body.path;
+  assert.equal((await read()).status, 404);
+  assert.equal((await read(newLink)).status, 200);
+  assert.deepEqual((await v1(path, { ...scope, method: 'DELETE' })).body, { active: false });
+  assert.equal((await read(newLink)).status, 404);
+});

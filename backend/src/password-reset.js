@@ -37,7 +37,7 @@ export function registerPasswordReset(router, { accounts, sessions, mobileSessio
     if (!await accounts.findOne(condition, { projection: { _id: 1 } })) throw invalidLink();
     const replacement = await passwordHash(password);
     const account = await accounts.findOneAndUpdate({ ...condition, 'passwordReset.expiresAt': { $gt: new Date() } }, {
-      $set: { passwordHash: replacement }, $unset: { passwordReset: '' },
+      $set: { passwordHash: replacement }, $unset: { passwordReset: '', calendarTokenHash: '' },
     }, { projection: { _id: 1 } });
     if (!account) throw invalidLink();
     const filter = { accountId: account._id };

@@ -136,6 +136,7 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
                         Text(stringResource(R.string.rotate_tasks))
                     }
                 }
+                if (!task && original?.dueOn != null) AddToPhoneCalendar(original)
                 if (original == null) VoiceAttachment(voice, !state.busy, { voice = it }, { recording = it })
                 if (original?.voice != null) VoicePlayback(original.id, model)
                 Status(state)

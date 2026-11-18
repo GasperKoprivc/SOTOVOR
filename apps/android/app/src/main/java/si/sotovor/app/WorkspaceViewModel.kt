@@ -19,6 +19,7 @@ data class WorkspaceState(
     val tasks: List<Entry> = emptyList(), val taskCursor: String? = null, val filters: TaskFilters = TaskFilters(),
     val notifications: List<Notice> = emptyList(), val noticeCursor: String? = null, val devices: List<DeviceSession>? = null,
     val editor: EntryEditor? = null, val conflict: Boolean = false, val export: String? = null,
+    val calendarSubscription: CalendarSubscription? = null,
     val shopping: List<ShoppingItem>? = null, val shoppingPush: Boolean? = null,
     val plan: PlanPreview? = null, val notificationSettings: NotificationSettings? = null
 )
@@ -72,6 +73,16 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
     fun signOut() = update {
         repository.logout()
         mutable.update { it.copy(workspace = null) }
+    }
+
+    fun calendarSubscription() = update {
+        val subscription = repository.calendarSubscription()
+        mutable.update { it.copy(calendarSubscription = subscription) }
+    }
+
+    fun changeCalendarSubscription(revoke: Boolean) = update {
+        val subscription = if (revoke) repository.revokeCalendarSubscription() else repository.createCalendarSubscription()
+        mutable.update { it.copy(calendarSubscription = subscription) }
     }
 
     fun shopping() = update {

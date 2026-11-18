@@ -1,4 +1,10 @@
 {
+  "Zasebna naročnina na koledar": {"en": "Private calendar subscription", "de": "Privates Kalenderabo"},
+  "Kdor ima povezavo, lahko vidi dogodke in datirana opravila tvojih družin. Zamenjava povezave prekliče prejšnjo.": {"en": "Anyone with this link can see your families’ events and dated tasks. Replacing the link revokes the previous one.", "de": "Mit diesem Link sind Termine und datierte Aufgaben deiner Familien sichtbar. Ein neuer Link widerruft den alten."},
+  "Zamenjaj povezavo": {"en": "Replace link", "de": "Link ersetzen"},
+  "Ustvari povezavo": {"en": "Create link", "de": "Link erstellen"},
+  "Prekliči povezavo": {"en": "Revoke link", "de": "Link widerrufen"},
+  "Kopiraj povezavo v svoj koledar": {"en": "Copy this link into your calendar", "de": "Kopiere diesen Link in deinen Kalender"},
   "Ves dan": {"en": "All day", "de": "Ganztägig"},
   "Začetek": {"en": "Start time", "de": "Beginn"},
   "Trajanje (minute)": {"en": "Duration (minutes)", "de": "Dauer (Minuten)"},

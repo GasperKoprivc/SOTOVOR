@@ -3,6 +3,29 @@ info: {title: Sotovor native API, version: 1.0.0}
 servers: [{url: /api/v1}]
 security: [{bearer: []}, {browserSession: []}]
 paths:
+  /calendar/subscription:
+    get:
+      summary: Read the authenticated account's private subscription status
+      responses:
+        '200': {description: Status without the secret path, content: {application/json: {schema: {$ref: '#/components/schemas/CalendarSubscription'}}}}
+    post:
+      summary: Create or replace the authenticated account's subscription link
+      requestBody: {required: true, content: {application/json: {schema: {type: object}}}}
+      responses:
+        '201': {description: This is the only response that returns the private path, content: {application/json: {schema: {$ref: '#/components/schemas/CalendarSubscription'}}}}
+    delete:
+      summary: Revoke the current subscription link
+      responses:
+        '200': {description: Subscription disabled, content: {application/json: {schema: {$ref: '#/components/schemas/CalendarSubscription'}}}}
+  /calendar/feed/{file}:
+    get:
+      security: []
+      summary: Read the private iCalendar feed using the secret filename
+      parameters:
+        - {name: file, in: path, required: true, schema: {type: string, pattern: '^[a-f0-9]{64}[.]ics$'}}
+      responses:
+        '200': {description: Calendar entries for current memberships, content: {text/calendar: {schema: {type: string}}}}
+        '404': {description: The supplied subscription is invalid or revoked}
   /shopping:
     parameters:
       - $ref: '#/components/parameters/ShoppingHousehold'
@@ -423,6 +446,7 @@ components:
     bearer: {type: http, scheme: bearer, bearerFormat: opaque}
     browserSession: {type: apiKey, in: cookie, name: sotovor_session}
   schemas:
+    CalendarSubscription: {type: object, required: [active], properties: {active: {type: boolean}, path: {type: string}}}
     ShoppingItem:
       type: object
       required: [id, title, quantity, checkedAt, checkedByName]

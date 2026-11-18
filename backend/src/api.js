@@ -7,6 +7,7 @@ import { registerNotificationRoutes } from './notifications.js';
 import { registerPasswordReset } from './password-reset.js';
 import { registerAccountData } from './account-data.js';
 import { createShoppingList } from './shopping.js';
+import { registerCalendarFeed, registerCalendarSettings } from './calendar-feed.js';
 import { eventTiming, timingOf } from './event-timing.js';
 import { taskFilters } from './task-filters.js';
 import { Router } from 'express';
@@ -66,6 +67,7 @@ export function createApi(database, {
 } = {}) {
   const { households, entries, accounts, sessions, desktopLinks } = database;
   const router = Router();
+  if (versioned) registerCalendarFeed(router, database);
   const cookieOptions = { httpOnly: true, sameSite: 'strict', path: '/' };
 
   async function startSession(req, res, accountId) {
@@ -126,6 +128,8 @@ export function createApi(database, {
     }
     next();
   });
+
+  registerCalendarSettings(router, database);
 
   registerDesktopAuth(router, {
     desktopLinks, hash,

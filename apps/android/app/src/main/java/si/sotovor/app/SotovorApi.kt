@@ -48,6 +48,9 @@ interface SotovorApi {
     @POST("households/members/{id}/planning") suspend fun member(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Body body: PlanningMember): Ok
     @POST("households/members/{id}/permissions") suspend fun permissions(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Body body: Permissions): Ok
     @POST("households/members/{id}/{action}") suspend fun memberAction(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Path("action") action: String, @Body body: Empty = Empty()): Ok
+    @GET("calendar/subscription") suspend fun calendarSubscription(): CalendarSubscription
+    @POST("calendar/subscription") suspend fun createCalendarSubscription(@Body input: Empty = Empty()): CalendarSubscription
+    @DELETE("calendar/subscription") suspend fun revokeCalendarSubscription(): CalendarSubscription
     @GET("shopping") suspend fun shopping(@Header("X-Sotovor-Household") household: String): List<ShoppingItem>
     @POST("shopping") suspend fun addShopping(@Header("X-Sotovor-Household") household: String, @Body input: ShoppingInput): ShoppingItem
     @PUT("shopping/{id}") suspend fun checkShopping(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Body input: ShoppingCheck): ShoppingItem
