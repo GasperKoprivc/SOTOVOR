@@ -1,4 +1,11 @@
 {
+  "Ponavljanje": {"en": "Repeat", "de": "Wiederholung"},
+  "Brez ponavljanja": {"en": "Does not repeat", "de": "Keine Wiederholung"},
+  "Interval v dnevih": {"en": "Interval in days", "de": "Intervall in Tagen"},
+  "Tedensko": {"en": "Weekly", "de": "Wöchentlich"},
+  "Mesečno": {"en": "Monthly", "de": "Monatlich"},
+  "Dan v mesecu": {"en": "Day of the month", "de": "Tag des Monats"},
+  "Dnevi v tednu": {"en": "Days of the week", "de": "Wochentage"},
   "Točke za otroka": {"en": "Points for a child", "de": "Punkte für ein Kind"},
   "Točke in nagrade": {"en": "Points and rewards", "de": "Punkte und Belohnungen"},
   "Prikaži lestvico": {"en": "Show leaderboard", "de": "Rangliste anzeigen"},

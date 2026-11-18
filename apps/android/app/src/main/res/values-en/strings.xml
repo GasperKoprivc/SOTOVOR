@@ -190,4 +190,10 @@
     <string name="reward_add">Add reward</string>
     <string name="reward_remove">Remove</string>
     <string name="reward_points_for">%1$s · %2$d points</string>
+    <string name="repeat_mode">Repeat</string>
+    <string name="repeat_none">Does not repeat</string>
+    <string name="repeat_interval">Interval in days</string>
+    <string name="repeat_weekly">Weekly</string>
+    <string name="repeat_monthly">Monthly</string>
+    <string name="repeat_month_day">Day of the month</string>
 </resources>

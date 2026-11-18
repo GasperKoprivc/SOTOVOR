@@ -14,7 +14,7 @@ import { eventTiming, timingOf } from './event-timing.js';
 import { taskFilters } from './task-filters.js';
 import { Router } from 'express';
 import { Binary, ObjectId } from 'mongodb';
-import { materializeOccurrences, nextOccurrence } from './recurrence.js';
+import { materializeOccurrences, nextOccurrence, normalizeRecurrence } from './recurrence.js';
 import { codeHash } from './whatsapp.js';
 import { emailPattern, passwordHash, publicProfile, sessionSeconds, verifyPassword } from './accounts.js';
 import { registerDesktopAuth } from './desktop-auth.js';
@@ -425,9 +425,14 @@ export function createApi(database, {
     if (!categories.has(category)) throw new HttpError(400, 'Izberi veljavno kategorijo.');
     if (dueOn !== null && !isDay(dueOn)) throw new HttpError(400, 'Izberi veljaven datum.');
     if (kind === 'event' && !dueOn) throw new HttpError(400, 'Dogodek potrebuje datum.');
+    const recurrence = normalizeRecurrence(Object.hasOwn(req.body, 'recurrence')
+      ? req.body.recurrence : (repeatDays ? null : previous?.recurrence));
+    if (recurrence === undefined || (recurrence && (kind !== 'task' || !dueOn || repeatDays > 0))) {
+      throw new HttpError(400, 'Izberi veljavno tedensko ali mesečno ponavljanje.');
+    }
     if (!Number.isInteger(repeatDays) || repeatDays < 0 || repeatDays > 3660 ||
         (repeatDays > 0 && (kind !== 'task' || !dueOn)) || typeof rotate !== 'boolean' ||
-        (rotate && !repeatDays)) {
+        (rotate && !repeatDays && !recurrence)) {
       throw new HttpError(400, 'Za ponavljanje opravila izberi rok in veljaven interval.');
     }
     if (!Number.isInteger(reminderDays) || reminderDays < 0 || reminderDays > 30) {
@@ -448,7 +453,7 @@ export function createApi(database, {
     if (assigneeId !== null && !req.household.members.some(member => member.id === assigneeId && !member.inactive)) {
       throw new HttpError(400, 'Izberi člana tega prostora.');
     }
-    return { kind, title, dueOn, category, assigneeId, repeatDays, rotate, reminderDays, ...(kind === 'task' ? { estimatedMinutes, points } : {}), ...eventTiming(req.body, previous) };
+    return { kind, title, dueOn, category, assigneeId, repeatDays, rotate, reminderDays, ...(kind === 'task' ? { estimatedMinutes, points, recurrence } : {}), ...eventTiming(req.body, previous) };
   }
 
   if (versioned) {
@@ -505,8 +510,8 @@ export function createApi(database, {
     if (action === 'edit' && !rights.edit) {
       for (const [key, value] of Object.entries(fields)) {
         const original = key === 'assigneeId' && req.household.members.some(person => person.id === entry.assigneeId && person.inactive)
-          ? null : entry[key] ?? { repeatDays: 0, rotate: false, reminderDays: 2, assigneeId: null, estimatedMinutes: null, points: null, ...(entry.kind === 'event' ? timingOf(entry) : {}) }[key];
-        if (key !== 'dueOn' && value !== original) {
+          ? null : entry[key] ?? { repeatDays: 0, rotate: false, reminderDays: 2, assigneeId: null, estimatedMinutes: null, points: null, recurrence: null, ...(entry.kind === 'event' ? timingOf(entry) : {}) }[key];
+        if (key !== 'dueOn' && (key === 'recurrence' ? JSON.stringify(value) !== JSON.stringify(original) : value !== original)) {
           throw new HttpError(403, 'Dovoljenje velja samo za spremembo datuma.');
         }
       }

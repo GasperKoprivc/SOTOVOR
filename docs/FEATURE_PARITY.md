@@ -8,7 +8,7 @@
 | Task checklists and comments | Family-scoped details and comment notifications | Task details dialog | Details inside task editor |
 | Task duration and planner weighting | Optional estimate and minute-weighted planning | Task editor and planner guidance | Task editor and planner guidance |
 | Points and rewards | Admin-controlled rewards and child scores | Task editor and reward thresholds | Task editor and reward thresholds |
-| Weekly and monthly recurrence | Planned | Planned | Planned |
+| Weekly and monthly recurrence | Successor on completion, with rotation | Task editor | Task editor |
 | Today widget | Planned | Planned | Planned |
 | Voice transcription | Planned | Planned | Planned |
 | English and dark mode | Planned | Planned | Planned |
@@ -66,3 +66,10 @@ Family admins can add optional points to a task and set reward thresholds in
 the Workload tab. Completing the task credits those points once to its child
 assignee. Rewards use earned totals as milestones. With the leaderboard off,
 children can see their own score and other members see only the rewards.
+
+## Weekly and monthly recurrence
+
+Set a due date and select either specific weekdays or a day of the month.
+A monthly schedule for the 31st uses the last day of shorter months and
+returns to the 31st when possible. Day intervals remain available. All three
+modes create the next task on completion and can rotate the assignee.

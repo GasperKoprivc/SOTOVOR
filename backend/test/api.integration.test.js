@@ -728,3 +728,27 @@ test('reward settings and task points are admin-only and leaderboard privacy is 
   assert.equal((await save(owner, true)).status, 200);
   assert.equal((await v1('/rewards', { cookie: owner })).body.scores[0].points, 10);
 });
+
+test('weekly and monthly recurrence creates successors on completion and retains the configured day', async () => {
+  const family = await postJson('/households', { householdName: 'Recurring', memberName: 'Ana' });
+  const cookie = sessionCookie(family.response);
+  const { data: board } = await dashboard(cookie);
+  const joined = await postJson('/households/join', { inviteCode: board.household.inviteCode, memberName: 'Bor' });
+  const { data: member } = await dashboard(sessionCookie(joined.response));
+  const base = { kind: 'task', dueOn: '2028-01-31', assigneeId: board.memberId };
+  const add = fields => postJson('/entries', { ...base, ...fields }, cookie);
+  const complete = item => postJson('/tasks/' + item.id + '/complete', {}, cookie);
+  assert.equal((await add({ title: 'Invalid', recurrence: { type: 'weekly', weekdays: [0] } })).response.status, 400);
+  const weekly = await add({ title: 'Weekly', recurrence: { type: 'weekly', weekdays: [5, 1, 5] }, rotate: true });
+  const w = weekly.data.entries.find(item => item.title === 'Weekly');
+  assert.deepEqual(w.recurrence.weekdays, [1, 5]);
+  const nextWeek = (await complete(w)).data.entries.find(item => item.title === 'Weekly' && !item.completedAt);
+  assert.equal(nextWeek.dueOn, '2028-02-04');
+  assert.equal(nextWeek.assigneeId, member.memberId);
+  const monthly = await add({ title: 'Monthly', recurrence: { type: 'monthly', dayOfMonth: 31 } });
+  const nextMonth = (await complete(monthly.data.entries.find(item => item.title === 'Monthly')))
+    .data.entries.find(item => item.title === 'Monthly' && !item.completedAt);
+  assert.equal(nextMonth.dueOn, '2028-02-29');
+  const march = (await complete(nextMonth)).data.entries.find(item => item.title === 'Monthly' && !item.completedAt);
+  assert.equal(march.dueOn, '2028-03-31');
+});
