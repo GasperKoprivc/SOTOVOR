@@ -58,6 +58,8 @@ function Dialog({ title, onClose, children }) {
 function EntryDialog({ initialKind, initialDate, entry, permissions, members, admin, busy, error, onSave, onRemove, onClose }) {
   const [kind, setKind] = useState(initialKind);
   const [allDay, setAllDay] = useState(!entry?.startTime);
+  const [repeatMode, setRepeatMode] = useState(entry?.recurrence?.type ?? (entry?.repeatDays ? 'interval' : 'none'));
+  const [repeatWeekdays, setRepeatWeekdays] = useState(entry?.recurrence?.weekdays ?? []);
   const [repeatDays, setRepeatDays] = useState(String(entry?.repeatDays ?? 0));
   const [removing, setRemoving] = useState(false);
   const [voice, setVoice] = useState(null);
@@ -79,7 +81,10 @@ function EntryDialog({ initialKind, initialDate, entry, permissions, members, ad
         ...(kind === 'task' && admin ? { points: values.points ? Number(values.points) : null } : {}),
         title: editContent ? values.title : entry.title, category: editContent ? values.category : entry.category,
         assigneeId: editContent ? values.assigneeId || null : entry.assigneeId,
-        repeatDays: editContent ? Number(values.repeatDays || 0) : entry.repeatDays ?? 0,
+        repeatDays: editContent ? (kind === 'task' && repeatMode === 'interval' ? Number(values.repeatDays) : 0) : entry.repeatDays ?? 0,
+        ...(kind === 'task' && editContent ? { recurrence: repeatMode === 'weekly'
+          ? { type: 'weekly', weekdays: repeatWeekdays } : repeatMode === 'monthly'
+            ? { type: 'monthly', dayOfMonth: Number(values.dayOfMonth) } : null } : {}),
         rotate: editContent ? values.rotate === 'on' : entry.rotate ?? false,
         reminderDays: editContent ? Number(values.reminderDays ?? 2) : entry.reminderDays ?? 2, voice,
       });
@@ -89,7 +94,7 @@ function EntryDialog({ initialKind, initialDate, entry, permissions, members, ad
       </select></label>}
       <label>{t('Naslov')}<input name="title" readOnly={!editContent} defaultValue={entry?.title} maxLength="160" required placeholder={kind === 'task' ? t('Npr. Prevzem iz šole') : t('Npr. Družinsko kosilo')} /></label>
       <div className="fields">
-        <label>{kind === 'event' ? t('Datum') : t('Rok')}<input type="date" name="dueOn" readOnly={!moveDate} defaultValue={entry?.dueOn ?? initialDate} required={kind === 'event' || Number(repeatDays) > 0} /></label>
+        <label>{kind === 'event' ? t('Datum') : t('Rok')}<input type="date" name="dueOn" readOnly={!moveDate} defaultValue={entry?.dueOn ?? initialDate} required={kind === 'event' || repeatMode !== 'none'} /></label>
         <label>{t('Kategorija')}<select name="category" disabled={!editContent} defaultValue={entry?.category ?? 'drugo'}>
           {Object.entries(categories).map(([key, label]) => <option key={key} value={key}>{t(label)}</option>)}
         </select></label>
@@ -109,14 +114,28 @@ function EntryDialog({ initialKind, initialDate, entry, permissions, members, ad
         defaultValue={entry?.points ?? ''} /></label>}
       {kind === 'task' && <label>{t('Ocena trajanja (minute)')}<input name="estimatedMinutes" type="number" min="1" max="1440"
         defaultValue={entry?.estimatedMinutes ?? ''} readOnly={!editContent} /></label>}
-      {kind === 'task' && editContent && <div className="fields">
-        <label>{t('Ponovi čez dni')}<input name="repeatDays" type="number" min="0" max="3660" required value={repeatDays} onChange={event => setRepeatDays(event.target.value)} /></label>
+      {kind === 'task' && editContent && <>
+        <label>{t('Ponavljanje')}<select value={repeatMode} onChange={event => setRepeatMode(event.target.value)}>
+          <option value="none">{t('Brez ponavljanja')}</option><option value="interval">{t('Interval v dnevih')}</option>
+          <option value="weekly">{t('Tedensko')}</option><option value="monthly">{t('Mesečno')}</option>
+        </select></label>
+        {repeatMode === 'interval' && <label>{t('Ponovi čez dni')}<input name="repeatDays" type="number" min="1" max="3660" required
+          value={repeatDays} onChange={event => setRepeatDays(event.target.value)} /></label>}
+        {repeatMode === 'weekly' && <fieldset><legend>{t('Dnevi v tednu')}</legend>
+          {[1, 2, 3, 4, 5, 6, 7].map(day => <label className="check-field" key={day}>
+            <input type="checkbox" checked={repeatWeekdays.includes(day)} onChange={event => setRepeatWeekdays(previous =>
+              event.target.checked ? [...previous, day] : previous.filter(item => item !== day))} />
+            {new Intl.DateTimeFormat(getLanguage(), { weekday: 'long' }).format(new Date(2026, 0, 4 + day))}
+          </label>)}
+        </fieldset>}
+        {repeatMode === 'monthly' && <label>{t('Dan v mesecu')}<input name="dayOfMonth" type="number" min="1" max="31" required
+          defaultValue={entry?.recurrence?.dayOfMonth ?? 1} /></label>}
         <label>{t('Opomni dni pred rokom')}<input name="reminderDays" type="number" min="0" max="30" defaultValue={entry?.reminderDays ?? 2} required /></label>
-      </div>}
-      {kind === 'task' && editContent && Number(repeatDays) > 0 && <label className="check-field"><input name="rotate" type="checkbox" defaultChecked={entry?.rotate} />{' '}{t('Naslednjič dodeli naslednjemu članu')}</label>}
+        {repeatMode !== 'none' && <label className="check-field"><input name="rotate" type="checkbox" defaultChecked={entry?.rotate} />{' '}{t('Naslednjič dodeli naslednjemu članu')}</label>}
+      </>}
       {!entry && <VoiceRecorder onChange={setVoice} busy={busy || recordingBusy} setBusy={setRecordingBusy} />}
       {error && <p className="error" role="alert">{errorText(error)}</p>}
-      {(editContent || moveDate) && <button className="primary" disabled={busy || recordingBusy || removing}>{entry ? t('Shrani spremembe') : <><Plus size={19} />{kind === 'task' ? t('Dodaj opravilo') : t('Dodaj dogodek')}</>}</button>}
+      {(editContent || moveDate) && <button className="primary" disabled={busy || recordingBusy || removing || (kind === 'task' && editContent && repeatMode === 'weekly' && !repeatWeekdays.length)}>{entry ? t('Shrani spremembe') : <><Plus size={19} />{kind === 'task' ? t('Dodaj opravilo') : t('Dodaj dogodek')}</>}</button>}
       {entry && permissions.remove && (removing ? <div className="top-actions">
         <button type="button" className="soft-button" onClick={() => setRemoving(false)} disabled={busy}>{t('Obdrži vnos')}</button>
         <button type="button" className="danger-button soft-button" onClick={onRemove} disabled={busy}>{t('Potrdi odstranitev')}</button>

@@ -29,7 +29,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.format.TextStyle
+import java.util.Locale
 
 @Composable
 fun <T> SelectField(label: String, current: T, options: List<Pair<T, String>>, enabled: Boolean = true, choose: (T) -> Unit) {
@@ -74,6 +77,13 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
     val context = LocalContext.current
     var category by rememberSaveable(original?.id) { mutableStateOf(original?.category ?: "drugo") }
     var assigned by rememberSaveable(original?.id) { mutableStateOf(original?.assigneeId) }
+    var repeatMode by rememberSaveable(original?.id) {
+        mutableStateOf(original?.recurrence?.type ?: if ((original?.repeatDays ?: 0) > 0) "interval" else "none")
+    }
+    var weekdays by rememberSaveable(original?.id) {
+        mutableStateOf(original?.recurrence?.weekdays?.joinToString("").orEmpty())
+    }
+    var monthDay by rememberSaveable(original?.id) { mutableStateOf((original?.recurrence?.dayOfMonth ?: 1).toString()) }
     var repeat by rememberSaveable(original?.id) { mutableStateOf((original?.repeatDays ?: 0).toString()) }
     var points by rememberSaveable(original?.id) { mutableStateOf(original?.points?.toString().orEmpty()) }
     var estimate by rememberSaveable(original?.id) { mutableStateOf(original?.estimatedMinutes?.toString().orEmpty()) }
@@ -82,7 +92,13 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
     var deleting by rememberSaveable(original?.id) { mutableStateOf(false) }
     var voice by remember { mutableStateOf<Voice?>(null) }
     var recording by remember { mutableStateOf(false) }
-    val size = repeat.toIntOrNull() ?: -1
+    val size = if (repeatMode == "interval") repeat.toIntOrNull() ?: -1 else 0
+    val validRepeat = when (repeatMode) {
+        "interval" -> size in 1..3660
+        "weekly" -> weekdays.isNotEmpty()
+        "monthly" -> (monthDay.toIntOrNull() ?: 0) in 1..31
+        else -> true
+    }
     val threshold = remind.toIntOrNull() ?: -1
     val validDate = date.isBlank() || runCatching { LocalDate.parse(date).toString() == date }.getOrDefault(false)
 
@@ -137,9 +153,25 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
                     InputField(R.string.task_estimated_minutes, estimate, canEdit && !state.busy, KeyboardType.Number) {
                         estimate = it.filter { digit -> digit in '0'..'9' }.take(4)
                     }
-                    InputField(R.string.repeat_days, repeat, canEdit && !state.busy, KeyboardType.Number) { repeat = it.take(4) }
+                    SelectField(stringResource(R.string.repeat_mode), repeatMode, listOf(
+                        "none" to stringResource(R.string.repeat_none), "interval" to stringResource(R.string.repeat_interval),
+                        "weekly" to stringResource(R.string.repeat_weekly), "monthly" to stringResource(R.string.repeat_monthly)
+                    ), canEdit && !state.busy) { repeatMode = it }
+                    if (repeatMode == "interval") InputField(R.string.repeat_days, repeat, canEdit && !state.busy, KeyboardType.Number) { repeat = it.take(4) }
+                    if (repeatMode == "weekly") (1..7).forEach { day ->
+                        val code = day.digitToChar()
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(code in weekdays, { checked ->
+                                weekdays = if (checked) weekdays + code else weekdays.replace(code.toString(), "")
+                            }, enabled = canEdit && !state.busy)
+                            Text(DayOfWeek.of(day).getDisplayName(TextStyle.FULL, Locale.getDefault()))
+                        }
+                    }
+                    if (repeatMode == "monthly") InputField(R.string.repeat_month_day, monthDay, canEdit && !state.busy, KeyboardType.Number) {
+                        monthDay = it.filter(Char::isDigit).take(2)
+                    }
                     InputField(R.string.remind_days, remind, canEdit && !state.busy, KeyboardType.Number) { remind = it.take(2) }
-                    if (size > 0) Row {
+                    if (repeatMode != "none") Row {
                         Checkbox(rotate, { rotate = it }, enabled = canEdit && !state.busy)
                         Text(stringResource(R.string.rotate_tasks))
                     }
@@ -165,17 +197,22 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
         },
         confirmButton = {
             if (canEdit || canDate) TextButton(
-                enabled = !state.busy && !recording && title.isNotBlank() && validDate && size in 0..3660 &&
+                enabled = !state.busy && !recording && title.isNotBlank() && validDate && validRepeat &&
                     threshold in 0..30 && (!task || points.isEmpty() || (points.toIntOrNull() ?: 0) in 1..1000) && (!task || estimate.isEmpty() || (estimate.toIntOrNull() ?: 0) in 1..1440) && (task || allDay || duration.isEmpty() || (duration.toIntOrNull() ?: 0) in 1..1440) &&
-                    (date.isNotBlank() || (task && size == 0)),
+                    (date.isNotBlank() || (task && repeatMode == "none")),
                 onClick = {
                     model.save(EntryInput(title.trim(), editor.kind, category, date.ifBlank { null }, assigned,
-                        size, size > 0 && rotate, threshold, voice = voice,
+                        size, repeatMode != "none" && rotate, threshold, voice = voice,
                         allDay = if (task) null else allDay,
                         startTime = startTime.takeIf { !task && !allDay },
                         durationMinutes = duration.toIntOrNull()?.takeIf { !task && !allDay },
                         estimatedMinutes = estimate.toIntOrNull()?.takeIf { task },
-                        points = points.toIntOrNull()?.takeIf { task }))
+                        points = points.toIntOrNull()?.takeIf { task },
+                        recurrence = when (repeatMode) {
+                            "weekly" -> Recurrence("weekly", weekdays.map(Char::digitToInt))
+                            "monthly" -> Recurrence("monthly", dayOfMonth = monthDay.toIntOrNull())
+                            else -> null
+                        }))
                 }
             ) { Text(stringResource(R.string.save)) }
         },

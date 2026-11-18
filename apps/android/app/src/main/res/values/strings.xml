@@ -190,4 +190,10 @@
     <string name="reward_add">Dodaj nagrado</string>
     <string name="reward_remove">Odstrani</string>
     <string name="reward_points_for">%1$s · %2$d točk</string>
+    <string name="repeat_mode">Ponavljanje</string>
+    <string name="repeat_none">Brez ponavljanja</string>
+    <string name="repeat_interval">Interval v dnevih</string>
+    <string name="repeat_weekly">Tedensko</string>
+    <string name="repeat_monthly">Mesečno</string>
+    <string name="repeat_month_day">Dan v mesecu</string>
 </resources>
