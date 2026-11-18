@@ -80,8 +80,10 @@ test('verified family members collaborate across separate browser sessions', asy
     await nav(page, 'Koledar').click();
     await page.getByRole('button', { name: 'Dodaj vnos', exact: true }).click();
     await page.getByLabel('Naslov', { exact: true }).fill('Quality event');
-    await page.locator('input[name=dueOn]').fill('2027-02-15');
+    await page.locator('input[name=dueOn]').fill(new Date().toISOString().slice(0, 10));
     await page.getByRole('dialog').getByRole('button', { name: 'Dodaj dogodek', exact: true }).click();
+    await expect(page.getByRole('dialog')).not.toBeVisible();
+    await expect(page.locator('.month-agenda').getByText('Quality event', { exact: true })).toBeVisible();
 
     await nav(page, 'Opravila').click();
     await page.getByRole('button', { name: 'Dodaj vnos', exact: true }).click();
