@@ -373,7 +373,7 @@ export function createApi(database, {
     }
     const householdId = req.household._id;
     const tasks = await entries.find({ householdId, archivedAt: null, kind: 'task' }, {
-      projection: { title: 1, category: 1, dueOn: 1, completedAt: 1, assigneeId: 1, version: 1 },
+      projection: { title: 1, category: 1, dueOn: 1, completedAt: 1, assigneeId: 1, version: 1, estimatedMinutes: 1 },
     }).toArray();
     const plan = planTasks(tasks, req.household.members, householdDay(), rebalance);
     const fingerprint = hash(JSON.stringify(plan));
@@ -430,11 +430,17 @@ export function createApi(database, {
     if (!Number.isInteger(reminderDays) || reminderDays < 0 || reminderDays > 30) {
       throw new HttpError(400, 'Opomnik nastavi od 0 do 30 dni pred rokom.');
     }
+    const estimatedMinutes = Object.hasOwn(req.body, 'estimatedMinutes')
+      ? req.body.estimatedMinutes : previous?.estimatedMinutes ?? null;
+    if (estimatedMinutes !== null && (kind !== 'task' || !Number.isInteger(estimatedMinutes) ||
+        estimatedMinutes < 1 || estimatedMinutes > 1440)) {
+      throw new HttpError(400, 'Ocena trajanja opravila mora biti od 1 do 1440 minut.');
+    }
     const assigneeId = kind === 'task' ? req.body.assigneeId ?? null : null;
     if (assigneeId !== null && !req.household.members.some(member => member.id === assigneeId && !member.inactive)) {
       throw new HttpError(400, 'Izberi člana tega prostora.');
     }
-    return { kind, title, dueOn, category, assigneeId, repeatDays, rotate, reminderDays, ...eventTiming(req.body, previous) };
+    return { kind, title, dueOn, category, assigneeId, repeatDays, rotate, reminderDays, ...(kind === 'task' ? { estimatedMinutes } : {}), ...eventTiming(req.body, previous) };
   }
 
   if (versioned) {
@@ -491,7 +497,7 @@ export function createApi(database, {
     if (action === 'edit' && !rights.edit) {
       for (const [key, value] of Object.entries(fields)) {
         const original = key === 'assigneeId' && req.household.members.some(person => person.id === entry.assigneeId && person.inactive)
-          ? null : entry[key] ?? { repeatDays: 0, rotate: false, reminderDays: 2, assigneeId: null, ...(entry.kind === 'event' ? timingOf(entry) : {}) }[key];
+          ? null : entry[key] ?? { repeatDays: 0, rotate: false, reminderDays: 2, assigneeId: null, estimatedMinutes: null, ...(entry.kind === 'event' ? timingOf(entry) : {}) }[key];
         if (key !== 'dueOn' && value !== original) {
           throw new HttpError(403, 'Dovoljenje velja samo za spremembo datuma.');
         }

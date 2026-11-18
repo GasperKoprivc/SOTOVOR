@@ -139,6 +139,7 @@ fun SmartPlan(workspace: Workspace, state: WorkspaceState, model: WorkspaceViewM
     if (!workspace.admin) return
     var rebalance by rememberSaveable(workspace.household?.id) { mutableStateOf(false) }
     SectionTitle(R.string.smart_planning)
+    Text(stringResource(R.string.plan_weighted_minutes))
     ToggleRow(R.string.rebalance, rebalance, !state.busy) {
         rebalance = it
         model.clearPlan()

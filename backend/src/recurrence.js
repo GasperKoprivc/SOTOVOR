@@ -18,6 +18,7 @@ export function nextOccurrence(task, members) {
     assignedAt: new Date(),
     repeatDays, rotate,
     reminderDays: task.reminderDays ?? 2,
+    estimatedMinutes: task.estimatedMinutes ?? null,
     completedAt: null,
     createdAt: new Date(),
   };

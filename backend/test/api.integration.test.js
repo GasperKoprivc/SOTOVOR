@@ -682,3 +682,25 @@ test('task details allow family collaboration and notify members other than the 
   assert.equal((await postJson(root + '/complete', {}, owner)).response.status, 200);
   assert.equal((await write('/checklist', { title: 'Too late' })).status, 409);
 });
+
+test('planner weights existing workload by minutes and preserves estimates through legacy edits', async () => {
+  const family = await postJson('/households', { householdName: 'Weighted', memberName: 'Ana' });
+  const owner = sessionCookie(family.response);
+  const { data: board } = await dashboard(owner);
+  const member = await postJson('/households/join', { inviteCode: board.household.inviteCode, memberName: 'Bor' });
+  const { data: joined } = await dashboard(sessionCookie(member.response));
+  for (const [title, assigneeId, estimatedMinutes] of [
+    ['Long', board.memberId, 120], ['Short one', joined.memberId, 5], ['Short two', joined.memberId, 5],
+  ]) assert.equal((await postJson('/entries', { kind: 'task', title, assigneeId, estimatedMinutes }, owner)).response.status, 201);
+  for (const estimatedMinutes of [0, 1441, 3.5, '30']) {
+    assert.equal((await postJson('/entries', { kind: 'task', title: 'Invalid', estimatedMinutes }, owner)).response.status, 400);
+  }
+  const { data } = await postJson('/entries', { kind: 'task', title: 'Unassigned', estimatedMinutes: 20 }, owner);
+  const id = data.entries.find(entry => entry.title === 'Unassigned').id;
+  const edited = await postJson('/entries/' + id + '/edit', { kind: 'task', title: 'Edited', version: 0 }, owner);
+  assert.equal(edited.data.entries.find(entry => entry.id === id).estimatedMinutes, 20);
+  const preview = () => postJson('/planning/preview', {}, owner);
+  const first = (await preview()).data;
+  assert.deepEqual(first, (await preview()).data);
+  assert.deepEqual(first.changes, [{ id, title: 'Edited', assigneeName: 'Bor Test' }]);
+});

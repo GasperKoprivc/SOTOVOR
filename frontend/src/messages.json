@@ -1,4 +1,7 @@
 {
+  "Ocena trajanja (minute)": {"en": "Estimated duration (minutes)", "de": "Geschätzte Dauer (Minuten)"},
+  "Obremenitev temelji na ocenjenih minutah. Opravilo brez ocene šteje 30 minut.": {"en": "Workload uses estimated minutes. Tasks without an estimate count as 30 minutes.", "de": "Die Arbeitslast basiert auf geschätzten Minuten. Aufgaben ohne Schätzung zählen als 30 Minuten."},
+  "Ocena trajanja opravila mora biti od 1 do 1440 minut.": {"en": "The task estimate must be between 1 and 1440 minutes.", "de": "Die Aufgabenschätzung muss zwischen 1 und 1440 Minuten liegen."},
   "Podopravila": {"en": "Checklist", "de": "Checkliste"},
   "Novo podopravilo": {"en": "New checklist item", "de": "Neuer Checklistenpunkt"},
   "Dodaj podopravilo": {"en": "Add checklist item", "de": "Checklistenpunkt hinzufügen"},
