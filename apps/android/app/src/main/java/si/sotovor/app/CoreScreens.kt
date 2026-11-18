@@ -213,7 +213,8 @@ fun EntryCard(entry: Entry, workspace: Workspace, model: WorkspaceViewModel? = n
             val category = categories[entry.category]?.let { stringResource(it) }.orEmpty()
             val assignee = workspace.members.find { it.id == entry.assigneeId }?.name
                 ?: if (entry.kind == "task") stringResource(R.string.unassigned) else ""
-            Text(listOfNotNull(category, entry.dueOn, assignee).filter { it.isNotBlank() }.joinToString(" · "))
+            Text(listOfNotNull(category, entry.dueOn, assignee,
+                if (entry.kind == "event" && entry.startTime == null) stringResource(R.string.event_all_day) else null).filter { it.isNotBlank() }.joinToString(" · "))
             state?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.tertiary) }
             if (entry.voice != null && model != null) VoicePlayback(entry.id, model)
         }

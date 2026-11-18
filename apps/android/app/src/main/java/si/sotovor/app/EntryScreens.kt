@@ -23,7 +23,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -66,6 +68,10 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
     val task = editor.kind == "task"
     var title by rememberSaveable(original?.id, editor.day) { mutableStateOf(original?.title.orEmpty()) }
     var date by rememberSaveable(original?.id, editor.day) { mutableStateOf(original?.dueOn ?: editor.day.orEmpty()) }
+    var allDay by rememberSaveable(original?.id) { mutableStateOf(original?.startTime == null) }
+    var startTime by rememberSaveable(original?.id) { mutableStateOf(original?.startTime ?: "09:00") }
+    var duration by rememberSaveable(original?.id) { mutableStateOf(original?.durationMinutes?.toString().orEmpty()) }
+    val context = LocalContext.current
     var category by rememberSaveable(original?.id) { mutableStateOf(original?.category ?: "drugo") }
     var assigned by rememberSaveable(original?.id) { mutableStateOf(original?.assigneeId) }
     var repeat by rememberSaveable(original?.id) { mutableStateOf((original?.repeatDays ?: 0).toString()) }
@@ -99,6 +105,26 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
                 SelectField(stringResource(R.string.category), category, categories.map { it.key to stringResource(it.value) }, canEdit && !state.busy) {
                     category = it
                 }
+                if (!task) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(allDay, { allDay = it }, enabled = canEdit && !state.busy)
+                        Text(stringResource(R.string.event_all_day))
+                    }
+                    if (!allDay) {
+                        OutlinedButton(
+                            enabled = canEdit && !state.busy,
+                            onClick = {
+                                val parts = startTime.split(':')
+                                android.app.TimePickerDialog(context, { _, hour, minute ->
+                                    startTime = eventClock(hour * 60 + minute)
+                                }, parts[0].toInt(), parts[1].toInt(), true).show()
+                            }
+                        ) { Text(stringResource(R.string.event_start, startTime)) }
+                        InputField(R.string.event_duration, duration, canEdit && !state.busy, KeyboardType.Number) {
+                            duration = it.filter { digit -> digit in '0'..'9' }.take(4)
+                        }
+                    }
+                }
                 if (task) {
                     SelectField(stringResource(R.string.member), assigned,
                         listOf(null to stringResource(R.string.unassigned)) + workspace.members.filterNot { it.inactive }.map { it.id to it.name },
@@ -130,10 +156,14 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
         confirmButton = {
             if (canEdit || canDate) TextButton(
                 enabled = !state.busy && !recording && title.isNotBlank() && validDate && size in 0..3660 &&
-                    threshold in 0..30 && (date.isNotBlank() || (task && size == 0)),
+                    threshold in 0..30 && (task || allDay || duration.isEmpty() || (duration.toIntOrNull() ?: 0) in 1..1440) &&
+                    (date.isNotBlank() || (task && size == 0)),
                 onClick = {
                     model.save(EntryInput(title.trim(), editor.kind, category, date.ifBlank { null }, assigned,
-                        size, size > 0 && rotate, threshold, voice = voice))
+                        size, size > 0 && rotate, threshold, voice = voice,
+                        allDay = if (task) null else allDay,
+                        startTime = startTime.takeIf { !task && !allDay },
+                        durationMinutes = duration.toIntOrNull()?.takeIf { !task && !allDay }))
                 }
             ) { Text(stringResource(R.string.save)) }
         },

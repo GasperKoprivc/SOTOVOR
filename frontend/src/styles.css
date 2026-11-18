@@ -277,3 +277,6 @@ dialog .invite-label { margin-bottom: .8rem; }
   .row-actions { grid-column: 2; }
   .panel-heading { flex-wrap: wrap; }
 }
+
+.day-entries .timed-event { border-inline-start: 3px solid var(--accent); }
+.day-entries .timed-event > span { font-variant-numeric: tabular-nums; white-space: nowrap; }
