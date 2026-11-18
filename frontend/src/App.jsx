@@ -15,6 +15,7 @@ import FamilySettings from './FamilySettings.jsx';
 import { EmailVerificationReminder } from './EmailVerification.jsx';
 import CalendarSubscription from './CalendarSubscription.jsx';
 import MonthCalendar from './MonthCalendar.jsx';
+import Rewards from './Rewards.jsx';
 import TaskDetails from './TaskDetails.jsx';
 import ShoppingList from './ShoppingList.jsx';
 import SmartPlanning from './SmartPlanning.jsx';
@@ -54,7 +55,7 @@ function Dialog({ title, onClose, children }) {
   </dialog>;
 }
 
-function EntryDialog({ initialKind, initialDate, entry, permissions, members, busy, error, onSave, onRemove, onClose }) {
+function EntryDialog({ initialKind, initialDate, entry, permissions, members, admin, busy, error, onSave, onRemove, onClose }) {
   const [kind, setKind] = useState(initialKind);
   const [allDay, setAllDay] = useState(!entry?.startTime);
   const [repeatDays, setRepeatDays] = useState(String(entry?.repeatDays ?? 0));
@@ -75,6 +76,7 @@ function EntryDialog({ initialKind, initialDate, entry, permissions, members, bu
           durationMinutes: allDay || !values.durationMinutes ? null : Number(values.durationMinutes),
         } : {}),
         ...(kind === 'task' && editContent ? { estimatedMinutes: values.estimatedMinutes ? Number(values.estimatedMinutes) : null } : {}),
+        ...(kind === 'task' && admin ? { points: values.points ? Number(values.points) : null } : {}),
         title: editContent ? values.title : entry.title, category: editContent ? values.category : entry.category,
         assigneeId: editContent ? values.assigneeId || null : entry.assigneeId,
         repeatDays: editContent ? Number(values.repeatDays || 0) : entry.repeatDays ?? 0,
@@ -103,6 +105,8 @@ function EntryDialog({ initialKind, initialDate, entry, permissions, members, bu
         <option value="">{t('Na voljo za prevzem')}</option>
         {members.filter(member => !member.inactive).map(member => <option key={member.id} value={member.id}>{member.name}</option>)}
       </select></label>}
+      {kind === 'task' && admin && <label>{t('Točke za otroka')}<input name="points" type="number" min="1" max="1000"
+        defaultValue={entry?.points ?? ''} /></label>}
       {kind === 'task' && <label>{t('Ocena trajanja (minute)')}<input name="estimatedMinutes" type="number" min="1" max="1440"
         defaultValue={entry?.estimatedMinutes ?? ''} readOnly={!editContent} /></label>}
       {kind === 'task' && editContent && <div className="fields">
@@ -385,6 +389,7 @@ export default function App() {
         </>}
         {page === 'workload' && <div className="right-stack">
           <Workload {...{ members, tasks, memberId }} />
+          <Rewards key={household.id} householdId={household.id} admin={data.admin} />
           {data.admin && <SmartPlanning busy={busy}
             onPreview={(rebalance, setPlan) => run(async () => setPlan(await request('/planning/preview', { rebalance })))}
             onApply={(fields, clearPlan) => run(async () => {
@@ -474,7 +479,7 @@ export default function App() {
       <TaskDetails key={editing.id} task={editing} householdId={household.id} />
     </Dialog>}
     {['task', 'event', 'edit'].includes(modal) && <EntryDialog initialKind={modal === 'edit' ? editing.kind : modal} initialDate={entryDate}
-      entry={modal === 'edit' ? editing : null} {...{ permissions, members, busy, error }}
+      entry={modal === 'edit' ? editing : null} admin={data.admin} {...{ permissions, members, busy, error }}
       onClose={() => { if (!pending.current) { setModal(null); setError(''); } }}
       onRemove={() => run(async () => {
         setData(await request(`/entries/${editing.id}/remove`, { version: editing.version ?? 0 }));

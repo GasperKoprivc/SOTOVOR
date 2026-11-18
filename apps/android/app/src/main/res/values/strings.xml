@@ -182,4 +182,12 @@
     <string name="task_new_comment">Nov komentar pri opravilu</string>
     <string name="task_estimated_minutes">Ocena trajanja (minute)</string>
     <string name="plan_weighted_minutes">Obremenitev temelji na ocenjenih minutah. Opravilo brez ocene šteje 30 minut.</string>
+    <string name="reward_task_points">Točke za otroka</string>
+    <string name="rewards_title">Točke in nagrade</string>
+    <string name="rewards_leaderboard">Prikaži lestvico</string>
+    <string name="reward_name">Ime nagrade</string>
+    <string name="reward_threshold">Potrebne točke</string>
+    <string name="reward_add">Dodaj nagrado</string>
+    <string name="reward_remove">Odstrani</string>
+    <string name="reward_points_for">%1$s · %2$d točk</string>
 </resources>

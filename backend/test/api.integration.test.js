@@ -704,3 +704,27 @@ test('planner weights existing workload by minutes and preserves estimates throu
   assert.deepEqual(first, (await preview()).data);
   assert.deepEqual(first.changes, [{ id, title: 'Edited', assigneeName: 'Bor Test' }]);
 });
+
+test('reward settings and task points are admin-only and leaderboard privacy is enforced', async () => {
+  const family = await postJson('/households', { householdName: 'Rewards', memberName: 'Ana' });
+  const owner = sessionCookie(family.response);
+  const { data: board } = await dashboard(owner);
+  const joined = await postJson('/households/join', { inviteCode: board.household.inviteCode, memberName: 'Otrok' });
+  const child = sessionCookie(joined.response);
+  const { data: childBoard } = await dashboard(child);
+  assert.equal((await postJson('/households/members/' + childBoard.memberId + '/planning',
+    { familyRole: 'child', availability: 'available' }, owner)).response.status, 200);
+  const save = (cookie, leaderboard) => v1('/rewards', {
+    cookie, method: 'PUT', body: { leaderboard, rewards: [{ title: 'Izlet', points: 20 }] },
+  });
+  assert.equal((await save(child, true)).status, 403);
+  assert.equal((await save(owner, false)).status, 200);
+  assert.equal((await postJson('/entries', { kind: 'task', title: 'Denied', points: 5 }, child)).response.status, 403);
+  const task = await postJson('/entries', { kind: 'task', title: 'Pospravi', points: 10, assigneeId: childBoard.memberId }, owner);
+  const complete = () => postJson('/tasks/' + task.data.entries[0].id + '/complete', {}, child);
+  assert.deepEqual((await Promise.all([complete(), complete()])).map(r => r.response.status).sort(), [200, 409]);
+  assert.deepEqual((await v1('/rewards', { cookie: owner })).body.scores, []);
+  assert.equal((await v1('/rewards', { cookie: child })).body.scores[0].points, 10);
+  assert.equal((await save(owner, true)).status, 200);
+  assert.equal((await v1('/rewards', { cookie: owner })).body.scores[0].points, 10);
+});

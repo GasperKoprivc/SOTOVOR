@@ -19,6 +19,7 @@ data class WorkspaceState(
     val tasks: List<Entry> = emptyList(), val taskCursor: String? = null, val filters: TaskFilters = TaskFilters(),
     val notifications: List<Notice> = emptyList(), val noticeCursor: String? = null, val devices: List<DeviceSession>? = null,
     val editor: EntryEditor? = null, val conflict: Boolean = false, val export: String? = null,
+    val rewards: Rewards? = null,
     val taskDetails: TaskDetails? = null,
     val calendarSubscription: CalendarSubscription? = null,
     val shopping: List<ShoppingItem>? = null, val shoppingPush: Boolean? = null,
@@ -74,6 +75,20 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
     fun signOut() = update {
         repository.logout()
         mutable.update { it.copy(workspace = null) }
+    }
+
+    fun rewards() = update {
+        val id = household() ?: return@update
+        val rewards = repository.rewards(id)
+        mutable.update { it.copy(rewards = rewards) }
+    }
+
+    fun saveRewards(settings: RewardSettings, saved: () -> Unit = {}) = update {
+        val id = household() ?: return@update
+        repository.saveRewards(id, settings)
+        val rewards = repository.rewards(id)
+        mutable.update { it.copy(rewards = rewards) }
+        saved()
     }
 
     fun taskDetails() = updateDetails(repository::taskDetails)
@@ -325,7 +340,7 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
         mutable.update {
             if (it.workspace?.household?.id == workspace?.household?.id) it.copy(workspace = workspace)
             else it.copy(workspace = workspace, tasks = emptyList(), taskCursor = null, notifications = emptyList(),
-                noticeCursor = null, filters = TaskFilters(), editor = null, plan = null, shopping = null, shoppingPush = null)
+                noticeCursor = null, filters = TaskFilters(), editor = null, plan = null, shopping = null, shoppingPush = null, rewards = null)
         }
     }
 

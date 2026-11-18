@@ -182,4 +182,12 @@
     <string name="task_new_comment">New task comment</string>
     <string name="task_estimated_minutes">Estimated duration (minutes)</string>
     <string name="plan_weighted_minutes">Workload uses estimated minutes. Tasks without an estimate count as 30 minutes.</string>
+    <string name="reward_task_points">Points for a child</string>
+    <string name="rewards_title">Points and rewards</string>
+    <string name="rewards_leaderboard">Show leaderboard</string>
+    <string name="reward_name">Reward name</string>
+    <string name="reward_threshold">Points required</string>
+    <string name="reward_add">Add reward</string>
+    <string name="reward_remove">Remove</string>
+    <string name="reward_points_for">%1$s · %2$d points</string>
 </resources>

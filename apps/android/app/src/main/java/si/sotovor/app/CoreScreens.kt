@@ -76,6 +76,7 @@ fun CoreWorkspace(workspace: Workspace, state: WorkspaceState, model: WorkspaceV
         when (tab) {
             1 -> model.tasks(requestedFilter)
             2 -> model.calendarSubscription()
+            3 -> model.rewards()
             4 -> model.notifications()
             6 -> model.shopping()
         }

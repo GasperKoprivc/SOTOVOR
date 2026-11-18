@@ -32,7 +32,7 @@ data class Credentials(
     val dueOn: String? = null, val category: String = "drugo", val assigneeId: String? = null,
     val completedAt: String? = null, val createdAt: String, val repeatDays: Int = 0, val rotate: Boolean = false,
     val reminderDays: Int = 2, val voice: Voice? = null,
-    val allDay: Boolean? = null, val startTime: String? = null, val durationMinutes: Int? = null, val estimatedMinutes: Int? = null
+    val allDay: Boolean? = null, val startTime: String? = null, val durationMinutes: Int? = null, val estimatedMinutes: Int? = null, val points: Int? = null
 )
 @Serializable data class Workspace(
     val profile: Profile, val household: Space? = null, val spaces: List<Space> = emptyList(),
@@ -46,7 +46,7 @@ data class Credentials(
     val title: String, val kind: String, val category: String = "drugo", val dueOn: String? = null,
     val assigneeId: String? = null, val repeatDays: Int = 0, val rotate: Boolean = false,
     val reminderDays: Int = 2, val version: Int? = null, val voice: Voice? = null,
-    val allDay: Boolean? = null, val startTime: String? = null, val durationMinutes: Int? = null, val estimatedMinutes: Int? = null
+    val allDay: Boolean? = null, val startTime: String? = null, val durationMinutes: Int? = null, val estimatedMinutes: Int? = null, val points: Int? = null
 )
 @Serializable data class Version(val version: Int)
 @Serializable data class NoticeTarget(val screen: String, val householdId: String, val entryId: String? = null)

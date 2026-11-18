@@ -3,6 +3,7 @@ import { parseBuffer } from 'music-metadata';
 import { HttpError, handleError } from './api-errors.js';
 import { bearerSession, hash, registerMobileAuth, validId } from './mobile-auth.js';
 import { pageOf } from './paging.js';
+import { registerRewards } from './rewards.js';
 import { registerTaskDetails } from './task-details.js';
 import { registerNotificationRoutes, taskCommentNotice } from './notifications.js';
 import { registerPasswordReset } from './password-reset.js';
@@ -315,6 +316,8 @@ export function createApi(database, {
     if (!isAdmin(req.household, req.member)) throw new HttpError(403, 'To lahko opravi samo skrbnik prostora.');
   }
 
+  registerRewards(router, database, requireAdmin);
+
   router.post('/households/invite/rotate', async (req, res) => {
     requireAdmin(req);
     await households.updateOne({ _id: req.household._id }, { $set: { inviteCode: randomBytes(16).toString('hex') } });
@@ -436,11 +439,16 @@ export function createApi(database, {
         estimatedMinutes < 1 || estimatedMinutes > 1440)) {
       throw new HttpError(400, 'Ocena trajanja opravila mora biti od 1 do 1440 minut.');
     }
+    const points = Object.hasOwn(req.body, 'points') ? req.body.points : previous?.points ?? null;
+    if (points !== null && (kind !== 'task' || !Number.isInteger(points) || points < 1 || points > 1000)) {
+      throw new HttpError(400, 'Opravilo je lahko vredno od 1 do 1000 točk.');
+    }
+    if (points !== (previous?.points ?? null)) requireAdmin(req);
     const assigneeId = kind === 'task' ? req.body.assigneeId ?? null : null;
     if (assigneeId !== null && !req.household.members.some(member => member.id === assigneeId && !member.inactive)) {
       throw new HttpError(400, 'Izberi člana tega prostora.');
     }
-    return { kind, title, dueOn, category, assigneeId, repeatDays, rotate, reminderDays, ...(kind === 'task' ? { estimatedMinutes } : {}), ...eventTiming(req.body, previous) };
+    return { kind, title, dueOn, category, assigneeId, repeatDays, rotate, reminderDays, ...(kind === 'task' ? { estimatedMinutes, points } : {}), ...eventTiming(req.body, previous) };
   }
 
   if (versioned) {
@@ -497,7 +505,7 @@ export function createApi(database, {
     if (action === 'edit' && !rights.edit) {
       for (const [key, value] of Object.entries(fields)) {
         const original = key === 'assigneeId' && req.household.members.some(person => person.id === entry.assigneeId && person.inactive)
-          ? null : entry[key] ?? { repeatDays: 0, rotate: false, reminderDays: 2, assigneeId: null, estimatedMinutes: null, ...(entry.kind === 'event' ? timingOf(entry) : {}) }[key];
+          ? null : entry[key] ?? { repeatDays: 0, rotate: false, reminderDays: 2, assigneeId: null, estimatedMinutes: null, points: null, ...(entry.kind === 'event' ? timingOf(entry) : {}) }[key];
         if (key !== 'dueOn' && value !== original) {
           throw new HttpError(403, 'Dovoljenje velja samo za spremembo datuma.');
         }
@@ -541,6 +549,7 @@ export function createApi(database, {
     if (action === 'complete') {
       const current = await entries.findOne(condition, { projection: { voice: 0 } });
       if (!current) throw new HttpError(409, 'Stanje opravila se je spremenilo ali pa dejanje ni na voljo.');
+      if (req.member.familyRole === 'child' && current.points) changes.complete.earnedPoints = current.points;
       condition.version = current.version ?? null;
       const next = nextOccurrence(current, req.household.members.filter(member => !member.inactive));
       if (next) changes.complete.nextOccurrence = next;

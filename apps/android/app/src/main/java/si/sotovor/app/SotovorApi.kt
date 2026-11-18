@@ -52,6 +52,8 @@ interface SotovorApi {
     @POST("tasks/{id}/checklist") suspend fun addCheck(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Body input: ChecklistInput): TaskDetails
     @PUT("tasks/{id}/checklist/{item}") suspend fun checkItem(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Path("item") item: String, @Body input: ChecklistCheck): TaskDetails
     @POST("tasks/{id}/comments") suspend fun addComment(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Body input: CommentInput): TaskDetails
+    @GET("rewards") suspend fun rewards(@Header("X-Sotovor-Household") household: String): Rewards
+    @PUT("rewards") suspend fun saveRewards(@Header("X-Sotovor-Household") household: String, @Body input: RewardSettings): Ok
     @GET("calendar/subscription") suspend fun calendarSubscription(): CalendarSubscription
     @POST("calendar/subscription") suspend fun createCalendarSubscription(@Body input: Empty = Empty()): CalendarSubscription
     @DELETE("calendar/subscription") suspend fun revokeCalendarSubscription(): CalendarSubscription

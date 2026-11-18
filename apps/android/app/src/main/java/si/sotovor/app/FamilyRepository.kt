@@ -58,6 +58,8 @@ class FamilyRepository @Inject constructor(
     suspend fun addCheck(household: String, id: String, title: String) = api.addCheck(household, id, ChecklistInput(title))
     suspend fun checkItem(household: String, id: String, item: String, checked: Boolean) = api.checkItem(household, id, item, ChecklistCheck(checked))
     suspend fun addComment(household: String, id: String, text: String) = api.addComment(household, id, CommentInput(text))
+    suspend fun rewards(id: String) = api.rewards(id)
+    suspend fun saveRewards(id: String, settings: RewardSettings) = api.saveRewards(id, settings)
     suspend fun calendarSubscription() = api.calendarSubscription()
     suspend fun createCalendarSubscription() = api.createCalendarSubscription()
     suspend fun revokeCalendarSubscription() = api.revokeCalendarSubscription()
