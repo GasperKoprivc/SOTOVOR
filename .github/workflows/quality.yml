@@ -2,6 +2,8 @@ name: Launch quality gate
 
 on:
   push:
+    branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -58,7 +60,7 @@ jobs:
       - run: docker compose -p sotovor-quality -f compose.test.yaml up -d --build --wait --wait-timeout 180
       - name: Build instrumented and production-shrunk test apps
         working-directory: apps/android
-        run: ./gradlew assembleQa assembleDebug assembleDebugAndroidTest -Pkotlin.compiler.execution.strategy=in-process -PsotovorDebugUrl=http://127.0.0.1:3060/
+        run: ./gradlew assembleQa assembleDebug assembleDebugAndroidTest '-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8' -Pkotlin.compiler.execution.strategy=in-process -PsotovorDebugUrl=http://127.0.0.1:3060/
       - name: Reserve disk and memory for the API 36 emulator
         run: |
           # This disposable job needs Kotlin/Java; other preinstalled toolchains are unused.
@@ -77,11 +79,12 @@ jobs:
           working-directory: apps/android
           api-level: 36
           arch: x86_64
-          target: google_apis
+          target: google_atd
           profile: pixel_7
           disk-size: 6G
           ram-size: 3072M
           emulator-boot-timeout: 300
+          emulator-options: -no-window -gpu software -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
           script: bash ../../scripts/android-e2e.sh
       - uses: actions/upload-artifact@v4

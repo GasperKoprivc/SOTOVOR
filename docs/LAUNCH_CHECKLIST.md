@@ -103,3 +103,18 @@ ProGuard rules and keeps its local URL, package suffix and test signing key.
 These advisories are retained in the uploaded Android Lint report. Unknown lint
 issue IDs are errors, so a misspelled or unavailable configured rule cannot
 silently pass the gate.
+
+## CI device and trigger policy
+
+Each pull request runs the full gate once. Pushes to `main` and `v*` tags
+run it again before deployment or publication. Manual runs are available.
+Branch pushes with an open PR use the PR run, avoiding duplicate emulator jobs.
+
+The API 36 CI emulator uses Google's `google_atd` image and supported software
+rendering. ATDs reduce background services and remove the System UI to keep
+instrumented app tests reliable on hosted runners. The tests still request and
+deny the real Android notification permission, exercise native voice capture
+and playback, and dispatch a task deep link through Android. Local runs also
+passed on a normal API 36 Google Play image. Actual notification-shade behavior,
+TalkBack, launcher/widget presentation and production Firebase remain in the
+physical-device checklist. [Android ATD documentation](https://developer.android.com/studio/test/managed-devices#atd)
