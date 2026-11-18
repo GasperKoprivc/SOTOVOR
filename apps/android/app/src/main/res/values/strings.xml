@@ -165,4 +165,12 @@
     <string name="event_all_day">Ves dan</string>
     <string name="event_start">Začetek: %1$s</string>
     <string name="event_duration">Trajanje (minute)</string>
+    <string name="calendar_subscription">Zasebna naročnina na koledar</string>
+    <string name="calendar_subscription_privacy">Kdor ima povezavo, lahko vidi dogodke in datirana opravila tvojih družin. Zamenjava povezave prekliče prejšnjo.</string>
+    <string name="calendar_create">Ustvari povezavo</string>
+    <string name="calendar_replace">Zamenjaj povezavo</string>
+    <string name="calendar_revoke">Prekliči povezavo</string>
+    <string name="calendar_share">Deli povezavo</string>
+    <string name="calendar_add_phone">Dodaj v koledar telefona</string>
+    <string name="calendar_app_unavailable">Aplikacija za koledar ni na voljo.</string>
 </resources>

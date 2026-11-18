@@ -13,6 +13,7 @@ import Landing from './Landing.jsx';
 import './landing.css';
 import FamilySettings from './FamilySettings.jsx';
 import { EmailVerificationReminder } from './EmailVerification.jsx';
+import CalendarSubscription from './CalendarSubscription.jsx';
 import MonthCalendar from './MonthCalendar.jsx';
 import ShoppingList from './ShoppingList.jsx';
 import SmartPlanning from './SmartPlanning.jsx';
@@ -361,6 +362,7 @@ export default function App() {
         {page === 'tasks' && taskPanel}
         {page === 'shopping' && <ShoppingList key={household.id} householdId={household.id} />}
         {page === 'calendar' && <>
+          <CalendarSubscription />
           <div className="calendar-view" aria-label={t('Pogled koledarja')}>
             <button className="soft-button" aria-pressed={calendarView === 'month'} onClick={() => setCalendarView('month')}>{t('Mesec')}</button>
             <button className="soft-button" aria-pressed={calendarView === 'week'} onClick={() => setCalendarView('week')}>{t('Teden')}</button>

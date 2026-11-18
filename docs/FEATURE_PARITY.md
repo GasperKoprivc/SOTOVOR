@@ -4,7 +4,7 @@
 | --- | --- | --- | --- |
 | Shared shopping list | Family API and WhatsApp quick add | Add, check, uncheck, remove, live updates | Add, check, uncheck, remove, optional FCM alerts |
 | Event time and duration | All-day or timed events with optional duration | Editor and weekly time blocks | Editor and weekly time blocks |
-| Private calendar subscription | Planned | Planned | Planned |
+| Private calendar subscription | Private ICS, rotate and revoke | Calendar subscription controls | Subscription controls and add an event to the phone calendar |
 | Task checklists and comments | Planned | Planned | Planned |
 | Task duration and planner weighting | Planned | Planned | Planned |
 | Points and rewards | Planned | Planned | Planned |
@@ -34,3 +34,14 @@ events by start time and shows the continuation on the following day for
 overnight events. Times are stored as Europe/Ljubljana local wall time. Older
 clients can edit an event without overwriting its timing when they omit the new
 fields; existing date-only entries are displayed as all-day.
+
+## Private calendar subscription
+
+Open **Zasebna naročnina na koledar** in the calendar, create a link, and add
+that URL as a subscription in your calendar app. It includes events and dated
+tasks for all current family memberships. The link is a secret, shown only
+when created. Rotate or revoke it if shared by mistake. Previously downloaded
+copies may remain in the external calendar's cache.
+
+On Android, open an event and choose **Dodaj v koledar telefona** to hand off
+a pre-filled event to an installed calendar app. The user confirms it there.

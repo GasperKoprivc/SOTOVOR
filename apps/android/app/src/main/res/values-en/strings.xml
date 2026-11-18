@@ -165,4 +165,12 @@
     <string name="event_all_day">All day</string>
     <string name="event_start">Start time: %1$s</string>
     <string name="event_duration">Duration (minutes)</string>
+    <string name="calendar_subscription">Private calendar subscription</string>
+    <string name="calendar_subscription_privacy">Anyone with the link can see your families’ events and dated tasks. Replacing the link revokes the previous one.</string>
+    <string name="calendar_create">Create link</string>
+    <string name="calendar_replace">Replace link</string>
+    <string name="calendar_revoke">Revoke link</string>
+    <string name="calendar_share">Share link</string>
+    <string name="calendar_add_phone">Add to phone calendar</string>
+    <string name="calendar_app_unavailable">No calendar app is available.</string>
 </resources>

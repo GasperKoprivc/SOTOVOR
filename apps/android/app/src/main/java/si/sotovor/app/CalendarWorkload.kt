@@ -45,6 +45,7 @@ fun CalendarPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVi
     }
     PanelScreen {
         SectionTitle(R.string.calendar)
+        CalendarSubscriptionControls(state, model)
         Status(state)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(monthly, { monthly = true }, { Text(stringResource(R.string.month)) })
