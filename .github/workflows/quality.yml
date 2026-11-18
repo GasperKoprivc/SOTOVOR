@@ -58,7 +58,7 @@ jobs:
       - run: docker compose -p sotovor-quality -f compose.test.yaml up -d --build --wait --wait-timeout 180
       - name: Build instrumented and production-shrunk test apps
         working-directory: apps/android
-        run: ./gradlew assembleQa assembleDebugAndroidTest -PsotovorDebugUrl=http://10.0.2.2:3060/
+        run: ./gradlew assembleQa assembleDebugAndroidTest -PsotovorDebugUrl=http://127.0.0.1:3060/
       - name: Reserve disk and memory for the API 36 emulator
         run: |
           # This disposable job needs Kotlin/Java; other preinstalled toolchains are unused.
@@ -83,9 +83,7 @@ jobs:
           ram-size: 2048M
           emulator-boot-timeout: 300
           disable-animations: true
-          script: |
-            adb install -r app/build/outputs/apk/qa/app-qa.apk
-            ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.r8=true -PsotovorDebugUrl=http://10.0.2.2:3060/
+          script: bash ../../scripts/android-e2e.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -93,6 +91,7 @@ jobs:
           path: |
             apps/android/app/build/reports/androidTests/
             apps/android/app/build/outputs/androidTest-results/
+            quality-results/android/
       - if: always()
         run: |
           docker compose -p sotovor-quality -f compose.test.yaml logs --tail 80

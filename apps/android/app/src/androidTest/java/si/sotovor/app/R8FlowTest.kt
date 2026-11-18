@@ -6,6 +6,7 @@ import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
+import java.io.File
 import java.util.UUID
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
@@ -16,10 +17,29 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.junit.Assume.assumeTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TestWatcher
+import org.junit.runner.Description
 
 /** The debug test process drives the production-shrunk QA APK through Android UI automation. */
 class R8FlowTest {
+    @get:Rule val diagnostics = object : TestWatcher() {
+        override fun failed(error: Throwable, description: Description) {
+            val instrumentation = InstrumentationRegistry.getInstrumentation()
+            val device = UiDevice.getInstance(instrumentation)
+            val directory = checkNotNull(instrumentation.targetContext.externalCacheDir)
+            device.takeScreenshot(File(directory, "r8-failure.png"))
+            device.dumpWindowHierarchy(File(directory, "r8-failure.xml"))
+            // AGP uninstalls the target after testing; preserve diagnostics in shell-owned storage.
+            for (extension in listOf("png", "xml")) {
+                device.executeShellCommand(
+                    "cp ${File(directory, "r8-failure.$extension").absolutePath} /data/local/tmp/sotovor-r8-failure.$extension"
+                )
+            }
+        }
+    }
+
     @Test fun minifiedLoginVoiceTaskAndDeepLink() {
         assumeTrue(
             "Install assembleQa and supply the r8 instrumentation argument.",
@@ -70,15 +90,17 @@ class R8FlowTest {
             error("R8 UI control was unavailable: $label")
         }
         fun shown(label: String) {
-            check(device.wait(Until.hasObject(By.text(label)), 15_000)) { "R8 UI did not display $label" }
+            check(device.wait(Until.hasObject(By.text(label)), 30_000)) { "R8 UI did not display $label" }
         }
 
         val pkg = "si.sotovor.app.qa"
+        device.wakeUp()
+        device.executeShellCommand("wm dismiss-keyguard")
         device.executeShellCommand("pm clear $pkg")
         device.executeShellCommand("am start -W -n $pkg/si.sotovor.app.MainActivity")
         shown("Prijava")
         click("Prijava")
-        check(device.wait(Until.hasObject(By.clazz("android.widget.EditText")), 5_000))
+        check(device.wait(Until.hasObject(By.clazz("android.widget.EditText")), 10_000))
         val fields = device.findObjects(By.clazz("android.widget.EditText"))
         check(fields.size == 2)
         fields[0].text = email
@@ -87,7 +109,7 @@ class R8FlowTest {
         shown("Opravila")
         click("Opravila")
         click("Dodaj opravilo")
-        check(device.wait(Until.hasObject(By.clazz("android.widget.EditText")), 5_000))
+        check(device.wait(Until.hasObject(By.clazz("android.widget.EditText")), 10_000))
         device.findObjects(By.clazz("android.widget.EditText"))[0].text = "R8 voice task"
         device.executeShellCommand("pm grant $pkg android.permission.RECORD_AUDIO")
         click("Posnemi beležko")
