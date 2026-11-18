@@ -75,6 +75,7 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
     var category by rememberSaveable(original?.id) { mutableStateOf(original?.category ?: "drugo") }
     var assigned by rememberSaveable(original?.id) { mutableStateOf(original?.assigneeId) }
     var repeat by rememberSaveable(original?.id) { mutableStateOf((original?.repeatDays ?: 0).toString()) }
+    var points by rememberSaveable(original?.id) { mutableStateOf(original?.points?.toString().orEmpty()) }
     var estimate by rememberSaveable(original?.id) { mutableStateOf(original?.estimatedMinutes?.toString().orEmpty()) }
     var remind by rememberSaveable(original?.id) { mutableStateOf((original?.reminderDays ?: 2).toString()) }
     var rotate by rememberSaveable(original?.id) { mutableStateOf(original?.rotate ?: false) }
@@ -130,6 +131,9 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
                     SelectField(stringResource(R.string.member), assigned,
                         listOf(null to stringResource(R.string.unassigned)) + workspace.members.filterNot { it.inactive }.map { it.id to it.name },
                         canEdit && !state.busy) { assigned = it }
+                    if (workspace.admin) InputField(R.string.reward_task_points, points, canEdit && !state.busy, KeyboardType.Number) {
+                        points = it.filter { digit -> digit in '0'..'9' }.take(4)
+                    }
                     InputField(R.string.task_estimated_minutes, estimate, canEdit && !state.busy, KeyboardType.Number) {
                         estimate = it.filter { digit -> digit in '0'..'9' }.take(4)
                     }
@@ -162,7 +166,7 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
         confirmButton = {
             if (canEdit || canDate) TextButton(
                 enabled = !state.busy && !recording && title.isNotBlank() && validDate && size in 0..3660 &&
-                    threshold in 0..30 && (!task || estimate.isEmpty() || (estimate.toIntOrNull() ?: 0) in 1..1440) && (task || allDay || duration.isEmpty() || (duration.toIntOrNull() ?: 0) in 1..1440) &&
+                    threshold in 0..30 && (!task || points.isEmpty() || (points.toIntOrNull() ?: 0) in 1..1000) && (!task || estimate.isEmpty() || (estimate.toIntOrNull() ?: 0) in 1..1440) && (task || allDay || duration.isEmpty() || (duration.toIntOrNull() ?: 0) in 1..1440) &&
                     (date.isNotBlank() || (task && size == 0)),
                 onClick = {
                     model.save(EntryInput(title.trim(), editor.kind, category, date.ifBlank { null }, assigned,
@@ -170,7 +174,8 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
                         allDay = if (task) null else allDay,
                         startTime = startTime.takeIf { !task && !allDay },
                         durationMinutes = duration.toIntOrNull()?.takeIf { !task && !allDay },
-                        estimatedMinutes = estimate.toIntOrNull()?.takeIf { task }))
+                        estimatedMinutes = estimate.toIntOrNull()?.takeIf { task },
+                        points = points.toIntOrNull()?.takeIf { task }))
                 }
             ) { Text(stringResource(R.string.save)) }
         },

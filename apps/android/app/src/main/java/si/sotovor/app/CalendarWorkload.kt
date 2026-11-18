@@ -139,6 +139,7 @@ fun WorkloadPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVi
             }
         }
         WorkloadBars(workspace, days)
+        RewardsPanel(workspace, state, model)
         SmartPlan(workspace, state, model)
     }
 }

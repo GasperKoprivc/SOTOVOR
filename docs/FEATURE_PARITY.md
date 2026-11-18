@@ -7,7 +7,7 @@
 | Private calendar subscription | Private ICS, rotate and revoke | Calendar subscription controls | Subscription controls and add an event to the phone calendar |
 | Task checklists and comments | Family-scoped details and comment notifications | Task details dialog | Details inside task editor |
 | Task duration and planner weighting | Optional estimate and minute-weighted planning | Task editor and planner guidance | Task editor and planner guidance |
-| Points and rewards | Planned | Planned | Planned |
+| Points and rewards | Admin-controlled rewards and child scores | Task editor and reward thresholds | Task editor and reward thresholds |
 | Weekly and monthly recurrence | Planned | Planned | Planned |
 | Today widget | Planned | Planned | Planned |
 | Voice transcription | Planned | Planned | Planned |
@@ -59,3 +59,10 @@ Set an optional estimate in the task editor. The planner uses 30 minutes for
 tasks without an estimate and one quarter of the estimate for recent completed
 work. It keeps availability, age-appropriate categories, and the existing
 planning window. Recurring copies keep the estimate.
+
+## Points and rewards
+
+Family admins can add optional points to a task and set reward thresholds in
+the Workload tab. Completing the task credits those points once to its child
+assignee. Rewards use earned totals as milestones. With the leaderboard off,
+children can see their own score and other members see only the rewards.
