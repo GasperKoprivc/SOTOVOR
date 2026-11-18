@@ -48,6 +48,10 @@ interface SotovorApi {
     @POST("households/members/{id}/planning") suspend fun member(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Body body: PlanningMember): Ok
     @POST("households/members/{id}/permissions") suspend fun permissions(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Body body: Permissions): Ok
     @POST("households/members/{id}/{action}") suspend fun memberAction(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Path("action") action: String, @Body body: Empty = Empty()): Ok
+    @GET("tasks/{id}/details") suspend fun taskDetails(@Header("X-Sotovor-Household") household: String, @Path("id") id: String): TaskDetails
+    @POST("tasks/{id}/checklist") suspend fun addCheck(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Body input: ChecklistInput): TaskDetails
+    @PUT("tasks/{id}/checklist/{item}") suspend fun checkItem(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Path("item") item: String, @Body input: ChecklistCheck): TaskDetails
+    @POST("tasks/{id}/comments") suspend fun addComment(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Body input: CommentInput): TaskDetails
     @GET("calendar/subscription") suspend fun calendarSubscription(): CalendarSubscription
     @POST("calendar/subscription") suspend fun createCalendarSubscription(@Body input: Empty = Empty()): CalendarSubscription
     @DELETE("calendar/subscription") suspend fun revokeCalendarSubscription(): CalendarSubscription

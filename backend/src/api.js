@@ -3,7 +3,8 @@ import { parseBuffer } from 'music-metadata';
 import { HttpError, handleError } from './api-errors.js';
 import { bearerSession, hash, registerMobileAuth, validId } from './mobile-auth.js';
 import { pageOf } from './paging.js';
-import { registerNotificationRoutes } from './notifications.js';
+import { registerTaskDetails } from './task-details.js';
+import { registerNotificationRoutes, taskCommentNotice } from './notifications.js';
 import { registerPasswordReset } from './password-reset.js';
 import { registerAccountData } from './account-data.js';
 import { createShoppingList } from './shopping.js';
@@ -63,7 +64,7 @@ async function parseVoice(voice, versioned) {
 }
 
 export function createApi(database, {
-  shopping = createShoppingList(database), versioned = false, mobileOptions = {}, whatsappEnabled = false, verificationMail, reportMailFailure = () => console.error('Verification email delivery failed.'),
+  shopping = createShoppingList(database), push, versioned = false, mobileOptions = {}, whatsappEnabled = false, verificationMail, reportMailFailure = () => console.error('Verification email delivery failed.'),
 } = {}) {
   const { households, entries, accounts, sessions, desktopLinks } = database;
   const router = Router();
@@ -142,7 +143,7 @@ export function createApi(database, {
     registerAccountData(router, database);
   }
 
-  const entryProjection = { householdId: 0, nextOccurrence: 0, whatsappMessageId: 0, 'voice.bytes': 0 };
+  const entryProjection = { householdId: 0, nextOccurrence: 0, whatsappMessageId: 0, checklist: 0, comments: 0, 'voice.bytes': 0 };
   function publicEntry({ _id, ...item }, household) {
     return {
       id: String(_id), ...item, ...(item.kind === 'event' ? timingOf(item) : {}), version: item.version ?? 0,
@@ -308,6 +309,7 @@ export function createApi(database, {
   });
 
   shopping.register(router);
+  registerTaskDetails(router, database, taskCommentNotice(database, push));
 
   function requireAdmin(req) {
     if (!isAdmin(req.household, req.member)) throw new HttpError(403, 'To lahko opravi samo skrbnik prostora.');

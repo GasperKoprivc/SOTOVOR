@@ -51,7 +51,7 @@ if (process.env.SOTOVOR_REQUIRE_SMTP === '1') {
   }));
 }
 app.post(['/api/entries', '/api/v1/entries'], express.json({ limit: '3mb' }));
-const apiOptions = { shopping, whatsappEnabled: Boolean(whatsapp), verificationMail };
+const apiOptions = { shopping, push, whatsappEnabled: Boolean(whatsapp), verificationMail };
 const json = express.json({ limit: '8kb' });
 app.use('/api/v1', json, createApi(database, { ...apiOptions, versioned: true, mobileOptions: {
   accessSeconds: Number(process.env.SOTOVOR_MOBILE_ACCESS_SECONDS ?? 600),

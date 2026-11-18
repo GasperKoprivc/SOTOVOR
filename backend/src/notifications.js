@@ -81,27 +81,38 @@ function activeMembers(household) {
   }));
 }
 
+async function emitNotice({ accounts, notifications }, push, now, accountId, householdId, type, entryId, key, preference) {
+  if (!accountId) return;
+  const person = await accounts.findOne({ _id: accountId }, { projection: { passwordHash: 1, notificationSettings: 1 } });
+  if (!person || person.notificationSettings?.[preference] === false) return;
+  const target = { screen: entryId ? 'task' : 'family', householdId: String(householdId), ...(entryId ? { entryId: String(entryId) } : {}) };
+  try {
+    await notifications.insertOne({
+      accountId, householdId, type, target, createdAt: now, readAt: null,
+      key: hash(JSON.stringify([String(accountId), String(householdId), type, String(entryId ?? ''), key])),
+    });
+  } catch (error) {
+    if (error.code === 11000) return;
+    throw error;
+  }
+  await push?.send(accountId, hash(person.passwordHash), { type, target });
+}
+
+export function taskCommentNotice(database, push) {
+  return async (household, authorId, entryId, comment) => {
+    for (const [memberId, accountId] of activeMembers(household)) {
+      if (memberId !== authorId) await emitNotice(database, push, comment.createdAt, accountId,
+        household._id, 'task_comment', entryId, String(comment._id), 'assignments');
+    }
+  };
+}
+
 export async function produceNotifications({ households, entries, accounts, notifications }, push, { now = new Date(), today = householdDay() } = {}) {
   const recent = new Date(+now - 24 * 60 * 60_000);
   const ahead = new Date(today);
   ahead.setUTCDate(ahead.getUTCDate() + 30);
   const latestDay = ahead.toISOString().slice(0, 10);
-  async function emit(accountId, householdId, type, entryId, key, preference) {
-    if (!accountId) return;
-    const person = await accounts.findOne({ _id: accountId }, { projection: { passwordHash: 1, notificationSettings: 1 } });
-    if (!person || person.notificationSettings?.[preference] === false) return;
-    const target = { screen: entryId ? 'task' : 'family', householdId: String(householdId), ...(entryId ? { entryId: String(entryId) } : {}) };
-    try {
-      await notifications.insertOne({
-        accountId, householdId, type, target, createdAt: now, readAt: null,
-        key: hash(JSON.stringify([String(accountId), String(householdId), type, String(entryId ?? ''), key])),
-      });
-    } catch (error) {
-      if (error.code === 11000) return;
-      throw error;
-    }
-    await push.send(accountId, hash(person.passwordHash), { type, target });
-  }
+  const emit = (...args) => emitNotice({ accounts, notifications }, push, now, ...args);
   for await (const family of households.find({}, { projection: { members: 1, ownerId: 1, ownerAccountId: 1 } })) {
     const members = activeMembers(family);
     if (!members.size) continue;

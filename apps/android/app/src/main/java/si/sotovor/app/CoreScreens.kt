@@ -224,7 +224,7 @@ fun EntryCard(entry: Entry, workspace: Workspace, model: WorkspaceViewModel? = n
 
 private val notificationLabels = mapOf(
     "assignment" to R.string.assigned_notification, "deadline" to R.string.due, "overdue" to R.string.overdue,
-    "swap" to R.string.swap_notification, "member_joined" to R.string.member_joined
+    "swap" to R.string.swap_notification, "member_joined" to R.string.member_joined, "task_comment" to R.string.task_new_comment
 )
 
 @Composable

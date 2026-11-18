@@ -173,4 +173,11 @@
     <string name="calendar_share">Share link</string>
     <string name="calendar_add_phone">Add to phone calendar</string>
     <string name="calendar_app_unavailable">No calendar app is available.</string>
+    <string name="task_checklist">Checklist</string>
+    <string name="task_new_check">New checklist item</string>
+    <string name="task_add_check">Add checklist item</string>
+    <string name="task_comments">Comments</string>
+    <string name="task_your_comment">Your comment</string>
+    <string name="task_add_comment">Post comment</string>
+    <string name="task_new_comment">New task comment</string>
 </resources>
