@@ -10,7 +10,7 @@
 | Points and rewards | Admin-controlled rewards and child scores | Task editor and reward thresholds | Task editor and reward thresholds |
 | Weekly and monthly recurrence | Successor on completion, with rotation | Task editor | Task editor |
 | Today widget | Member-scoped today endpoint and existing completion action | Android home-screen feature | Glance widget, open or complete, background refresh |
-| Voice transcription | Planned | Planned | Planned |
+| Voice transcription | Disabled by default, configurable provider | Voice notes in task details and entry editor | Voice notes in entry dialog |
 | English and dark mode | Planned | Planned | Planned |
 
 ## Shared shopping list
@@ -81,3 +81,12 @@ widget displays up to three open tasks assigned to you and due today in the
 active family. Tap a task to open it, or tap **Končano** to complete it. Android
 schedules periodic and push-triggered refreshes through WorkManager. The
 launcher can display the titles to anyone with access to the home screen.
+
+## Voice transcription
+
+Transcription is off by default. An operator can set
+`SOTOVOR_TRANSCRIPTION_ENABLED=1` and configure a compatible multipart
+transcription endpoint, model and optional bearer token. Choose a provider
+whose retention policy fits your deployment. Sotovor sends a recording only
+after the user requests a transcript and shows a privacy notice before the
+request. The response appears in the dialog and Sotovor does not store it.

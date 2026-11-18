@@ -38,7 +38,7 @@ data class Credentials(
 @Serializable data class Workspace(
     val profile: Profile, val household: Space? = null, val spaces: List<Space> = emptyList(),
     val memberId: String? = null, val members: List<Member> = emptyList(), val entries: List<Entry> = emptyList(),
-    val admin: Boolean = false, val permissions: Permissions = Permissions(), val leaveRequested: Boolean = false
+    val transcriptionEnabled: Boolean = false, val admin: Boolean = false, val permissions: Permissions = Permissions(), val leaveRequested: Boolean = false
 )
 @Serializable data class ApiError(val error: ErrorDetail)
 @Serializable data class ErrorDetail(val code: String, val message: String)

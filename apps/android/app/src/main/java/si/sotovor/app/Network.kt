@@ -50,8 +50,10 @@ object Network {
         retrofit(OkHttpClient.Builder()
             .addInterceptor(Interceptor { chain ->
                 val request = chain.request()
+                val connection = if (request.url.pathSegments.lastOrNull() == "transcription")
+                    chain.withReadTimeout(50, java.util.concurrent.TimeUnit.SECONDS) else chain
                 val credentials = store.current()
-                chain.proceed(if (credentials == null) request else request.newBuilder()
+                connection.proceed(if (credentials == null) request else request.newBuilder()
                     .header("Authorization", "Bearer ${credentials.accessToken}").build())
             })
             .authenticator(MobileAuthenticator(store, publicApi))

@@ -15,6 +15,7 @@ import FamilySettings from './FamilySettings.jsx';
 import { EmailVerificationReminder } from './EmailVerification.jsx';
 import CalendarSubscription from './CalendarSubscription.jsx';
 import MonthCalendar from './MonthCalendar.jsx';
+import Transcription from "./Transcription.jsx";
 import Rewards from './Rewards.jsx';
 import TaskDetails from './TaskDetails.jsx';
 import ShoppingList from './ShoppingList.jsx';
@@ -55,7 +56,7 @@ function Dialog({ title, onClose, children }) {
   </dialog>;
 }
 
-function EntryDialog({ initialKind, initialDate, entry, permissions, members, admin, busy, error, onSave, onRemove, onClose }) {
+function EntryDialog({ initialKind, initialDate, entry, permissions, members, admin, transcriptionEnabled, busy, error, onSave, onRemove, onClose }) {
   const [kind, setKind] = useState(initialKind);
   const [allDay, setAllDay] = useState(!entry?.startTime);
   const [repeatMode, setRepeatMode] = useState(entry?.recurrence?.type ?? (entry?.repeatDays ? 'interval' : 'none'));
@@ -133,6 +134,7 @@ function EntryDialog({ initialKind, initialDate, entry, permissions, members, ad
         <label>{t('Opomni dni pred rokom')}<input name="reminderDays" type="number" min="0" max="30" defaultValue={entry?.reminderDays ?? 2} required /></label>
         {repeatMode !== 'none' && <label className="check-field"><input name="rotate" type="checkbox" defaultChecked={entry?.rotate} />{' '}{t('Naslednjič dodeli naslednjemu članu')}</label>}
       </>}
+      {entry?.voice && transcriptionEnabled && <Transcription entryId={entry.id} />}
       {!entry && <VoiceRecorder onChange={setVoice} busy={busy || recordingBusy} setBusy={setRecordingBusy} />}
       {error && <p className="error" role="alert">{errorText(error)}</p>}
       {(editContent || moveDate) && <button className="primary" disabled={busy || recordingBusy || removing || (kind === 'task' && editContent && repeatMode === 'weekly' && !repeatWeekdays.length)}>{entry ? t('Shrani spremembe') : <><Plus size={19} />{kind === 'task' ? t('Dodaj opravilo') : t('Dodaj dogodek')}</>}</button>}
@@ -495,10 +497,10 @@ export default function App() {
     {modal === 'whatsapp' && <WhatsAppDialog linked={data.whatsapp.linked} onClose={() => setModal(null)}
       onUpdate={async () => setData(await request('/dashboard'))} />}
     {modal === 'task-details' && <Dialog title={editing.title} onClose={() => setModal(null)}>
-      <TaskDetails key={editing.id} task={editing} householdId={household.id} />
+      <TaskDetails key={editing.id} task={editing} householdId={household.id} transcriptionEnabled={data.transcriptionEnabled} />
     </Dialog>}
     {['task', 'event', 'edit'].includes(modal) && <EntryDialog initialKind={modal === 'edit' ? editing.kind : modal} initialDate={entryDate}
-      entry={modal === 'edit' ? editing : null} admin={data.admin} {...{ permissions, members, busy, error }}
+      entry={modal === 'edit' ? editing : null} admin={data.admin} transcriptionEnabled={data.transcriptionEnabled} {...{ permissions, members, busy, error }}
       onClose={() => { if (!pending.current) { setModal(null); setError(''); } }}
       onRemove={() => run(async () => {
         setData(await request(`/entries/${editing.id}/remove`, { version: editing.version ?? 0 }));

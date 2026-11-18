@@ -10,6 +10,7 @@ import { registerAppLinks } from '../src/app-links.js';
 import { produceNotifications } from '../src/notifications.js';
 import { householdDay } from '../src/planning.js';
 import { pushDelivery } from '../src/push.js';
+import { transcriptionProvider } from '../src/transcription.js';
 import { createShoppingList } from '../src/shopping.js';
 import { createWhatsApp } from '../src/whatsapp.js';
 
@@ -37,7 +38,9 @@ before(async () => {
     shopping, whatsappEnabled: true,
     verificationMail: async (email, token, purpose) => (purpose === 'password' ? passwordMessages : verificationMessages).set(email, token),
   };
-  app.use('/api/v1', createApi(database, { ...options, versioned: true }));
+  app.use('/api/v1', createApi(database, { ...options, versioned: true, transcription: {
+    async transcribe(bytes, mime) { return mime + ':' + bytes.toString('hex'); },
+  } }));
   app.use('/api', createApi(database, options));
   app.use(handleError);
   server = app.listen(0, '127.0.0.1');
@@ -777,4 +780,28 @@ test('today widget returns only the current member’s open tasks due today', as
     { householdId: family.data.householdId, tasks: [{ id: entry.id, title: myTask.title }] });
   assert.equal((await postJson('/tasks/' + entry.id + '/complete', {}, cookie)).response.status, 200);
   assert.deepEqual((await v1('/widget/today', { cookie })).body.tasks, []);
+});
+
+test('transcription is opt-in and family-scoped; configured providers receive only the audio', async () => {
+  const owner = sessionCookie((await postJson('/households', { householdName: 'Voice', memberName: 'Ana' })).response);
+  const other = sessionCookie((await postJson('/households', { householdName: 'Other voice', memberName: 'Bor' })).response);
+  const voice = { mime: 'audio/webm', data: Buffer.from('1a45dfa300000001', 'hex').toString('base64') };
+  const { data } = await postJson('/entries', { kind: 'task', title: 'Voice', voice }, owner);
+  const path = '/entries/' + data.entries[0].id + '/transcription';
+  assert.equal((await postJson(path, {}, owner)).response.status, 404);
+  assert.equal((await v1(path, { cookie: other, method: 'POST', body: {} })).status, 404);
+  assert.deepEqual((await v1(path, { cookie: owner, method: 'POST', body: {} })).body,
+    { text: 'audio/webm:1a45dfa300000001' });
+  assert.equal(transcriptionProvider({}), null);
+  const provider = transcriptionProvider({
+    SOTOVOR_TRANSCRIPTION_ENABLED: '1', SOTOVOR_TRANSCRIPTION_URL: 'https://speech.example.invalid/transcribe',
+  }, async (_url, request) => {
+    assert.equal(request.redirect, 'error');
+    assert.equal(request.body.get('model'), 'whisper-1');
+    assert.equal(request.body.get('file').type, voice.mime);
+    assert.equal(Buffer.from(await request.body.get('file').arrayBuffer()).toString('base64'), voice.data);
+    assert.deepEqual([...request.body.keys()].sort(), ['file', 'model']);
+    return Response.json({ text: ' Mock transcript ' });
+  });
+  assert.equal(await provider.transcribe(Buffer.from(voice.data, 'base64'), voice.mime), 'Mock transcript');
 });

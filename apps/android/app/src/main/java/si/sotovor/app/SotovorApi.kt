@@ -42,6 +42,7 @@ interface SotovorApi {
     @HTTP(method = "DELETE", path = "me", hasBody = true) suspend fun deleteAccount(@Body body: DeleteAccount): Ok
     @GET("mobile/min-version") suspend fun versions(): Versions
     @GET("entries/{id}") suspend fun entry(@Header("X-Sotovor-Household") household: String, @Path("id") id: String): Entry
+    @POST("entries/{id}/transcription") suspend fun transcribe(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Body input: Empty = Empty()): VoiceTranscript
     @Streaming @GET("entries/{id}/voice") suspend fun voice(@Header("X-Sotovor-Household") household: String, @Path("id") id: String): ResponseBody
     @POST("households/invite/rotate") suspend fun rotateInvite(@Header("X-Sotovor-Household") household: String, @Body body: Empty = Empty()): Ok
     @POST("households/leave") suspend fun leave(@Header("X-Sotovor-Household") household: String, @Body body: Empty = Empty()): Ok

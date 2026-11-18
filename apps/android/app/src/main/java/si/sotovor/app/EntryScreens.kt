@@ -179,7 +179,10 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
                 if (!task && original?.dueOn != null) AddToPhoneCalendar(original)
                 if (task && original != null) TaskDetailsPanel(original, state, model)
                 if (original == null) VoiceAttachment(voice, !state.busy, { voice = it }, { recording = it })
-                if (original?.voice != null) VoicePlayback(original.id, model)
+                if (original?.voice != null) {
+                    VoicePlayback(original.id, model)
+                    if (workspace.transcriptionEnabled) TranscriptionPanel(original.id, model)
+                }
                 Status(state)
                 if (open && task && original != null) {
                     if (original.assigneeId == null) TextButton(onClick = { model.taskAction(original.id, "claim") }, enabled = !state.busy) {

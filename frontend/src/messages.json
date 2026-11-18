@@ -1,4 +1,10 @@
 {
+  "Glas v besedilo": {"en": "Voice to text", "de": "Sprache zu Text"},
+  "Če nadaljuješ, bo posnetek poslan nastavljenemu ponudniku za prepis.": {"en": "Continuing sends the recording to the configured transcription provider.", "de": "Wenn du fortfährst, wird die Aufnahme an den konfigurierten Transkriptionsdienst gesendet."},
+  "Prepisovanje …": {"en": "Transcribing …", "de": "Wird transkribiert …"},
+  "Prepiši posnetek": {"en": "Transcribe recording", "de": "Aufnahme transkribieren"},
+  "V posnetku ni bilo prepoznanega besedila.": {"en": "No speech was recognised in the recording.", "de": "In der Aufnahme wurde keine Sprache erkannt."},
+  "Prepis trenutno ni na voljo.": {"en": "Transcription is currently unavailable.", "de": "Transkription ist derzeit nicht verfügbar."},
   "Ponavljanje": {"en": "Repeat", "de": "Wiederholung"},
   "Brez ponavljanja": {"en": "Does not repeat", "de": "Keine Wiederholung"},
   "Interval v dnevih": {"en": "Interval in days", "de": "Intervall in Tagen"},
