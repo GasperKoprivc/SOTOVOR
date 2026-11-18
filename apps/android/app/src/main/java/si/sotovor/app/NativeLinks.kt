@@ -4,7 +4,7 @@ import java.net.URI
 
 sealed interface NativeLink {
     data class Invite(val code: String) : NativeLink
-    data class Target(val household: String, val entry: String?) : NativeLink
+    data class Target(val household: String, val entry: String?, val shopping: Boolean = false) : NativeLink
 }
 
 fun parseNativeLink(raw: String?, inviteHost: String = URI(BuildConfig.PUBLIC_URL).host): NativeLink? {
@@ -12,7 +12,7 @@ fun parseNativeLink(raw: String?, inviteHost: String = URI(BuildConfig.PUBLIC_UR
     if (value.scheme == "https" && value.host.equals(inviteHost, ignoreCase = true) && value.rawUserInfo == null) {
         return value.path?.matchEntireInvite()?.let { NativeLink.Invite(it) }
     }
-    if (value.scheme != "sotovor" || value.host !in listOf("task", "family")) return null
+    if (value.scheme != "sotovor" || value.host !in listOf("task", "family", "shopping")) return null
     val query = value.rawQuery.orEmpty().split('&').mapNotNull {
         if ('=' !in it) null else it.substringBefore('=') to it.substringAfter('=')
     }.toMap()
@@ -20,7 +20,7 @@ fun parseNativeLink(raw: String?, inviteHost: String = URI(BuildConfig.PUBLIC_UR
     val household = query["householdId"]?.takeIf(idPattern::matches) ?: return null
     val entry = query["entryId"]?.takeIf(idPattern::matches)
     if (value.host == "task" && entry == null) return null
-    return NativeLink.Target(household, entry)
+    return NativeLink.Target(household, entry, value.host == "shopping")
 }
 
 private fun String.matchEntireInvite() = Regex("/join/([a-fA-F0-9]{32})").matchEntire(this)?.groupValues?.get(1)?.lowercase()

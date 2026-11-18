@@ -52,7 +52,7 @@ fun today(): LocalDate = LocalDate.now(ZoneId.of("Europe/Ljubljana"))
 @Composable
 fun CoreWorkspace(workspace: Workspace, state: WorkspaceState, model: WorkspaceViewModel, push: NativePush) {
     val household = workspace.household ?: return
-    val tabs = listOf(R.string.overview, R.string.tasks, R.string.calendar, R.string.workload, R.string.notifications, R.string.profile)
+    val tabs = listOf(R.string.overview, R.string.tasks, R.string.calendar, R.string.workload, R.string.notifications, R.string.profile, R.string.shopping_tab)
     var tab by rememberSaveable(household.id) { mutableIntStateOf(0) }
     var requestedFilter by remember { mutableStateOf(TaskFilters()) }
     val incoming by model.links.collectAsStateWithLifecycle()
@@ -61,8 +61,12 @@ fun CoreWorkspace(workspace: Workspace, state: WorkspaceState, model: WorkspaceV
             is NativeLink.Invite -> tab = 5
             is NativeLink.Target -> {
                 model.state.first { !it.busy }
-                tab = if (link.entry == null) 5 else 1
-                model.openTarget(link)
+                if (!link.shopping || household.id == link.household || workspace.spaces.none { it.id == link.household }) {
+                    tab = if (link.shopping) 6 else if (link.entry == null) 5 else 1
+                    model.openTarget(link)
+                } else {
+                    model.switchFamily(link.household)
+                }
             }
             null -> Unit
         }
@@ -72,6 +76,7 @@ fun CoreWorkspace(workspace: Workspace, state: WorkspaceState, model: WorkspaceV
         when (tab) {
             1 -> model.tasks(requestedFilter)
             4 -> model.notifications()
+            6 -> model.shopping()
         }
     }
 
@@ -86,6 +91,7 @@ fun CoreWorkspace(workspace: Workspace, state: WorkspaceState, model: WorkspaceV
             when (tab) {
                 1 -> model.tasks(requestedFilter)
                 4 -> model.notifications()
+                6 -> model.shopping()
                 else -> model.reload()
             }
         }, modifier = Modifier.weight(1f)) {
@@ -105,6 +111,7 @@ fun CoreWorkspace(workspace: Workspace, state: WorkspaceState, model: WorkspaceV
                     if (target == null) tab = if (item.target.screen == "family") 5 else 1
                     else model.edit(EntryEditor(target.kind, target))
                 }
+                6 -> ShoppingPage(household.id, state, model, push)
                 5 -> ProfilePage(workspace, state, model)
             }
         }

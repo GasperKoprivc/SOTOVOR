@@ -152,4 +152,14 @@
     <string name="microphone_denied">Dovoljenje za mikrofon ni bilo odobreno.</string>
     <string name="play_voice">Predvajaj posnetek</string>
     <string name="stop_playback">Ustavi predvajanje</string>
+    <string name="shopping_tab">Nakupi</string>
+    <string name="shopping_title">Skupni nakupovalni seznam</string>
+    <string name="shopping_item">Izdelek</string>
+    <string name="shopping_quantity">Količina (neobvezno)</string>
+    <string name="shopping_add">Dodaj izdelek</string>
+    <string name="shopping_empty">Nakupovalni seznam je prazen.</string>
+    <string name="shopping_push">Potisna obvestila o nakupih</string>
+    <string name="shopping_bought_by">Kupil/a: %1$s</string>
+    <string name="shopping_remove_item">Odstrani %1$s</string>
+    <string name="shopping_remove">Odstrani</string>
 </resources>

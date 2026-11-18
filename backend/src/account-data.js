@@ -1,7 +1,7 @@
 import { HttpError } from './api-errors.js';
 import { publicProfile, verifyPassword } from './accounts.js';
 
-export function registerAccountData(router, { accounts, households, entries, notifications, sessions, mobileSessions, devices }) {
+export function registerAccountData(router, { accounts, households, entries, shoppingItems, notifications, sessions, mobileSessions, devices }) {
   router.get('/me/export', async (req, res) => {
     if (!req.account) throw new HttpError(401, 'Najprej se prijavi.');
     const registeredAt = req.account._id.getTimestamp();
@@ -10,7 +10,7 @@ export function registerAccountData(router, { accounts, households, entries, not
     }).toArray();
     res.attachment('sotovor-data.json').json({
       profile: publicProfile(req.account), registeredAt, emailVerifiedAt: req.account.emailVerifiedAt ?? null,
-      spaces: req.spaces, notificationSettings: req.account.notificationSettings ?? {},
+      spaces: req.spaces, shoppingPush: req.account.shoppingPush === true, notificationSettings: req.account.notificationSettings ?? {},
       devices: registeredDevices,
     });
   });
@@ -34,6 +34,7 @@ export function registerAccountData(router, { accounts, households, entries, not
     await households.deleteMany({ _id: { $in: owned }, ownerAccountId: accountId });
     await Promise.all([
       entries.deleteMany(ownedScope),
+      shoppingItems.deleteMany(ownedScope),
       notifications.deleteMany({ $or: [ownedScope, { accountId }] }),
       households.updateMany({ $or: [{ 'members.accountId': accountId }, { 'members.guestAccountId': accountId }] }, {
         $set: { 'members.$[member].inactive': true, 'members.$[member].name': 'Nekdanji član' },

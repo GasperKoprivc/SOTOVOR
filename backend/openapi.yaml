@@ -3,6 +3,64 @@ info: {title: Sotovor native API, version: 1.0.0}
 servers: [{url: /api/v1}]
 security: [{bearer: []}, {browserSession: []}]
 paths:
+  /shopping:
+    parameters:
+      - $ref: '#/components/parameters/ShoppingHousehold'
+    get:
+      summary: List the selected family's shopping items
+      responses:
+        '200': {description: Shopping items, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/ShoppingItem'}}}}}
+        default: {$ref: '#/components/responses/ShoppingError'}
+    post:
+      summary: Add an item to the selected family's list
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [title], properties: {title: {type: string, minLength: 1, maxLength: 120}, quantity: {type: string, maxLength: 40}}}
+      responses:
+        '201': {description: Item added, content: {application/json: {schema: {$ref: '#/components/schemas/ShoppingItem'}}}}
+        default: {$ref: '#/components/responses/ShoppingError'}
+  /shopping/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ShoppingHousehold'
+      - {name: id, in: path, required: true, schema: {type: string, pattern: '^[a-f0-9]{24}$'}}
+    put:
+      summary: Mark an item purchased or return it to the active list
+      description: A repeated check preserves the original buyer until the item is unchecked.
+      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [checked], properties: {checked: {type: boolean}}}}}}
+      responses:
+        '200': {description: Current item, content: {application/json: {schema: {$ref: '#/components/schemas/ShoppingItem'}}}}
+        default: {$ref: '#/components/responses/ShoppingError'}
+    delete:
+      summary: Remove an item from the list
+      responses:
+        '200': {description: Removed, content: {application/json: {schema: {$ref: '#/components/schemas/Ok'}}}}
+        default: {$ref: '#/components/responses/ShoppingError'}
+  /shopping/stream:
+    get:
+      summary: Subscribe to shopping-list invalidations via server-sent events
+      description: An initial refresh event and subsequent refresh events instruct the client to fetch the list again. Reconnect after the server closes the stream.
+      parameters:
+        - $ref: '#/components/parameters/ShoppingHousehold'
+        - {name: household, in: query, schema: {type: string, pattern: '^[a-f0-9]{24}$'}}
+      responses:
+        '200': {description: Invalidation stream, content: {text/event-stream: {schema: {type: string}}}}
+        default: {$ref: '#/components/responses/ShoppingError'}
+  /shopping/push:
+    parameters:
+      - $ref: '#/components/parameters/ShoppingHousehold'
+    get:
+      summary: Read the account's Android shopping push preference
+      responses:
+        '200': {description: Current preference, content: {application/json: {schema: {$ref: '#/components/schemas/ShoppingPush'}}}}
+        default: {$ref: '#/components/responses/ShoppingError'}
+    put:
+      summary: Enable or disable Android shopping push notifications
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ShoppingPush'}}}}
+      responses:
+        '200': {description: Saved preference, content: {application/json: {schema: {$ref: '#/components/schemas/ShoppingPush'}}}}
+        default: {$ref: '#/components/responses/ShoppingError'}
   /me/export:
     get:
       summary: Export the authenticated account’s personal data
@@ -357,10 +415,24 @@ paths:
         '200': {"description":"Successful response","content":{"application/json":{"schema":{"$ref":"#/components/schemas/PlanResult"}}}}
         default: {"description":"Error response using the original HTTP status and a Slovenian message.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Error"}}}}
 components:
+  parameters:
+    ShoppingHousehold: {name: X-Sotovor-Household, in: header, schema: {type: string, pattern: '^[a-f0-9]{24}$'}}
+  responses:
+    ShoppingError: {description: Shopping request failed, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
   securitySchemes:
     bearer: {type: http, scheme: bearer, bearerFormat: opaque}
     browserSession: {type: apiKey, in: cookie, name: sotovor_session}
   schemas:
+    ShoppingItem:
+      type: object
+      required: [id, title, quantity, checkedAt, checkedByName]
+      properties:
+        id: {type: string, pattern: '^[a-f0-9]{24}$'}
+        title: {type: string}
+        quantity: {type: string}
+        checkedAt: {type: string, format: date-time, nullable: true}
+        checkedByName: {type: string, nullable: true}
+    ShoppingPush: {type: object, required: [enabled], properties: {enabled: {type: boolean, default: false}}}
     PersonalExport: {type: object, required: [profile, registeredAt, spaces], properties: {profile: {$ref: '#/components/schemas/Account'}, registeredAt: {type: string, format: date-time}, spaces: {type: array, items: {$ref: '#/components/schemas/Space'}}}}
     Error: {"type":"object","required":["error"],"properties":{"error":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string"},"message":{"type":"string"}}}}}
     Ok: {"type":"object","required":["ok"],"properties":{"ok":{"type":"boolean"}}}

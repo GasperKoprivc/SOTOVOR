@@ -48,6 +48,12 @@ interface SotovorApi {
     @POST("households/members/{id}/planning") suspend fun member(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Body body: PlanningMember): Ok
     @POST("households/members/{id}/permissions") suspend fun permissions(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Body body: Permissions): Ok
     @POST("households/members/{id}/{action}") suspend fun memberAction(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Path("action") action: String, @Body body: Empty = Empty()): Ok
+    @GET("shopping") suspend fun shopping(@Header("X-Sotovor-Household") household: String): List<ShoppingItem>
+    @POST("shopping") suspend fun addShopping(@Header("X-Sotovor-Household") household: String, @Body input: ShoppingInput): ShoppingItem
+    @PUT("shopping/{id}") suspend fun checkShopping(@Header("X-Sotovor-Household") household: String, @Path("id") id: String, @Body input: ShoppingCheck): ShoppingItem
+    @DELETE("shopping/{id}") suspend fun removeShopping(@Header("X-Sotovor-Household") household: String, @Path("id") id: String): Ok
+    @GET("shopping/push") suspend fun shoppingPush(@Header("X-Sotovor-Household") household: String): ShoppingPush
+    @PUT("shopping/push") suspend fun saveShoppingPush(@Header("X-Sotovor-Household") household: String, @Body input: ShoppingPush): ShoppingPush
     @POST("planning/preview") suspend fun preview(@Header("X-Sotovor-Household") household: String, @Body body: PlanRequest): PlanPreview
     @POST("planning/apply") suspend fun apply(@Header("X-Sotovor-Household") household: String, @Body body: PlanRequest): PlanResult
     @GET("me/notification-settings") suspend fun settings(): NotificationSettings

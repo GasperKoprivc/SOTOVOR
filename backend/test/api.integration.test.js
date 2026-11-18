@@ -9,6 +9,7 @@ import { versionedErrors } from '../src/api-errors.js';
 import { registerAppLinks } from '../src/app-links.js';
 import { produceNotifications } from '../src/notifications.js';
 import { pushDelivery } from '../src/push.js';
+import { createShoppingList } from '../src/shopping.js';
 import { createWhatsApp } from '../src/whatsapp.js';
 
 const whatsapp = { secret: 'test-secret', verify: 'test-verify', phoneId: '123' };
@@ -26,12 +27,13 @@ before(async () => {
   database = await connect();
 
   const app = express();
-  app.use('/webhooks/whatsapp', createWhatsApp(database, whatsapp));
+  const shopping = createShoppingList(database);
+  app.use('/webhooks/whatsapp', createWhatsApp(database, whatsapp, shopping));
   registerAppLinks(app, { SOTOVOR_ANDROID_FINGERPRINTS: Array(32).fill('AB').join(':') });
   app.use('/api/v1', versionedErrors);
   app.use(express.json({ limit: '8kb' }));
   const options = {
-    whatsappEnabled: true,
+    shopping, whatsappEnabled: true,
     verificationMail: async (email, token, purpose) => (purpose === 'password' ? passwordMessages : verificationMessages).set(email, token),
   };
   app.use('/api/v1', createApi(database, { ...options, versioned: true }));
@@ -88,11 +90,12 @@ async function dashboard(cookie, household) {
   return { response, data: await response.json() };
 }
 
-async function v1(path, { method = 'GET', body, access, household } = {}) {
+async function v1(path, { method = 'GET', body, access, household, cookie } = {}) {
   const response = await fetch(apiUrl + '/v1' + path, {
     method, headers: {
       ...(body === undefined ? {} : { 'content-type': 'application/json' }),
       ...(access ? { Authorization: 'Bearer ' + access } : {}),
+      ...(cookie ? { cookie } : {}),
       ...(household ? { 'x-sotovor-household': household } : {}),
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -207,6 +210,17 @@ test('device tokens are scoped, retired by FCM and reminders are deduplicated an
   assert.equal((await mobilePost('/devices', device, credentials)).body.id, registered.body.id);
   assert.equal((await mobilePost('/households', { householdName: 'Alerts', expectedMembers: 2 }, credentials)).status, 201);
   const dashboard = (await v1('/dashboard', { access: credentials })).body;
+  const family = await database.households.findOne({ inviteCode: dashboard.household.inviteCode });
+  const shoppingMessages = [];
+  const shoppingPush = pushDelivery(database, async message => shoppingMessages.push(message));
+  await shoppingPush.shopping(family);
+  assert.equal(shoppingMessages.length, 0);
+  await v1('/shopping/push', { method: 'PUT', body: { enabled: true }, access: credentials });
+  await shoppingPush.shopping(family, dashboard.memberId);
+  assert.equal(shoppingMessages.length, 0);
+  await shoppingPush.shopping(family);
+  assert.equal(shoppingMessages.length, 1);
+  assert.match(shoppingMessages[0].data.deepLink, /^sotovor:\/\/shopping\?/);
   const today = '2040-11-17';
   await mobilePost('/entries', { kind: 'task', title: 'Reminder', dueOn: today, assigneeId: dashboard.memberId, reminderDays: 0 }, credentials);
   const reminder = { today, now: new Date('2040-11-17T10:00:00Z') };
@@ -476,6 +490,17 @@ test('signed WhatsApp webhooks pair a sender and import each message once', asyn
   assert.equal(result.entries.length, 1);
   assert.equal(result.entries[0].title, 'Kosilo');
   assert.equal(result.entries[0].dueOn, '2027-02-10');
+  assert.equal(await send('shopping', 'nakup mleko'), 200);
+  assert.equal(await send('shopping', 'nakup mleko'), 200);
+  const headers = { cookie: owner };
+  const list = async () => (await fetch(apiUrl + '/shopping', { headers })).json();
+  const [milk] = await list();
+  assert.equal(milk.title, 'mleko');
+  assert.equal((await list()).length, 1);
+  assert.equal((await fetch(apiUrl + '/shopping/' + milk.id, { method: 'DELETE', headers })).status, 200);
+  assert.equal(await send('shopping', 'nakup mleko'), 200);
+  assert.deepEqual(await list(), []);
+
   assert.equal((await postJson('/whatsapp/unlink', {}, owner)).response.status, 200);
   assert.equal(await send('after-unlink', 'Opravilo'), 200);
   assert.equal((await dashboard(owner)).data.entries.length, 1);
@@ -520,4 +545,44 @@ test('accounts cannot switch households and only the owner can approve leaving o
   assert.equal((await dashboard(member)).data.leaveRequested, true);
   assert.equal((await postJson(memberPath + '/remove', {}, owner)).response.status, 200);
   assert.equal((await dashboard(member)).data.household, null);
+});
+
+test('shopping state is family scoped, preserves buyer attribution, and invalidates connected web clients', async () => {
+  const registered = await postJson('/households', { householdName: 'Nakupi', memberName: 'Owner' });
+  const owner = sessionCookie(registered.response);
+  const { householdId } = registered.data;
+  const { data: board } = await dashboard(owner, householdId);
+  const joined = await postJson('/households/join', { inviteCode: board.household.inviteCode, memberName: 'Buyer' });
+  assert.equal(joined.response.status, 201);
+  const buyerScope = { cookie: sessionCookie(joined.response), household: householdId };
+  const scope = { cookie: owner, household: householdId };
+  const other = sessionCookie((await postJson('/households', { householdName: 'Other', memberName: 'Other' })).response);
+  const stream = await fetch(apiUrl + '/v1/shopping/stream?household=' + householdId, {
+    headers: { cookie: owner }, signal: AbortSignal.timeout(5000),
+  });
+  assert.match(stream.headers.get('content-type'), /^text\/event-stream/);
+  const reader = stream.body.pipeThrough(new TextDecoderStream()).getReader();
+  try {
+    assert.match((await reader.read()).value, /event: refresh/);
+    assert.equal((await v1('/shopping', { ...scope, method: 'POST', body: { title: '   ' } })).status, 400);
+    const added = await v1('/shopping', { ...scope, method: 'POST', body: { title: 'Jabolka', quantity: ' 2 kg ' } });
+    assert.equal(added.status, 201);
+    assert.equal(added.body.quantity, '2 kg');
+    assert.match((await reader.read()).value, /event: refresh/);
+    const path = '/shopping/' + added.body.id;
+    const check = { method: 'PUT', body: { checked: true } };
+    assert.equal((await v1('/shopping', { cookie: other, household: householdId })).status, 403);
+    assert.equal((await v1(path, { ...buyerScope, ...check })).body.checkedByName, 'Buyer Test');
+    assert.equal((await v1(path, { ...scope, ...check })).body.checkedByName, 'Buyer Test');
+    const reset = await v1(path, { ...scope, method: 'PUT', body: { checked: false } });
+    assert.equal(reset.body.checkedByName, null);
+    assert.equal(reset.body.checkedAt, null);
+    assert.deepEqual((await v1('/shopping/push', buyerScope)).body, { enabled: false });
+    assert.deepEqual((await v1('/shopping/push', { ...buyerScope, method: 'PUT', body: { enabled: true } })).body, { enabled: true });
+    assert.deepEqual((await v1('/shopping/push', scope)).body, { enabled: false });
+    assert.equal((await v1(path, { ...scope, method: 'DELETE' })).status, 200);
+    assert.deepEqual((await v1('/shopping', buyerScope)).body, []);
+  } finally {
+    await reader.cancel();
+  }
 });

@@ -19,6 +19,7 @@ data class WorkspaceState(
     val tasks: List<Entry> = emptyList(), val taskCursor: String? = null, val filters: TaskFilters = TaskFilters(),
     val notifications: List<Notice> = emptyList(), val noticeCursor: String? = null, val devices: List<DeviceSession>? = null,
     val editor: EntryEditor? = null, val conflict: Boolean = false, val export: String? = null,
+    val shopping: List<ShoppingItem>? = null, val shoppingPush: Boolean? = null,
     val plan: PlanPreview? = null, val notificationSettings: NotificationSettings? = null
 )
 
@@ -71,6 +72,43 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
     fun signOut() = update {
         repository.logout()
         mutable.update { it.copy(workspace = null) }
+    }
+
+    fun shopping() = update {
+        val id = household() ?: return@update
+        loadShopping(id)
+        val push = repository.shoppingPush(id)
+        mutable.update { it.copy(shoppingPush = push.enabled) }
+    }
+
+    private suspend fun loadShopping(id: String) {
+        val items = repository.shopping(id)
+        mutable.update { it.copy(shopping = items) }
+    }
+
+    fun addShopping(input: ShoppingInput, added: () -> Unit) = update {
+        val id = household() ?: return@update
+        repository.addShopping(id, input)
+        added()
+        loadShopping(id)
+    }
+
+    fun checkShopping(item: ShoppingItem, checked: Boolean) = update {
+        val id = household() ?: return@update
+        repository.checkShopping(id, item.id, checked)
+        loadShopping(id)
+    }
+
+    fun removeShopping(item: ShoppingItem) = update {
+        val id = household() ?: return@update
+        repository.removeShopping(id, item.id)
+        loadShopping(id)
+    }
+
+    fun saveShoppingPush(enabled: Boolean) = update {
+        val id = household() ?: return@update
+        val value = repository.saveShoppingPush(id, enabled)
+        mutable.update { it.copy(shoppingPush = value.enabled) }
     }
 
     fun tasks(filters: TaskFilters, more: Boolean = false) = update {
@@ -254,7 +292,7 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
         mutable.update {
             if (it.workspace?.household?.id == workspace?.household?.id) it.copy(workspace = workspace)
             else it.copy(workspace = workspace, tasks = emptyList(), taskCursor = null, notifications = emptyList(),
-                noticeCursor = null, filters = TaskFilters(), editor = null, plan = null)
+                noticeCursor = null, filters = TaskFilters(), editor = null, plan = null, shopping = null, shoppingPush = null)
         }
     }
 

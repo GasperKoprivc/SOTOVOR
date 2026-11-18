@@ -1,15 +1,28 @@
+import { hash } from './mobile-auth.js';
 import { readFile } from 'node:fs/promises';
 
 const titles = {
+  shopping: 'Nakupovalni seznam je posodobljen',
   assignment: 'Novo opravilo', deadline: 'Bliža se rok', overdue: 'Rok je potekel', swap: 'Išče se zamenjava', member_joined: 'Nov družinski član',
 };
 const englishTitles = {
+  shopping: 'Shopping list updated',
   assignment: 'New assignment', deadline: 'Deadline approaching', overdue: 'Task overdue', swap: 'Swap requested', member_joined: 'New family member',
 };
 const unregistered = new Set(['messaging/registration-token-not-registered', 'messaging/invalid-registration-token']);
 
-export function pushDelivery({ devices, mobileSessions }, send, onError = () => console.error('Push delivery failed.')) {
-  return {
+export function pushDelivery({ accounts, devices, mobileSessions }, send, onError = () => console.error('Push delivery failed.')) {
+  const delivery = {
+    async shopping(household, actor) {
+      if (!send) return;
+      const ids = household.members.filter(member => !member.inactive && member.id !== actor)
+        .map(member => member.accountId ?? member.guestAccountId).filter(Boolean);
+      const people = accounts.find({ _id: { $in: ids }, shoppingPush: true, deletionFamilyIds: { $exists: false } },
+        { projection: { passwordHash: 1 } });
+      for await (const person of people) await delivery.send(person._id, hash(person.passwordHash), {
+        type: 'shopping', target: { screen: 'shopping', householdId: String(household._id) },
+      });
+    },
     async send(accountId, credential, { type, target }) {
       if (!send) return;
       const now = new Date();
@@ -23,7 +36,7 @@ export function pushDelivery({ devices, mobileSessions }, send, onError = () => 
             token: device.token,
             notification: { title: 'Sotovor', body: labels[type] },
             data: { type, deepLink: 'sotovor://' + target.screen + '?' + path },
-            android: { notification: { channelId: type === 'swap' ? 'swaps' : ['deadline', 'overdue'].includes(type) ? 'reminders' : 'assignments' } },
+            android: { notification: { channelId: type === 'shopping' ? 'shopping' : type === 'swap' ? 'swaps' : ['deadline', 'overdue'].includes(type) ? 'reminders' : 'assignments' } },
           });
         } catch (error) {
           if (unregistered.has(error.code)) await devices.deleteOne({ _id: device._id, token: device.token, updatedAt: device.updatedAt });
@@ -32,6 +45,7 @@ export function pushDelivery({ devices, mobileSessions }, send, onError = () => 
       }
     },
   };
+  return delivery;
 }
 
 export async function configurePush(database, env = process.env) {

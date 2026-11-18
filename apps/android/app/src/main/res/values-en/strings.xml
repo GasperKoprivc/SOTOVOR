@@ -152,4 +152,14 @@
     <string name="microphone_denied">Microphone permission was declined.</string>
     <string name="play_voice">Play voice note</string>
     <string name="stop_playback">Stop playback</string>
+    <string name="shopping_tab">Shopping</string>
+    <string name="shopping_title">Shared shopping list</string>
+    <string name="shopping_item">Item</string>
+    <string name="shopping_quantity">Quantity (optional)</string>
+    <string name="shopping_add">Add item</string>
+    <string name="shopping_empty">The shopping list is empty.</string>
+    <string name="shopping_push">Shopping push notifications</string>
+    <string name="shopping_bought_by">Bought by %1$s</string>
+    <string name="shopping_remove_item">Remove %1$s</string>
+    <string name="shopping_remove">Remove</string>
 </resources>

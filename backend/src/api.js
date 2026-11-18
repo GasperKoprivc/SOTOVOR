@@ -6,6 +6,7 @@ import { pageOf } from './paging.js';
 import { registerNotificationRoutes } from './notifications.js';
 import { registerPasswordReset } from './password-reset.js';
 import { registerAccountData } from './account-data.js';
+import { createShoppingList } from './shopping.js';
 import { taskFilters } from './task-filters.js';
 import { Router } from 'express';
 import { Binary, ObjectId } from 'mongodb';
@@ -60,7 +61,7 @@ async function parseVoice(voice, versioned) {
 }
 
 export function createApi(database, {
-  versioned = false, mobileOptions = {}, whatsappEnabled = false, verificationMail, reportMailFailure = () => console.error('Verification email delivery failed.'),
+  shopping = createShoppingList(database), versioned = false, mobileOptions = {}, whatsappEnabled = false, verificationMail, reportMailFailure = () => console.error('Verification email delivery failed.'),
 } = {}) {
   const { households, entries, accounts, sessions, desktopLinks } = database;
   const router = Router();
@@ -300,6 +301,8 @@ export function createApi(database, {
     if (!req.member) throw new HttpError(401, 'Najprej se pridruži družinskemu prostoru.');
     next();
   });
+
+  shopping.register(router);
 
   function requireAdmin(req) {
     if (!isAdmin(req.household, req.member)) throw new HttpError(403, 'To lahko opravi samo skrbnik prostora.');
