@@ -1,0 +1,27 @@
+# Feature parity
+
+| Feature | Backend / OpenAPI | Web and Tauri | Android |
+| --- | --- | --- | --- |
+| Shared shopping list | Family API and WhatsApp quick add | Add, check, uncheck, remove, live updates | Add, check, uncheck, remove, optional FCM alerts |
+| Event time and duration | Planned | Planned | Planned |
+| Private calendar subscription | Planned | Planned | Planned |
+| Task checklists and comments | Planned | Planned | Planned |
+| Task duration and planner weighting | Planned | Planned | Planned |
+| Points and rewards | Planned | Planned | Planned |
+| Weekly and monthly recurrence | Planned | Planned | Planned |
+| Today widget | Planned | Planned | Planned |
+| Voice transcription | Planned | Planned | Planned |
+| English and dark mode | Planned | Planned | Planned |
+
+## Shared shopping list
+
+Open **Nakupi** in the family space. Add an item and an optional quantity such as
+`2 kg`. Checking an item records the member who bought it. Any member can put it
+back on the active list or remove it. Web clients connected to the same app
+instance update immediately through SSE.
+
+After pairing the family through the existing WhatsApp integration, send
+`nakup mleko` to add milk to the shopping list. The webhook ignores duplicate
+deliveries. With Firebase configured, Android members can individually enable
+shopping notifications in the shopping screen and grant OS notification access.
+Alerts point to the family list and omit item names.

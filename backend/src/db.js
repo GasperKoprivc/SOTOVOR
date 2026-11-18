@@ -8,6 +8,7 @@ export async function connect() {
   try {
     const db = client.db(process.env.SOTOVOR_DB || 'sotovor');
     const households = db.collection('households');
+    const shoppingItems = db.collection('shoppingItems');
     const entries = db.collection('entries');
     const accounts = db.collection('accounts');
     const sessions = db.collection('sessions');
@@ -36,6 +37,8 @@ export async function connect() {
       notifications.createIndex({ key: 1 }, { unique: true }),
       notifications.createIndex({ accountId: 1, householdId: 1, _id: -1 }),
       households.createIndex({ whatsappSender: 1 }, { unique: true, sparse: true }),
+      shoppingItems.createIndex({ whatsappMessageId: 1 }, { unique: true, sparse: true }),
+      shoppingItems.createIndex({ householdId: 1, deletedAt: 1, checkedAt: 1, _id: -1 }),
       entries.createIndex({ whatsappMessageId: 1 }, { unique: true, sparse: true }),
       entries.createIndex({ householdId: 1, dueOn: 1 }),
       entries.createIndex({ householdId: 1, kind: 1, archivedAt: 1, _id: -1 }),
@@ -45,7 +48,7 @@ export async function connect() {
         partialFilterExpression: { nextOccurrence: { $exists: true } },
       }),
     ]);
-    return { client, households, entries, accounts, sessions, desktopLinks, mobileSessions, devices, notifications };
+    return { client, households, shoppingItems, entries, accounts, sessions, desktopLinks, mobileSessions, devices, notifications };
   } catch (error) {
     await client.close();
     throw error;

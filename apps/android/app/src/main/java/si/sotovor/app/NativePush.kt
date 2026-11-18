@@ -42,7 +42,8 @@ class NativePush @Inject constructor(
         manager.createNotificationChannels(listOf(
             channel("assignments", R.string.push_assignments),
             channel("reminders", R.string.push_reminders),
-            channel("swaps", R.string.push_swaps)
+            channel("swaps", R.string.push_swaps),
+            channel("shopping", R.string.shopping_title)
         ))
         scope.launch {
             store.sessions.map { it?.sessionId }.distinctUntilChanged().collect { if (it != null) requestToken() }
@@ -91,6 +92,7 @@ class SotovorMessaging : FirebaseMessagingService() {
         val channel = when (message.data["type"]) {
             "deadline", "overdue" -> "reminders"
             "swap" -> "swaps"
+            "shopping" -> "shopping"
             else -> "assignments"
         }
         val notification = NotificationCompat.Builder(this, channel)

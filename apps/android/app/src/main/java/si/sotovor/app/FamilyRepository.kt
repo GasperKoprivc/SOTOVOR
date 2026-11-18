@@ -54,6 +54,12 @@ class FamilyRepository @Inject constructor(
     suspend fun create(name: String, members: Int) = switch(api.createFamily(NewFamily(name, members)).householdId)
     suspend fun join(invite: String) = switch(api.joinFamily(Invitation(invite.trim())).householdId)
     suspend fun resend() = api.resend()
+    suspend fun shopping(id: String) = api.shopping(id)
+    suspend fun shoppingPush(id: String) = api.shoppingPush(id)
+    suspend fun addShopping(id: String, input: ShoppingInput) = api.addShopping(id, input)
+    suspend fun checkShopping(id: String, item: String, checked: Boolean) = api.checkShopping(id, item, ShoppingCheck(checked))
+    suspend fun removeShopping(id: String, item: String) = api.removeShopping(id, item)
+    suspend fun saveShoppingPush(id: String, enabled: Boolean) = api.saveShoppingPush(id, ShoppingPush(enabled))
     suspend fun tasks(household: String, filters: TaskFilters, cursor: String?) =
         api.tasks(household, filters.state, filters.search.trim().takeIf { it.isNotEmpty() }, filters.category, filters.assignee, cursor)
 

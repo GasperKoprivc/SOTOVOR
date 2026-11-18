@@ -11,6 +11,9 @@ export const codeHash = code => createHash('sha256').update(code).digest('hex');
 
 function parseText(body) {
   if (!body || body.length > 200) return;
+  const purchase = /^nakup\s+(.+)$/iu.exec(body);
+  if (purchase) return purchase[1].length <= 120 ? { kind: 'shopping', title: purchase[1] } : undefined;
+  if (/^nakup$/iu.test(body)) return;
   const event = /^dogodek\s+(\d{4}-\d{2}-\d{2})\s+(.+)$/iu.exec(body);
   if (event) {
     const [, dueOn, title] = event;
@@ -25,7 +28,7 @@ function parseText(body) {
   if (title.length <= 160) return { kind: 'task', title, dueOn: null };
 }
 
-export function createWhatsApp({ households, entries }, { secret, verify, phoneId }) {
+export function createWhatsApp({ households, entries }, { secret, verify, phoneId }, shopping) {
   const router = Router();
   router.get('/', (req, res) => {
     const challenge = req.query['hub.challenge'];
@@ -63,8 +66,12 @@ export function createWhatsApp({ households, entries }, { secret, verify, phoneI
           }
           const input = parseText(body);
           if (!input) continue;
-          const household = await households.findOne({ whatsappSender: message.from }, { projection: { _id: 1 } });
+          const household = await households.findOne({ whatsappSender: message.from });
           if (!household) continue;
+          if (input.kind === 'shopping') {
+            await shopping?.add(household, { title: input.title, whatsappMessageId: message.id });
+            continue;
+          }
           await entries.updateOne({ whatsappMessageId: message.id }, { $setOnInsert: {
             ...input, householdId: household._id, category: 'drugo', assigneeId: null,
             completedAt: null, createdAt: new Date(),

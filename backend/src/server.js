@@ -11,12 +11,15 @@ import { configurePush } from './push.js';
 import { scheduleNotifications } from './notifications.js';
 import { registerReleases, releaseConfiguration } from './releases.js';
 
+import { createShoppingList } from './shopping.js';
+
 const host = process.env.SOTOVOR_HOST || '127.0.0.1';
 const port = Number(process.env.SOTOVOR_PORT || 3000);
 const dist = fileURLToPath(new URL('../../frontend/dist/', import.meta.url));
 const verificationMail = smtpVerification();
 const database = await connect();
 const push = await configurePush(database);
+const shopping = createShoppingList(database, push.shopping);
 const app = express();
 app.disable('x-powered-by');
 if (process.env.SOTOVOR_TRUST_PROXY === '1') app.set('trust proxy', 1);
@@ -40,7 +43,7 @@ app.get('/readyz', async (_req, res) => {
   }
 });
 app.get(['/api/health', '/api/v1/health'], (_req, res) => res.json({ service: 'sotovor', desktopAuth: true, desktopCookie: true }));
-if (whatsapp) app.use('/webhooks/whatsapp', createWhatsApp(database, whatsapp));
+if (whatsapp) app.use('/webhooks/whatsapp', createWhatsApp(database, whatsapp, shopping));
 if (process.env.SOTOVOR_REQUIRE_SMTP === '1') {
   app.post(['/api/auth/register', '/api/v1/auth/register'], rateLimit({
     windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-8', legacyHeaders: false,
@@ -48,7 +51,7 @@ if (process.env.SOTOVOR_REQUIRE_SMTP === '1') {
   }));
 }
 app.post(['/api/entries', '/api/v1/entries'], express.json({ limit: '3mb' }));
-const apiOptions = { whatsappEnabled: Boolean(whatsapp), verificationMail };
+const apiOptions = { shopping, whatsappEnabled: Boolean(whatsapp), verificationMail };
 const json = express.json({ limit: '8kb' });
 app.use('/api/v1', json, createApi(database, { ...apiOptions, versioned: true, mobileOptions: {
   accessSeconds: Number(process.env.SOTOVOR_MOBILE_ACCESS_SECONDS ?? 600),

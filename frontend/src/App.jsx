@@ -3,7 +3,7 @@ import LanguageSelect from './LanguageSelect.jsx';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
   CalendarDays, Check, Clipboard, House, LayoutGrid,
-  ListTodo, LogOut, Plus, UserRound, UserRoundPlus, UsersRound, X,
+  ListTodo, LogOut, Plus, ShoppingBasket, UserRound, UserRoundPlus, UsersRound, X,
 } from 'lucide-react';
 import { Avatar, Calendar, Metrics, Tasks, Workload } from './Overview.jsx';
 import Notifications from './Notifications.jsx';
@@ -14,6 +14,7 @@ import './landing.css';
 import FamilySettings from './FamilySettings.jsx';
 import { EmailVerificationReminder } from './EmailVerification.jsx';
 import MonthCalendar from './MonthCalendar.jsx';
+import ShoppingList from './ShoppingList.jsx';
 import SmartPlanning from './SmartPlanning.jsx';
 import { DesktopApproval, DesktopSignIn, desktopBridge, desktopLink } from './DesktopAccess.jsx';
 import { categories, dateKey, fullDate, request, selectHousehold } from './data.js';
@@ -22,6 +23,7 @@ const pages = {
   overview: ['Pregled', LayoutGrid],
   tasks: ['Opravila', ListTodo],
   calendar: ['Koledar', CalendarDays],
+  shopping: ['Nakupi', ShoppingBasket],
   workload: ['Razporeditev', UsersRound],
   profile: ['Profil', UserRound],
 };
@@ -333,7 +335,7 @@ export default function App() {
             <h1>{overview ? t("Živjo, %0!", member.name) : t(pages[page][0])}</h1>
             {overview && <p>{t('Tukaj je pregled vaših družinskih opravil in dogovorov.')}</p>}
           </div>
-          {page !== 'profile' && permissions.create && <button className="primary" onClick={() => open(page === 'calendar' ? 'event' : 'task')}><Plus size={20} />{' '}{t('Dodaj vnos')}</button>}
+          {!['profile', 'shopping'].includes(page) && permissions.create && <button className="primary" onClick={() => open(page === 'calendar' ? 'event' : 'task')}><Plus size={20} />{' '}{t('Dodaj vnos')}</button>}
         </div>
         {error && !modal && <p className="error banner" role="alert">{errorText(error)}</p>}
         {notice && <p className="notice banner" role="status">{Array.isArray(notice) ? t(...notice) : t(notice)}</p>}
@@ -345,6 +347,7 @@ export default function App() {
           </div></div>
         </>}
         {page === 'tasks' && taskPanel}
+        {page === 'shopping' && <ShoppingList key={household.id} householdId={household.id} />}
         {page === 'calendar' && <>
           <div className="calendar-view" aria-label={t('Pogled koledarja')}>
             <button className="soft-button" aria-pressed={calendarView === 'month'} onClick={() => setCalendarView('month')}>{t('Mesec')}</button>
