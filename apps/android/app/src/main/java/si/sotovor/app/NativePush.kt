@@ -23,7 +23,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -63,7 +62,7 @@ class NativePush @Inject constructor(
         if (!available || !permissionGranted(context)) return
         scope.launch {
             if (store.current() != null) runCatching {
-                api.pushDevice(PushDevice(token, "android", BuildConfig.VERSION_NAME, Locale.getDefault().toLanguageTag(), widgetRefresh = true))
+                api.pushDevice(PushDevice(token, "android", BuildConfig.VERSION_NAME, androidLocale(readAppearance(context).language).toLanguageTag(), widgetRefresh = true))
             }
         }
     }

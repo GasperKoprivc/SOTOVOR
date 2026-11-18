@@ -4,7 +4,7 @@ export const languages = { en: 'English', sl: 'Slovenščina', de: 'Deutsch' };
 const locales = { en: 'en-GB', sl: 'sl-SI', de: 'de-DE' };
 const storageKey = 'sotovor-language';
 const listeners = new Set();
-let language = 'en';
+let language = 'sl';
 
 try {
   const saved = localStorage.getItem(storageKey);

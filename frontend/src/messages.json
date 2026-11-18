@@ -1,4 +1,8 @@
 {
+  "Videz": {"en": "Appearance", "de": "Darstellung"},
+  "Temni način": {"en": "Dark mode", "de": "Dunkelmodus"},
+  "Svetli način": {"en": "Light mode", "de": "Heller Modus"},
+  "Sistemski videz": {"en": "System appearance", "de": "Systemdarstellung"},
   "Glas v besedilo": {"en": "Voice to text", "de": "Sprache zu Text"},
   "Če nadaljuješ, bo posnetek poslan nastavljenemu ponudniku za prepis.": {"en": "Continuing sends the recording to the configured transcription provider.", "de": "Wenn du fortfährst, wird die Aufnahme an den konfigurierten Transkriptionsdienst gesendet."},
   "Prepisovanje …": {"en": "Transcribing …", "de": "Wird transkribiert …"},

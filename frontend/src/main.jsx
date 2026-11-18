@@ -6,6 +6,7 @@ import PasswordReset from './PasswordReset.jsx';
 import Downloads from './Downloads.jsx';
 import { getLanguage, subscribe, t } from './i18n.js';
 import './styles.css';
+import './themes.css';
 
 function updateDocumentLanguage() {
   if (location.pathname.replace(/\/$/, '') === '/prenesi') {

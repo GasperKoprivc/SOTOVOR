@@ -10,9 +10,10 @@ export function Brand() {
   return <span className="brand"><BrandMark className="brand-icon" />Sotovor<span className="brand-dot">.</span></span>;
 }
 
-export function ChooseHousehold({ profile, busy, error, onSubmit, onLogout, inviteCode, startJoining, verification }) {
+export function ChooseHousehold({ profile, busy, error, onSubmit, onLogout, inviteCode, startJoining, verification, appearanceControls }) {
   const [joining, setJoining] = useState(Boolean(startJoining));
   return <main className="profile-shell">
+    {appearanceControls}
     <Brand />
     <LanguageSelect />
     <section className="panel account-card">

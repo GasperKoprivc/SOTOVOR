@@ -45,7 +45,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
 @Composable
-fun SotovorNav(model: WorkspaceViewModel, push: NativePush) {
+fun SotovorNav(model: WorkspaceViewModel, push: NativePush, appearance: Appearance = Appearance(), changeAppearance: (Appearance) -> Unit = {}) {
     val state by model.state.collectAsStateWithLifecycle()
     val upgrade by model.updateLevel.collectAsStateWithLifecycle()
     val nav = rememberNavController()
@@ -73,6 +73,7 @@ fun SotovorNav(model: WorkspaceViewModel, push: NativePush) {
                 Status(state)
                 Button(enabled = !state.busy, onClick = { model.clearNotice(); nav.navigate("login") }) { Text(stringResource(R.string.sign_in)) }
                 OutlinedButton(enabled = !state.busy, onClick = { model.clearNotice(); nav.navigate("register") }) { Text(stringResource(R.string.register)) }
+                AppearanceControls(appearance, change = changeAppearance)
                 if (state.problemResource != null) TextButton(onClick = model::reload) { Text(stringResource(R.string.retry)) }
             }
         }
@@ -80,8 +81,8 @@ fun SotovorNav(model: WorkspaceViewModel, push: NativePush) {
         composable("register") { AuthForm(true, state, model, { model.clearNotice(); nav.popBackStack() }) }
         composable("workspace") {
             state.workspace?.let {
-                if (it.household == null) ProfilePage(it, state, model)
-                else CoreWorkspace(it, state, model, push)
+                if (it.household == null) ProfilePage(it, state, model, appearance)
+                else CoreWorkspace(it, state, model, push, appearance)
             }
         }
         }

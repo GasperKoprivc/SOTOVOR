@@ -77,6 +77,13 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
         mutable.update { it.copy(workspace = null) }
     }
 
+    fun appearance(value: Appearance) = update {
+        val saved = repository.saveAppearance(value)
+        mutable.update { state ->
+            state.copy(workspace = state.workspace?.let { it.copy(profile = it.profile.copy(appearance = saved)) })
+        }
+    }
+
     fun rewards() = update {
         val id = household() ?: return@update
         val rewards = repository.rewards(id)

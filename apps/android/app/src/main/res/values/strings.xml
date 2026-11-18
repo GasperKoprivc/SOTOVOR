@@ -206,4 +206,9 @@
     <string name="transcription_submit">Prepiši posnetek</string>
     <string name="transcription_empty">V posnetku ni bilo prepoznanega besedila.</string>
     <string name="transcription_failed">Prepis trenutno ni na voljo.</string>
+    <string name="appearance_language">Jezik</string>
+    <string name="appearance_theme">Videz</string>
+    <string name="appearance_dark">Temni način</string>
+    <string name="appearance_light">Svetli način</string>
+    <string name="appearance_system">Sistemski videz</string>
 </resources>

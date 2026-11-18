@@ -1,4 +1,6 @@
-import { t, errorText, getLanguage, subscribe } from './i18n.js';
+import { t, errorText, getLanguage, setLanguage, subscribe } from './i18n.js';
+import ThemeSelect from './ThemeSelect.jsx';
+import { getTheme, setTheme } from './theme.js';
 import LanguageSelect from './LanguageSelect.jsx';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
@@ -214,6 +216,28 @@ export default function App() {
   const [calendarView, setCalendarView] = useState('month');
   const [entryDate, setEntryDate] = useState('');
   const [today, setToday] = useState(() => dateKey(new Date()));
+  const appearance = data?.profile?.appearance;
+  useEffect(() => {
+    if (appearance?.language) setLanguage(appearance.language);
+    if (appearance?.theme) setTheme(appearance.theme);
+  }, [appearance?.language, appearance?.theme]);
+
+  function updateAppearance(fields) {
+    const next = { language: getLanguage(), theme: getTheme(), ...fields };
+    if (!data?.profile) {
+      setLanguage(next.language);
+      setTheme(next.theme);
+      return;
+    }
+    void run(async () => {
+      const saved = await request('/me/appearance', next, undefined, null, 'PUT');
+      setLanguage(saved.language);
+      setTheme(saved.theme);
+      setData(current => ({ ...current, profile: { ...current.profile, appearance: saved } }));
+    });
+  }
+  const onLanguage = language => updateAppearance({ language });
+  const onTheme = theme => updateAppearance({ theme });
   const pending = useRef(false);
   const revision = useRef(0);
 
@@ -312,7 +336,7 @@ export default function App() {
 
   if (data === undefined) return <main className="loading">
     <Brand />
-    <LanguageSelect />
+    <LanguageSelect onChange={onLanguage} /><ThemeSelect onChange={onTheme} />
     {error ? <><p role="alert">{errorText(error)}</p><button className="primary" onClick={() => location.reload()}>{t('Poskusi znova')}</button></> : <p role="status">{t('Odpiram družinski prostor …')}</p>}
   </main>;
   function logout() {
@@ -335,11 +359,11 @@ export default function App() {
   if (desktopLink && !desktopBridge) return <DesktopApproval profile={data?.profile} {...{ legacy, busy, error, onAuth }} onLogout={logout} />;
   if (desktopBridge && !data?.profile) return <DesktopSignIn />;
   if (!inApp || !data?.profile) return <Landing signedIn={Boolean(data?.profile)} {...{ legacy, busy, error, onAuth }}
-    startWithInvite={Boolean(inviteCode)} onEnter={followShortcut} onJoin={() => open('join')} />;
+    onLanguage={onLanguage} onTheme={onTheme} startWithInvite={Boolean(inviteCode)} onEnter={followShortcut} onJoin={() => open('join')} />;
 
   if (!data.household) return <ChooseHousehold profile={data.profile} {...{ busy, error, inviteCode }}
     verification={data.profile.emailVerificationPending && <EmailVerificationReminder />}
-    startJoining={modal === 'join'} onLogout={logout} onSubmit={(joining, fields) => run(() => joinOrCreate(joining, fields))} />;
+    appearanceControls={<div className="top-actions appearance-controls"><LanguageSelect onChange={onLanguage} /><ThemeSelect onChange={onTheme} /></div>} startJoining={modal === 'join'} onLogout={logout} onSubmit={(joining, fields) => run(() => joinOrCreate(joining, fields))} />;
 
   const { household, memberId, members, entries, permissions } = data;
   const member = members.find(member => member.id === memberId);
@@ -367,7 +391,7 @@ export default function App() {
     <main className="main">
       <header className="topbar"><span><House size={16} />{household.name}</span>
         <div className="top-actions">
-          <LanguageSelect />
+          <LanguageSelect onChange={onLanguage} /><ThemeSelect onChange={onTheme} />
           <Notifications key={memberId} tasks={tasks} householdId={household.id}
             onView={(next, task) => {
               if (next === 'family') go('profile');

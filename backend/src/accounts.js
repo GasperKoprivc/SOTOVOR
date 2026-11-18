@@ -15,6 +15,6 @@ export async function verifyPassword(password, stored) {
   return timingSafeEqual(Buffer.from(await passwordHash(password, salt)), Buffer.from(stored));
 }
 
-export function publicProfile({ firstName, lastName, email, phone }) {
-  return { firstName, lastName, email, phone };
+export function publicProfile({ firstName, lastName, email, phone, appearance }) {
+  return { firstName, lastName, email, phone, ...(appearance ? { appearance } : {}) };
 }

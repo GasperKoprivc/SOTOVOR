@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-fun ProfilePage(workspace: Workspace, state: WorkspaceState, model: WorkspaceViewModel) {
+fun ProfilePage(workspace: Workspace, state: WorkspaceState, model: WorkspaceViewModel, appearance: Appearance = Appearance()) {
     var deleting by remember { mutableStateOf(false) }
     var revoke by remember { mutableStateOf<DeviceSession?>(null) }
     var saveFailed by remember { mutableStateOf(false) }
@@ -46,6 +46,7 @@ fun ProfilePage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVie
         Text("${workspace.profile.firstName} ${workspace.profile.lastName}")
         Text(workspace.profile.email)
         Text(workspace.profile.phone)
+        AppearanceControls(appearance, !state.busy, model::appearance)
         FamilyControls(workspace, state, model)
         if (workspace.admin) AdminControls(workspace, state, model)
         TextButton(onClick = model::devices, enabled = !state.busy) { Text(stringResource(R.string.devices)) }

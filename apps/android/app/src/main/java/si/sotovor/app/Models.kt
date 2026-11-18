@@ -18,7 +18,7 @@ data class Credentials(
 @Serializable data class NewFamily(val householdName: String, val expectedMembers: Int)
 @Serializable data class Invitation(val inviteCode: String)
 @Serializable data class HouseId(val householdId: String)
-@Serializable data class Profile(val firstName: String, val lastName: String, val email: String, val phone: String, val emailVerificationPending: Boolean = false)
+@Serializable data class Profile(val firstName: String, val lastName: String, val email: String, val phone: String, val emailVerificationPending: Boolean = false, val appearance: Appearance? = null)
 @Serializable data class Space(val id: String, val name: String, val admin: Boolean = false, val inviteCode: String? = null)
 @Serializable data class Permissions(val create: Boolean = false, val edit: Boolean = false, val move: Boolean = false, val remove: Boolean = false)
 @Serializable data class Member(
