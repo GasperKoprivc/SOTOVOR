@@ -112,7 +112,10 @@ class FamilyFlowTest {
                 ActivityCompat.requestPermissions(compose.activity, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 78)
             }
             val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-            val deny = device.wait(Until.findObject(By.res("com.android.permissioncontroller", "permission_deny_button")), 5_000)
+            val deny = device.wait(
+                Until.findObject(By.res(Regex(".*:id/permission_deny_button").toPattern())),
+                15_000
+            )
             checkNotNull(deny) { "Android notification permission prompt did not appear" }.click()
             assertEquals(
                 PackageManager.PERMISSION_DENIED,
