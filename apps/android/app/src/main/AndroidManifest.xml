@@ -36,8 +36,10 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="sotovor" android:host="task" />
-                <data android:scheme="sotovor" android:host="family" />
+                <data android:scheme="sotovor" />
+                <data android:host="task" />
+                <data android:host="family" />
+                <data android:host="shopping" />
             </intent-filter>
         </activity>
     </application>

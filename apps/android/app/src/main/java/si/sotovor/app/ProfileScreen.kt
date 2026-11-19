@@ -3,9 +3,7 @@ package si.sotovor.app
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,11 +29,13 @@ fun ProfilePage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVie
     val scope = rememberCoroutineScope()
     val export = state.export
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { document ->
-        if (document != null && export != null) scope.launch {
-            saveFailed = !withContext(Dispatchers.IO) {
-                runCatching {
-                    checkNotNull(context.contentResolver.openOutputStream(document)).use { it.write(export.encodeToByteArray()) }
-                }.isSuccess
+        if (document != null && export != null) {
+            scope.launch {
+                saveFailed = !withContext(Dispatchers.IO) {
+                    runCatching {
+                        checkNotNull(context.contentResolver.openOutputStream(document)).use { it.write(export.encodeToByteArray()) }
+                    }.isSuccess
+                }
             }
         }
         model.consumeExport()
@@ -56,15 +56,24 @@ fun ProfilePage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVie
         }
         TextButton(onClick = model::export, enabled = !state.busy) { Text(stringResource(R.string.export_data)) }
         if (saveFailed) Text(stringResource(R.string.error_generic))
-        TextButton(onClick = { deleting = true; model.clearNotice() }, enabled = !state.busy) {
+        TextButton(onClick = {
+            deleting = true
+            model.clearNotice()
+        }, enabled = !state.busy) {
             Text(stringResource(R.string.delete_account))
         }
     }
     revoke?.let { device ->
         AlertDialog(
-            onDismissRequest = { revoke = null }, title = { Text(stringResource(R.string.revoke_device)) },
+            onDismissRequest = { revoke = null },
+            title = { Text(stringResource(R.string.revoke_device)) },
             text = { Text(device.deviceName) },
-            confirmButton = { TextButton(onClick = { revoke = null; model.revoke(device) }) { Text(stringResource(R.string.revoke_device)) } },
+            confirmButton = {
+                TextButton(onClick = {
+                    revoke = null
+                    model.revoke(device)
+                }) { Text(stringResource(R.string.revoke_device)) }
+            },
             dismissButton = { TextButton(onClick = { revoke = null }) { Text(stringResource(R.string.cancel)) } }
         )
     }
@@ -81,17 +90,18 @@ private fun DeleteAccountDialog(owned: Boolean, state: WorkspaceState, model: Wo
         text = {
             Column {
                 Text(stringResource(R.string.delete_account_message))
-                if (owned) Row {
-                    Checkbox(confirmed, { confirmed = it })
-                    Text(stringResource(R.string.delete_owned_spaces))
+                if (owned) {
+                    ToggleRow(R.string.delete_owned_spaces, confirmed, !state.busy) { confirmed = it }
                 }
                 Field(R.string.password, password, { password = it }, KeyboardType.Password)
                 Status(state)
             }
         },
         confirmButton = {
-            TextButton(onClick = { model.deleteAccount(DeleteAccount(password, confirmed)) },
-                enabled = !state.busy && password.isNotBlank() && (!owned || confirmed)) {
+            TextButton(
+                onClick = { model.deleteAccount(DeleteAccount(password, confirmed)) },
+                enabled = !state.busy && password.isNotBlank() && (!owned || confirmed)
+            ) {
                 Text(stringResource(R.string.delete_account))
             }
         },

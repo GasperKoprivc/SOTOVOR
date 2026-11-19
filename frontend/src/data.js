@@ -8,7 +8,13 @@ export const categories = {
   drugo: 'Drugo',
 };
 
-export const familyRoles = { father: 'Oče', mother: 'Mati', guardian: 'Skrbnik otroka', child: 'Otrok', other: 'Drugo' };
+export const familyRoles = {
+  father: 'Oče',
+  mother: 'Mati',
+  guardian: 'Skrbnik otroka',
+  child: 'Otrok',
+  other: 'Drugo',
+};
 export const availabilityStates = { available: 'Na voljo', sick: 'Bolan/a', unavailable: 'Odsoten/na' };
 
 export const shortDate = localizedDate({ day: 'numeric', month: 'short' });
@@ -16,7 +22,7 @@ export const fullDate = localizedDate({ day: 'numeric', month: 'long', weekday: 
 export const weekday = localizedDate({ weekday: 'short' });
 
 export function dateKey(date) {
-  const pad = value => String(value).padStart(2, '0');
+  const pad = (value) => String(value).padStart(2, '0');
   return `${String(date.getFullYear()).padStart(4, '0')}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
@@ -26,10 +32,19 @@ export function addDays(date, days) {
   return result;
 }
 
-export const fromKey = key => new Date(key + 'T12:00:00');
-export const needsReminder = (task, today) => !task.completedAt && Boolean(task.dueOn) &&
+export const fromKey = (key) => new Date(key + 'T12:00:00');
+export const needsReminder = (task, today) =>
+  !task.completedAt &&
+  Boolean(task.dueOn) &&
   task.dueOn <= dateKey(addDays(fromKey(today), task.reminderDays ?? 2));
-export const initials = name => name.trim().split(/\s+/).slice(0, 2).map(word => Array.from(word)[0]).join('').toUpperCase();
+export const initials = (name) =>
+  name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((word) => Array.from(word)[0])
+    .join('')
+    .toUpperCase();
 
 let activeHousehold;
 
@@ -41,15 +56,25 @@ export function voiceUrl(id) {
   return `/api/entries/${id}/voice${activeHousehold ? '?household=' + activeHousehold : ''}`;
 }
 
-export async function request(path, body, signal, household = activeHousehold, method = body === undefined ? 'GET' : 'POST') {
+export async function request(
+  path,
+  body,
+  signal,
+  household = activeHousehold,
+  method = body === undefined ? 'GET' : 'POST',
+) {
   const headers = household ? { 'X-Sotovor-Household': household } : {};
-  const options = body === undefined ? { signal, headers } : {
-    method,
-    headers: { ...headers, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  };
+  const options =
+    body === undefined
+      ? { signal, headers }
+      : {
+          method,
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        };
   const response = await fetch('/api' + path, options);
   const data = await response.json();
-  if (!response.ok) throw Object.assign(new Error(data.error?.message ?? data.error), { status: response.status });
+  if (!response.ok)
+    throw Object.assign(new Error(data.error?.message ?? data.error), { status: response.status });
   return data;
 }

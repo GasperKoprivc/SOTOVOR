@@ -42,14 +42,16 @@ fun NotificationControls(state: WorkspaceState, model: WorkspaceViewModel, push:
                     model.saveNotificationSettings(value.copy(swaps = it))
                 }
             }
-            if (push.available) OutlinedButton(onClick = {
-                if (Build.VERSION.SDK_INT >= 33 && !permissionGranted(context)) {
-                    permission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                } else {
-                    denied = !permissionGranted(context)
-                    if (!denied) push.requestToken()
-                }
-            }) { Text(stringResource(R.string.enable_push)) }
+            if (push.available) {
+                OutlinedButton(onClick = {
+                    if (Build.VERSION.SDK_INT >= 33 && !permissionGranted(context)) {
+                        permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        denied = !permissionGranted(context)
+                        if (!denied) push.requestToken()
+                    }
+                }) { Text(stringResource(R.string.enable_push)) }
+            }
             if (denied) Text(stringResource(R.string.push_denied))
         }
     }

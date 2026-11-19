@@ -22,7 +22,11 @@ export function subscribeTheme(listener) {
 export function setTheme(value) {
   if (!['dark', 'light', 'system'].includes(value) || value === theme) return;
   theme = value;
-  try { localStorage.setItem('sotovor-theme', value); } catch { /* In-memory fallback. */ }
+  try {
+    localStorage.setItem('sotovor-theme', value);
+  } catch {
+    /* In-memory fallback. */
+  }
   paint();
-  listeners.forEach(listener => listener());
+  listeners.forEach((listener) => listener());
 }

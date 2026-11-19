@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 const root = new URL('../', import.meta.url);
-const path = name => fileURLToPath(new URL(name, root));
+const path = (name) => fileURLToPath(new URL(name, root));
 const { version } = JSON.parse(await readFile(path('package.json'), 'utf8'));
 if (!/^(0|[1-9]\d*)\.(0|[1-9]\d?)\.(0|[1-9]\d?)$/.test(version)) {
   throw new Error('Use a major.minor.patch version with minor and patch below 100.');
@@ -30,12 +30,12 @@ async function sync(name, transform) {
   await writeFile(path(name), next);
 }
 for (const [name, pattern] of files) {
-  await sync(name, current => {
+  await sync(name, (current) => {
     if (!pattern.test(current)) throw new Error('Version field missing in ' + name);
     return current.replace(pattern, (_, prefix) => prefix + JSON.stringify(version));
   });
 }
-await sync('package-lock.json', current => {
+await sync('package-lock.json', (current) => {
   const lock = JSON.parse(current);
   lock.version = version;
   lock.packages[''].version = version;

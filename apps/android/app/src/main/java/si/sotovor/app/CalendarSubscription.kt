@@ -15,11 +15,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import kotlinx.serialization.Serializable
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
+import kotlinx.serialization.Serializable
 
 @Serializable
 data class CalendarSubscription(val active: Boolean, val path: String? = null)
@@ -36,9 +36,12 @@ fun CalendarSubscriptionControls(state: WorkspaceState, model: WorkspaceViewMode
             TextButton(enabled = !state.busy && subscription != null, onClick = { model.changeCalendarSubscription(false) }) {
                 Text(stringResource(if (subscription?.active == true) R.string.calendar_replace else R.string.calendar_create))
             }
-            if (subscription?.active == true) TextButton(
-                enabled = !state.busy, onClick = { model.changeCalendarSubscription(true) }
-            ) { Text(stringResource(R.string.calendar_revoke)) }
+            if (subscription?.active == true) {
+                TextButton(
+                    enabled = !state.busy,
+                    onClick = { model.changeCalendarSubscription(true) }
+                ) { Text(stringResource(R.string.calendar_revoke)) }
+            }
             subscription?.path?.let { path ->
                 val url = BuildConfig.BASE_URL.trimEnd('/') + path
                 SelectionContainer { Text(url) }
@@ -58,8 +61,11 @@ fun AddToPhoneCalendar(event: Entry) {
     OutlinedButton(onClick = {
         val day = LocalDate.parse(event.dueOn)
         val time = event.startTime?.let(LocalTime::parse)
-        val start = if (time == null) day.atStartOfDay(ZoneOffset.UTC)
-            else day.atTime(time).atZone(ZoneId.of("Europe/Ljubljana"))
+        val start = if (time == null) {
+            day.atStartOfDay(ZoneOffset.UTC)
+        } else {
+            day.atTime(time).atZone(ZoneId.of("Europe/Ljubljana"))
+        }
         val intent = Intent(Intent.ACTION_INSERT, CalendarContract.Events.CONTENT_URI)
             .putExtra(CalendarContract.Events.TITLE, event.title)
             .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, start.toInstant().toEpochMilli())

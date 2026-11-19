@@ -6,14 +6,14 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withContext
-import retrofit2.HttpException
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
+import retrofit2.HttpException
 
 private val Context.settings by preferencesDataStore("sotovor-settings")
 private val activeHousehold = stringPreferencesKey("active_household")
@@ -82,7 +82,8 @@ class FamilyRepository @Inject constructor(
     suspend fun resend() = api.resend()
     suspend fun taskDetails(household: String, id: String) = api.taskDetails(household, id)
     suspend fun addCheck(household: String, id: String, title: String) = api.addCheck(household, id, ChecklistInput(title))
-    suspend fun checkItem(household: String, id: String, item: String, checked: Boolean) = api.checkItem(household, id, item, ChecklistCheck(checked))
+    suspend fun checkItem(household: String, id: String, item: String, checked: Boolean) =
+        api.checkItem(household, id, item, ChecklistCheck(checked))
     suspend fun addComment(household: String, id: String, text: String) = api.addComment(household, id, CommentInput(text))
     suspend fun rewards(id: String) = api.rewards(id)
     suspend fun saveRewards(id: String, settings: RewardSettings) = api.saveRewards(id, settings)
@@ -100,8 +101,11 @@ class FamilyRepository @Inject constructor(
 
     suspend fun save(household: String, editor: EntryEditor, input: EntryInput) {
         val entry = editor.entry
-        if (entry == null) api.createEntry(household, input)
-        else api.editEntry(household, entry.id, input.copy(version = entry.version))
+        if (entry == null) {
+            api.createEntry(household, input)
+        } else {
+            api.editEntry(household, entry.id, input.copy(version = entry.version))
+        }
     }
 
     suspend fun remove(household: String, entry: Entry) = api.removeEntry(household, entry.id, Version(entry.version))

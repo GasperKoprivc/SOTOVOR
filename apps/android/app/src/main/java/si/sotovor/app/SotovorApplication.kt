@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 @HiltAndroidApp
 class SotovorApplication : Application() {
     @Inject lateinit var push: NativePush
+
     @Inject lateinit var repository: FamilyRepository
     override fun onCreate() {
         super.onCreate()

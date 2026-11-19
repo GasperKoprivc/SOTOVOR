@@ -1,10 +1,12 @@
 import { MongoClient } from 'mongodb';
 
 export async function connect() {
-  const client = new MongoClient(process.env.SOTOVOR_MONGO_URI ||
-    `mongodb://127.0.0.1:${process.env.SOTOVOR_MONGO_PORT || 27027}`, {
-    serverSelectionTimeoutMS: 5000,
-  });
+  const client = new MongoClient(
+    process.env.SOTOVOR_MONGO_URI || `mongodb://127.0.0.1:${process.env.SOTOVOR_MONGO_PORT || 27027}`,
+    {
+      serverSelectionTimeoutMS: 5000,
+    },
+  );
   try {
     const db = client.db(process.env.SOTOVOR_DB || 'sotovor');
     const households = db.collection('households');
@@ -44,12 +46,26 @@ export async function connect() {
       entries.createIndex({ householdId: 1, dueOn: 1 }),
       entries.createIndex({ householdId: 1, kind: 1, archivedAt: 1, _id: -1 }),
       entries.createIndex({ householdId: 1, archivedAt: 1, createdAt: -1 }),
-      entries.createIndex({ householdId: 1 }, {
-        name: 'pending_occurrences',
-        partialFilterExpression: { nextOccurrence: { $exists: true } },
-      }),
+      entries.createIndex(
+        { householdId: 1 },
+        {
+          name: 'pending_occurrences',
+          partialFilterExpression: { nextOccurrence: { $exists: true } },
+        },
+      ),
     ]);
-    return { client, households, shoppingItems, entries, accounts, sessions, desktopLinks, mobileSessions, devices, notifications };
+    return {
+      client,
+      households,
+      shoppingItems,
+      entries,
+      accounts,
+      sessions,
+      desktopLinks,
+      mobileSessions,
+      devices,
+      notifications,
+    };
   } catch (error) {
     await client.close();
     throw error;

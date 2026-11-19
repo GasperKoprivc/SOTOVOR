@@ -5,8 +5,8 @@ import android.content.res.Configuration
 import android.os.LocaleList
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
-import kotlinx.serialization.Serializable
 import java.util.Locale
+import kotlinx.serialization.Serializable
 
 @Serializable
 data class Appearance(val language: String = "sl", val theme: String = "dark")
@@ -31,10 +31,20 @@ internal fun appearanceContext(context: Context, language: String): Context {
 
 @Composable
 fun AppearanceControls(value: Appearance, enabled: Boolean = true, change: (Appearance) -> Unit) {
-    SelectField(stringResource(R.string.appearance_language), if (value.language == "sl") "sl" else "en",
-        listOf("sl" to "Slovenščina", "en" to "English"), enabled) { change(value.copy(language = it)) }
-    SelectField(stringResource(R.string.appearance_theme), value.theme, listOf(
-        "dark" to stringResource(R.string.appearance_dark), "light" to stringResource(R.string.appearance_light),
-        "system" to stringResource(R.string.appearance_system)
-    ), enabled) { change(value.copy(theme = it)) }
+    SelectField(
+        stringResource(R.string.appearance_language),
+        if (value.language == "sl") "sl" else "en",
+        listOf("sl" to "Slovenščina", "en" to "English"),
+        enabled
+    ) { change(value.copy(language = it)) }
+    SelectField(
+        stringResource(R.string.appearance_theme),
+        value.theme,
+        listOf(
+            "dark" to stringResource(R.string.appearance_dark),
+            "light" to stringResource(R.string.appearance_light),
+            "system" to stringResource(R.string.appearance_system)
+        ),
+        enabled
+    ) { change(value.copy(theme = it)) }
 }

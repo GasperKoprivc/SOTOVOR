@@ -48,30 +48,66 @@ export default function ShoppingList({ householdId }) {
     }
   }
 
-  return <section className="panel shopping-panel">
-    <h2>{t('Skupni nakupovalni seznam')}</h2>
-    <form className="shopping-form" onSubmit={event => {
-      event.preventDefault();
-      void change('/shopping', { title, quantity }, 'POST', () => { setTitle(''); setQuantity(''); });
-    }}>
-      <label>{t('Izdelek')}<input value={title} onChange={event => setTitle(event.target.value)} maxLength={120} required /></label>
-      <label>{t('Količina')}<input value={quantity} onChange={event => setQuantity(event.target.value)} maxLength={40} /></label>
-      <button className="primary" disabled={busy || !title.trim()}>{t('Dodaj izdelek')}</button>
-    </form>
-    {problem && <p role="alert">{problem} <button onClick={load}>{t('Osveži seznam')}</button></p>}
-    {!problem && items === null && <p role="status">{t('Nalaganje seznama …')}</p>}
-    {items?.length === 0 && <p>{t('Nakupovalni seznam je prazen.')}</p>}
-    <ul className="shopping-items">{items?.map(item => <li key={item.id}>
-      <label>
-        <input type="checkbox" checked={Boolean(item.checkedAt)} disabled={busy}
-          onChange={event => change('/shopping/' + item.id, { checked: event.target.checked }, 'PUT')} />
-        <span><strong className={item.checkedAt ? 'shopping-checked' : undefined}>{item.title}</strong>
-          {item.quantity && <small>{item.quantity}</small>}
-          {item.checkedByName && <small>{t('Kupil/a: %0', item.checkedByName)}</small>}
-        </span>
-      </label>
-      <button type="button" className="secondary" disabled={busy} aria-label={t('Odstrani %0', item.title)}
-        onClick={() => change('/shopping/' + item.id, {}, 'DELETE')}>{t('Odstrani')}</button>
-    </li>)}</ul>
-  </section>;
+  return (
+    <section className="panel shopping-panel">
+      <h2>{t('Skupni nakupovalni seznam')}</h2>
+      <form
+        className="shopping-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void change('/shopping', { title, quantity }, 'POST', () => {
+            setTitle('');
+            setQuantity('');
+          });
+        }}
+      >
+        <label>
+          {t('Izdelek')}
+          <input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} required />
+        </label>
+        <label>
+          {t('Količina')}
+          <input value={quantity} onChange={(event) => setQuantity(event.target.value)} maxLength={40} />
+        </label>
+        <button className="primary" disabled={busy || !title.trim()}>
+          {t('Dodaj izdelek')}
+        </button>
+      </form>
+      {problem && (
+        <p role="alert">
+          {problem} <button onClick={load}>{t('Osveži seznam')}</button>
+        </p>
+      )}
+      {!problem && items === null && <p role="status">{t('Nalaganje seznama …')}</p>}
+      {items?.length === 0 && <p>{t('Nakupovalni seznam je prazen.')}</p>}
+      <ul className="shopping-items">
+        {items?.map((item) => (
+          <li key={item.id}>
+            <label>
+              <input
+                type="checkbox"
+                checked={Boolean(item.checkedAt)}
+                disabled={busy}
+                onChange={(event) => change('/shopping/' + item.id, { checked: event.target.checked }, 'PUT')}
+              />
+              <span>
+                <strong className={item.checkedAt ? 'shopping-checked' : undefined}>{item.title}</strong>
+                {item.quantity && <small>{item.quantity}</small>}
+                {item.checkedByName && <small>{t('Kupil/a: %0', item.checkedByName)}</small>}
+              </span>
+            </label>
+            <button
+              type="button"
+              className="secondary"
+              disabled={busy}
+              aria-label={t('Odstrani %0', item.title)}
+              onClick={() => change('/shopping/' + item.id, {}, 'DELETE')}
+            >
+              {t('Odstrani')}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }

@@ -3,6 +3,8 @@ package si.sotovor.app
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.io.IOException
+import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -10,20 +12,29 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import retrofit2.HttpException
-import java.io.IOException
-import javax.inject.Inject
 
 data class WorkspaceState(
-    val workspace: Workspace? = null, val busy: Boolean = true,
-    val problem: String? = null, val problemResource: Int? = null, val notice: Int? = null,
-    val tasks: List<Entry> = emptyList(), val taskCursor: String? = null, val filters: TaskFilters = TaskFilters(),
-    val notifications: List<Notice> = emptyList(), val noticeCursor: String? = null, val devices: List<DeviceSession>? = null,
-    val editor: EntryEditor? = null, val conflict: Boolean = false, val export: String? = null,
+    val workspace: Workspace? = null,
+    val busy: Boolean = true,
+    val problem: String? = null,
+    val problemResource: Int? = null,
+    val notice: Int? = null,
+    val tasks: List<Entry> = emptyList(),
+    val taskCursor: String? = null,
+    val filters: TaskFilters = TaskFilters(),
+    val notifications: List<Notice> = emptyList(),
+    val noticeCursor: String? = null,
+    val devices: List<DeviceSession>? = null,
+    val editor: EntryEditor? = null,
+    val conflict: Boolean = false,
+    val export: String? = null,
     val rewards: Rewards? = null,
     val taskDetails: TaskDetails? = null,
     val calendarSubscription: CalendarSubscription? = null,
-    val shopping: List<ShoppingItem>? = null, val shoppingPush: Boolean? = null,
-    val plan: PlanPreview? = null, val notificationSettings: NotificationSettings? = null
+    val shopping: List<ShoppingItem>? = null,
+    val shoppingPush: Boolean? = null,
+    val plan: PlanPreview? = null,
+    val notificationSettings: NotificationSettings? = null
 )
 
 @HiltViewModel
@@ -220,9 +231,11 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
         load()
         loadTasks(mutable.value.filters)
         mutable.update { state ->
-            state.copy(editor = state.editor?.let { editor ->
-                state.workspace?.entries?.find { it.id == id && it.completedAt == null }?.let { editor.copy(entry = it) }
-            })
+            state.copy(
+                editor = state.editor?.let { editor ->
+                    state.workspace?.entries?.find { it.id == id && it.completedAt == null }?.let { editor.copy(entry = it) }
+                }
+            )
         }
     }
 
@@ -238,13 +251,18 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
     fun readNotice(notice: Notice) = update {
         repository.readNotice(notice.target.householdId, notice.id)
         mutable.update { state ->
-            state.copy(notifications = state.notifications.map {
-                if (it.id == notice.id) it.copy(readAt = java.time.Instant.now().toString()) else it
-            })
+            state.copy(
+                notifications = state.notifications.map {
+                    if (it.id == notice.id) it.copy(readAt = java.time.Instant.now().toString()) else it
+                }
+            )
         }
     }
 
-    fun devices() = update { mutable.update { it.copy(devices = null) }; loadDevices() }
+    fun devices() = update {
+        mutable.update { it.copy(devices = null) }
+        loadDevices()
+    }
     private suspend fun loadDevices() {
         val items = repository.devices()
         mutable.update { it.copy(devices = items) }
@@ -273,9 +291,15 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
             }
         }
     }
-    fun dismissUpdate() { if (upgrade.value == UpdateLevel.OPTIONAL) upgrade.value = UpdateLevel.CURRENT }
-    fun receiveLink(raw: String?) { parseNativeLink(raw)?.let { navigation.value = it } }
-    fun clearLink() { navigation.value = null }
+    fun dismissUpdate() {
+        if (upgrade.value == UpdateLevel.OPTIONAL) upgrade.value = UpdateLevel.CURRENT
+    }
+    fun receiveLink(raw: String?) {
+        parseNativeLink(raw)?.let { navigation.value = it }
+    }
+    fun clearLink() {
+        navigation.value = null
+    }
     fun openTarget(target: NativeLink.Target) = update {
         if (mutable.value.workspace?.spaces?.none { it.id == target.household } != false) {
             mutable.update { it.copy(problemResource = R.string.space_unavailable) }
@@ -325,7 +349,9 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
             val result = repository.apply(id, rebalance, plan.signature)
             clearPlan()
             load()
-            mutable.update { it.copy(notice = if (result.conflicts == 0) R.string.plan_applied else R.string.plan_some_conflicts) }
+            mutable.update {
+                it.copy(notice = if (result.conflicts == 0) R.string.plan_applied else R.string.plan_some_conflicts)
+            }
         } catch (error: HttpException) {
             if (error.code() != 409) throw error
             clearPlan()
@@ -346,9 +372,15 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
     private suspend fun load() {
         val workspace = repository.workspace()
         mutable.update {
-            if (it.workspace?.household?.id == workspace?.household?.id) it.copy(workspace = workspace)
-            else it.copy(workspace = workspace, tasks = emptyList(), taskCursor = null, notifications = emptyList(),
-                noticeCursor = null, filters = TaskFilters(), editor = null, plan = null, shopping = null, shoppingPush = null, rewards = null)
+            if (it.workspace?.household?.id == workspace?.household?.id) {
+                it.copy(workspace = workspace)
+            } else {
+                it.copy(
+                    workspace = workspace, tasks = emptyList(), taskCursor = null, notifications = emptyList(),
+                    noticeCursor = null, filters = TaskFilters(), editor = null, plan = null,
+                    shopping = null, shoppingPush = null, rewards = null
+                )
+            }
         }
     }
 

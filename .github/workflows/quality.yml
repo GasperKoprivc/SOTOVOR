@@ -1,0 +1,101 @@
+name: Launch quality gate
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  web-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24', cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: docker compose -p sotovor-quality -f compose.test.yaml up -d --build --wait --wait-timeout 180
+      - run: npm run test:e2e
+      - run: npm run test:load
+      - if: always()
+        run: docker compose -p sotovor-quality -f compose.test.yaml logs --no-color > quality-stack.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-quality-results
+          path: |
+            playwright-report/
+            test-results/
+            quality-results/
+            quality-stack.log
+      - if: always()
+        run: docker compose -p sotovor-quality -f compose.test.yaml down --volumes
+
+  android-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: android-actions/setup-android@v3
+        with: { packages: platform-tools, log-accepted-android-sdk-licenses: false }
+      - run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - run: docker compose -p sotovor-quality -f compose.test.yaml up -d --build --wait --wait-timeout 180
+      - name: Build instrumented and production-shrunk test apps
+        working-directory: apps/android
+        run: ./gradlew assembleQa assembleDebug assembleDebugAndroidTest '-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8' -Pkotlin.compiler.execution.strategy=in-process -PsotovorDebugUrl=http://127.0.0.1:3060/
+      - name: Reserve disk and memory for the API 36 emulator
+        run: |
+          # This disposable job needs Kotlin/Java; other preinstalled toolchains are unused.
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android/sdk/ndk \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/powershell
+          docker builder prune --all --force
+          apps/android/gradlew -p apps/android --stop
+          df -h /
+          available=$(df --output=avail -k / | tail -n 1)
+          if (( available < 12 * 1024 * 1024 )); then
+            echo '::error::API 36 requires at least 12 GiB free before its system image and userdata are created.'
+            exit 1
+          fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          working-directory: apps/android
+          api-level: 36
+          arch: x86_64
+          target: google_atd
+          profile: pixel_7
+          disk-size: 6G
+          ram-size: 3072M
+          emulator-boot-timeout: 300
+          emulator-options: -no-window -gpu software -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: bash ../../scripts/android-e2e.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-instrumented-results
+          path: |
+            apps/android/app/build/reports/androidTests/
+            apps/android/app/build/outputs/androidTest-results/
+            quality-results/android/
+      - if: always()
+        run: |
+          docker compose -p sotovor-quality -f compose.test.yaml logs --tail 80
+          docker compose -p sotovor-quality -f compose.test.yaml down --volumes

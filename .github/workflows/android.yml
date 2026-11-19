@@ -2,9 +2,15 @@ name: Android
 
 on:
   push:
-    paths: ['apps/android/**', '.github/workflows/android.yml']
+    branches: [main]
+    tags: ['v*']
+
   pull_request:
-    paths: ['apps/android/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -29,6 +35,15 @@ jobs:
       - name: Install SDK 36
         run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
       - uses: gradle/actions/setup-gradle@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - name: Kotlin static checks
+        run: ./gradlew ktlintCheck detekt
+      - name: Resolve and audit Android dependencies
+        run: |
+          ./gradlew :app:dependencyInventory
+          cd ../..
+          node scripts/audit-gradle.js
       - name: Lint, test and build without Firebase
         run: ./gradlew lintDebug testDebugUnitTest assembleDebug assembleRelease
       - uses: actions/upload-artifact@v4
@@ -49,3 +64,11 @@ jobs:
         with:
           name: sotovor-android-firebase-debug
           path: apps/android/app/build/outputs/apk/debug/app-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-static-reports
+          path: |
+            apps/android/app/build/reports/
+            quality-results/gradle-audit.json

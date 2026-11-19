@@ -12,8 +12,11 @@ export default function TaskDetails({ task, householdId, transcriptionEnabled })
   const path = '/tasks/' + task.id;
   useEffect(() => {
     const controller = new AbortController();
-    request(path + '/details', undefined, controller.signal, householdId).then(setDetails)
-      .catch(error => { if (!controller.signal.aborted) setProblem(errorText(error.message)); });
+    request(path + '/details', undefined, controller.signal, householdId)
+      .then(setDetails)
+      .catch((error) => {
+        if (!controller.signal.aborted) setProblem(errorText(error.message));
+      });
     return () => controller.abort();
   }, [path, householdId]);
 
@@ -30,37 +33,82 @@ export default function TaskDetails({ task, householdId, transcriptionEnabled })
     }
   }
 
-  return <div className="task-details">
-    {task.voice && transcriptionEnabled && <Transcription entryId={task.id} />}
-    {problem && <p role="alert">{problem}</p>}
-    {!details && !problem && <p role="status">{t('Nalaganje seznama …')}</p>}
-    {details && <>
-      <h3>{t('Podopravila')}</h3>
-      <ul>{details.checklist.map(item => <li key={item.id}>
-        <label className="check-field">
-          <input type="checkbox" checked={item.checked} disabled={busy || Boolean(task.completedAt)}
-            onChange={event => change('/checklist/' + item.id, { checked: event.target.checked }, 'PUT')} />
-          {item.title}
-        </label>
-      </li>)}</ul>
-      {!task.completedAt && <form onSubmit={event => {
-        event.preventDefault();
-        void change('/checklist', { title }, 'POST', () => setTitle(''));
-      }}>
-        <label>{t('Novo podopravilo')}<input required maxLength={160} value={title} onChange={event => setTitle(event.target.value)} /></label>
-        <button className="soft-button" disabled={busy || !title.trim()}>{t('Dodaj podopravilo')}</button>
-      </form>}
-      <h3>{t('Komentarji')}</h3>
-      <ul>{details.comments.map(item => <li key={item.id}>
-        <strong>{item.authorName}</strong><p>{item.text}</p>
-      </li>)}</ul>
-      <form onSubmit={event => {
-        event.preventDefault();
-        void change('/comments', { text: comment }, 'POST', () => setComment(''));
-      }}>
-        <label>{t('Tvoj komentar')}<textarea required maxLength={500} value={comment} onChange={event => setComment(event.target.value)} /></label>
-        <button className="soft-button" disabled={busy || !comment.trim()}>{t('Objavi komentar')}</button>
-      </form>
-    </>}
-  </div>;
+  return (
+    <div className="task-details">
+      {task.voice && transcriptionEnabled && <Transcription entryId={task.id} />}
+      {problem && <p role="alert">{problem}</p>}
+      {!details && !problem && <p role="status">{t('Nalaganje seznama …')}</p>}
+      {details && (
+        <>
+          <h3>{t('Podopravila')}</h3>
+          <ul>
+            {details.checklist.map((item) => (
+              <li key={item.id}>
+                <label className="check-field">
+                  <input
+                    type="checkbox"
+                    checked={item.checked}
+                    disabled={busy || Boolean(task.completedAt)}
+                    onChange={(event) =>
+                      change('/checklist/' + item.id, { checked: event.target.checked }, 'PUT')
+                    }
+                  />
+                  {item.title}
+                </label>
+              </li>
+            ))}
+          </ul>
+          {!task.completedAt && (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void change('/checklist', { title }, 'POST', () => setTitle(''));
+              }}
+            >
+              <label>
+                {t('Novo podopravilo')}
+                <input
+                  required
+                  maxLength={160}
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                />
+              </label>
+              <button className="soft-button" disabled={busy || !title.trim()}>
+                {t('Dodaj podopravilo')}
+              </button>
+            </form>
+          )}
+          <h3>{t('Komentarji')}</h3>
+          <ul>
+            {details.comments.map((item) => (
+              <li key={item.id}>
+                <strong>{item.authorName}</strong>
+                <p>{item.text}</p>
+              </li>
+            ))}
+          </ul>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void change('/comments', { text: comment }, 'POST', () => setComment(''));
+            }}
+          >
+            <label>
+              {t('Tvoj komentar')}
+              <textarea
+                required
+                maxLength={500}
+                value={comment}
+                onChange={(event) => setComment(event.target.value)}
+              />
+            </label>
+            <button className="soft-button" disabled={busy || !comment.trim()}>
+              {t('Objavi komentar')}
+            </button>
+          </form>
+        </>
+      )}
+    </div>
+  );
 }

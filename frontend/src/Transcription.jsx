@@ -17,13 +17,19 @@ export default function Transcription({ entryId }) {
       setBusy(false);
     }
   }
-  return <details>
-    <summary>{t('Glas v besedilo')}</summary>
-    <p>{t('Če nadaljuješ, bo posnetek poslan nastavljenemu ponudniku za prepis.')}</p>
-    <button type="button" className="soft-button" disabled={busy} onClick={transcribe}>
-      {t(busy ? 'Prepisovanje …' : 'Prepiši posnetek')}
-    </button>
-    {problem && <p role="alert">{problem}</p>}
-    {value !== null && <p className="transcript" role="status">{value || t('V posnetku ni bilo prepoznanega besedila.')}</p>}
-  </details>;
+  return (
+    <details>
+      <summary>{t('Glas v besedilo')}</summary>
+      <p>{t('Če nadaljuješ, bo posnetek poslan nastavljenemu ponudniku za prepis.')}</p>
+      <button type="button" className="soft-button" disabled={busy} onClick={transcribe}>
+        {t(busy ? 'Prepisovanje …' : 'Prepiši posnetek')}
+      </button>
+      {problem && <p role="alert">{problem}</p>}
+      {value !== null && (
+        <p className="transcript" role="status">
+          {value || t('V posnetku ni bilo prepoznanega besedila.')}
+        </p>
+      )}
+    </details>
+  );
 }

@@ -14,11 +14,14 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
 class MobileAuthenticatorTest {
     @Test fun rotatesBothCredentialsAndRetriesTheOriginalRequest() = exercise(200)
+
     @Test fun clearsRevokedSessions() = exercise(401)
 
     @Test fun staleEditIsReportedAsConflictWithoutRetrying() {
         MockWebServer().use { server ->
-            server.enqueue(MockResponse().setResponseCode(409).setBody("""{"error":{"code":"conflict","message":"Vnos se je spremenil."}}"""))
+            server.enqueue(
+                MockResponse().setResponseCode(409).setBody("""{"error":{"code":"conflict","message":"Vnos se je spremenil."}}""")
+            )
             val body = """{"title":"Task","kind":"task","version":1}"""
             val request = Request.Builder().url(server.url("/api/v1/entries/one/edit"))
                 .post(okhttp3.RequestBody.create("application/json".toMediaType(), body)).build()
@@ -31,9 +34,11 @@ class MobileAuthenticatorTest {
     private fun exercise(refreshStatus: Int) {
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setResponseCode(401))
-            server.enqueue(MockResponse().setResponseCode(refreshStatus)
-                .setHeader("Content-Type", "application/json")
-                .setBody("""{"accessToken":"nextAccess","refreshToken":"nextRefresh","sessionId":"device","expiresIn":60}"""))
+            server.enqueue(
+                MockResponse().setResponseCode(refreshStatus)
+                    .setHeader("Content-Type", "application/json")
+                    .setBody("""{"accessToken":"nextAccess","refreshToken":"nextRefresh","sessionId":"device","expiresIn":60}""")
+            )
             if (refreshStatus == 200) server.enqueue(MockResponse().setBody("workspace"))
             val refreshApi = Retrofit.Builder().baseUrl(server.url("/api/v1/"))
                 .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
@@ -57,7 +62,9 @@ class MobileAuthenticatorTest {
             if (refreshStatus == 200) {
                 assertEquals("Bearer nextAccess", server.takeRequest().getHeader("Authorization"))
                 assertEquals("nextRefresh", store.current()?.refreshToken)
-            } else assertNull(store.current())
+            } else {
+                assertNull(store.current())
+            }
         }
     }
 }

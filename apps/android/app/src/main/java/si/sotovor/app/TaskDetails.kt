@@ -12,8 +12,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import kotlinx.coroutines.flow.first
@@ -29,7 +29,9 @@ data class TaskComment(val id: String, val authorName: String, val text: String,
 data class TaskDetails(val checklist: List<ChecklistItem>, val comments: List<TaskComment>)
 
 @Serializable data class ChecklistInput(val title: String)
+
 @Serializable data class ChecklistCheck(val checked: Boolean)
+
 @Serializable data class CommentInput(val text: String)
 
 @Composable
@@ -45,8 +47,12 @@ fun TaskDetailsPanel(task: Entry, state: WorkspaceState, model: WorkspaceViewMod
     Text(stringResource(R.string.task_checklist), style = MaterialTheme.typography.titleMedium)
     details.checklist.forEach { item ->
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(item.checked, { model.checkItem(item.id, it) }, enabled = open && !state.busy,
-                modifier = Modifier.semantics { contentDescription = item.title })
+            Checkbox(
+                item.checked,
+                { model.checkItem(item.id, it) },
+                enabled = open && !state.busy,
+                modifier = Modifier.semantics { contentDescription = item.title }
+            )
             Text(item.title)
         }
     }

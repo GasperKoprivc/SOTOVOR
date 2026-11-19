@@ -23,54 +23,74 @@ let apiUrl;
 const verificationMessages = new Map();
 const passwordMessages = new Map();
 
-before(async () => {
-  process.env.SOTOVOR_MONGO_URI ||= 'mongodb://127.0.0.1:27027';
-  process.env.SOTOVOR_DB = databaseName;
-  database = await connect();
+before(
+  async () => {
+    process.env.SOTOVOR_MONGO_URI ||= 'mongodb://127.0.0.1:27027';
+    process.env.SOTOVOR_DB = databaseName;
+    database = await connect();
 
-  const app = express();
-  const shopping = createShoppingList(database);
-  app.use('/webhooks/whatsapp', createWhatsApp(database, whatsapp, shopping));
-  registerAppLinks(app, { SOTOVOR_ANDROID_FINGERPRINTS: Array(32).fill('AB').join(':') });
-  app.use('/api/v1', versionedErrors);
-  app.use(express.json({ limit: '8kb' }));
-  const options = {
-    shopping, whatsappEnabled: true,
-    verificationMail: async (email, token, purpose) => (purpose === 'password' ? passwordMessages : verificationMessages).set(email, token),
-  };
-  app.use('/api/v1', createApi(database, { ...options, versioned: true, transcription: {
-    async transcribe(bytes, mime) { return mime + ':' + bytes.toString('hex'); },
-  } }));
-  app.use('/api', createApi(database, options));
-  app.use(handleError);
-  server = app.listen(0, '127.0.0.1');
-  await once(server, 'listening');
-  apiUrl = `http://127.0.0.1:${server.address().port}/api`;
-}, { timeout: 30_000 });
+    const app = express();
+    const shopping = createShoppingList(database);
+    app.use('/webhooks/whatsapp', createWhatsApp(database, whatsapp, shopping));
+    registerAppLinks(app, { SOTOVOR_ANDROID_FINGERPRINTS: Array(32).fill('AB').join(':') });
+    app.use('/api/v1', versionedErrors);
+    app.use(express.json({ limit: '8kb' }));
+    const options = {
+      shopping,
+      whatsappEnabled: true,
+      verificationMail: async (email, token, purpose) =>
+        (purpose === 'password' ? passwordMessages : verificationMessages).set(email, token),
+    };
+    app.use(
+      '/api/v1',
+      createApi(database, {
+        ...options,
+        versioned: true,
+        transcription: {
+          async transcribe(bytes, mime) {
+            return mime + ':' + bytes.toString('hex');
+          },
+        },
+      }),
+    );
+    app.use('/api', createApi(database, options));
+    app.use(handleError);
+    server = app.listen(0, '127.0.0.1');
+    await once(server, 'listening');
+    apiUrl = `http://127.0.0.1:${server.address().port}/api`;
+  },
+  { timeout: 30_000 },
+);
 
-after(async () => {
-  try {
-    if (server) {
-      await new Promise((resolve, reject) => {
-        server.close(error => error ? reject(error) : resolve());
-      });
-    }
-  } finally {
-    if (database) {
-      try {
-        await database.client.db(databaseName).dropDatabase();
-      } finally {
-        await database.client.close();
+after(
+  async () => {
+    try {
+      if (server) {
+        await new Promise((resolve, reject) => {
+          server.close((error) => (error ? reject(error) : resolve()));
+        });
+      }
+    } finally {
+      if (database) {
+        try {
+          await database.client.db(databaseName).dropDatabase();
+        } finally {
+          await database.client.close();
+        }
       }
     }
-  }
-}, { timeout: 30_000 });
+  },
+  { timeout: 30_000 },
+);
 
 async function postJson(path, body, cookie, household) {
   if (!cookie && ['/households', '/households/join'].includes(path)) {
     const registered = await postJson('/auth/register', {
-      firstName: body.memberName, lastName: 'Test', email: `${randomUUID()}@test.invalid`,
-      phone: '+38640000111', password: 'integration-test',
+      firstName: body.memberName,
+      lastName: 'Test',
+      email: `${randomUUID()}@test.invalid`,
+      phone: '+38640000111',
+      password: 'integration-test',
     });
     cookie = sessionCookie(registered.response);
     body = { expectedMembers: 4, ...body };
@@ -96,7 +116,8 @@ async function dashboard(cookie, household) {
 
 async function v1(path, { method = 'GET', body, access, household, cookie } = {}) {
   const response = await fetch(apiUrl + '/v1' + path, {
-    method, headers: {
+    method,
+    headers: {
       ...(body === undefined ? {} : { 'content-type': 'application/json' }),
       ...(access ? { Authorization: 'Bearer ' + access } : {}),
       ...(cookie ? { cookie } : {}),
@@ -112,7 +133,13 @@ const mobilePost = (path, body, access) => v1(path, { method: 'POST', body, acce
 async function nativeUser() {
   const email = `${randomUUID()}@test.invalid`;
   const password = 'integration-test-password';
-  const registered = await mobilePost('/auth/register', { firstName: 'Native', lastName: 'Test', email, password, phone: '+38640000111' });
+  const registered = await mobilePost('/auth/register', {
+    firstName: 'Native',
+    lastName: 'Test',
+    email,
+    password,
+    phone: '+38640000111',
+  });
   assert.equal(registered.status, 201);
   const login = await mobilePost('/mobile/auth/login', { email, password, deviceName: 'Pixel test' });
   assert.equal(login.status, 200);
@@ -122,9 +149,13 @@ async function nativeUser() {
 test('v1 rotates refresh tokens atomically and revokes access by device and credential', async () => {
   const initial = await nativeUser();
   assert.equal(initial.emailVerificationPending, true);
-  const attempts = await Promise.all(Array.from({ length: 2 }, () => mobilePost('/mobile/auth/refresh', { refreshToken: initial.refreshToken })));
-  assert.deepEqual(attempts.map(result => result.status).sort(), [200, 401]);
-  const next = attempts.find(result => result.status === 200).body;
+  const attempts = await Promise.all(
+    Array.from({ length: 2 }, () =>
+      mobilePost('/mobile/auth/refresh', { refreshToken: initial.refreshToken }),
+    ),
+  );
+  assert.deepEqual(attempts.map((result) => result.status).sort(), [200, 401]);
+  const next = attempts.find((result) => result.status === 200).body;
   assert.equal(next.sessionId, initial.sessionId);
   assert.equal((await v1('/dashboard', { access: initial.accessToken })).body.error.code, 'invalid_session');
   const account = await database.accounts.findOne({ email: initial.email });
@@ -132,19 +163,32 @@ test('v1 rotates refresh tokens atomically and revokes access by device and cred
   assert.equal(sessions.body[0].current, true);
   const record = await database.mobileSessions.findOne({ accountId: account._id });
   assert.equal(record.refreshHash, createHash('sha256').update(next.refreshToken).digest('hex'));
-  const removed = await v1('/mobile/auth/sessions/' + next.sessionId, { method: 'DELETE', access: next.accessToken });
+  const removed = await v1('/mobile/auth/sessions/' + next.sessionId, {
+    method: 'DELETE',
+    access: next.accessToken,
+  });
   assert.equal(removed.status, 200);
   assert.equal((await mobilePost('/mobile/auth/refresh', { refreshToken: next.refreshToken })).status, 401);
-  const relogin = (await mobilePost('/mobile/auth/login', { email: initial.email, password: 'integration-test-password', deviceName: 'Second device' })).body;
+  const relogin = (
+    await mobilePost('/mobile/auth/login', {
+      email: initial.email,
+      password: 'integration-test-password',
+      deviceName: 'Second device',
+    })
+  ).body;
   await database.accounts.updateOne({ _id: account._id }, { $set: { passwordHash: 'changed-credential' } });
   assert.equal((await v1('/dashboard', { access: relogin.accessToken })).status, 401);
-  assert.equal((await mobilePost('/mobile/auth/refresh', { refreshToken: relogin.refreshToken })).status, 401);
+  assert.equal(
+    (await mobilePost('/mobile/auth/refresh', { refreshToken: relogin.refreshToken })).status,
+    401,
+  );
 });
 
 test('v1 scopes task pages to the selected household and preserves legacy error responses', async () => {
   const a = await nativeUser();
   const b = await nativeUser();
-  const createFamily = user => mobilePost('/households', { householdName: 'Mobile', expectedMembers: 2 }, user.accessToken);
+  const createFamily = (user) =>
+    mobilePost('/households', { householdName: 'Mobile', expectedMembers: 2 }, user.accessToken);
   const home = (await createFamily(a)).body.householdId;
   await createFamily(b);
   for (const title of ['A', 'B', 'C']) {
@@ -163,7 +207,10 @@ test('v1 scopes task pages to the selected household and preserves legacy error 
   const invalid = await v1('/events?limit=0', { access: a.accessToken });
   assert.equal(invalid.body.error.code, 'invalid_request');
   const filtered = await v1('/tasks?state=available&search=B&assignee=unassigned', { access: a.accessToken });
-  assert.deepEqual(filtered.body.items.map(item => item.title), ['B']);
+  assert.deepEqual(
+    filtered.body.items.map((item) => item.title),
+    ['B'],
+  );
   const due = await v1('/tasks?state=due', { access: a.accessToken });
   assert.equal(due.status, 200);
   assert.equal(due.body.items.length, 0);
@@ -184,7 +231,10 @@ test('account export omits credentials and deletion revokes access and requires 
   assert.equal(JSON.stringify(exported.body).includes('passwordHash'), false);
   const body = { password: 'integration-test-password' };
   assert.equal((await v1('/me', { method: 'DELETE', body, access })).body.error.code, 'owned_families');
-  assert.equal((await v1('/me', { method: 'DELETE', body: { ...body, deleteOwnedFamilies: true }, access })).status, 200);
+  assert.equal(
+    (await v1('/me', { method: 'DELETE', body: { ...body, deleteOwnedFamilies: true }, access })).status,
+    200,
+  );
   assert.equal((await v1('/dashboard', { access })).status, 401);
   assert.equal((await mobilePost('/mobile/auth/refresh', { refreshToken: user.refreshToken })).status, 401);
 });
@@ -193,7 +243,7 @@ test('password reset is single use and revokes native sessions', async () => {
   const user = await nativeUser();
   assert.equal((await mobilePost('/auth/password/request', { email: user.email })).status, 200);
   for (let attempt = 0; attempt < 20 && !passwordMessages.has(user.email); attempt++) {
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
   }
   const token = passwordMessages.get(user.email);
   assert.match(token, /^[a-f0-9]{64}$/);
@@ -202,7 +252,16 @@ test('password reset is single use and revokes native sessions', async () => {
   assert.equal((await mobilePost('/auth/password/reset', request)).status, 400);
   assert.equal((await v1('/dashboard', { access: user.accessToken })).status, 401);
   assert.equal((await mobilePost('/mobile/auth/refresh', { refreshToken: user.refreshToken })).status, 401);
-  assert.equal((await mobilePost('/mobile/auth/login', { email: user.email, password: request.password, deviceName: 'Pixel' })).status, 200);
+  assert.equal(
+    (
+      await mobilePost('/mobile/auth/login', {
+        email: user.email,
+        password: request.password,
+        deviceName: 'Pixel',
+      })
+    ).status,
+    200,
+  );
 });
 
 test('device tokens are scoped, retired by FCM and reminders are deduplicated and configurable', async () => {
@@ -212,11 +271,14 @@ test('device tokens are scoped, retired by FCM and reminders are deduplicated an
   const registered = await mobilePost('/devices', device, credentials);
   assert.equal(registered.status, 200);
   assert.equal((await mobilePost('/devices', device, credentials)).body.id, registered.body.id);
-  assert.equal((await mobilePost('/households', { householdName: 'Alerts', expectedMembers: 2 }, credentials)).status, 201);
+  assert.equal(
+    (await mobilePost('/households', { householdName: 'Alerts', expectedMembers: 2 }, credentials)).status,
+    201,
+  );
   const dashboard = (await v1('/dashboard', { access: credentials })).body;
   const family = await database.households.findOne({ inviteCode: dashboard.household.inviteCode });
   const shoppingMessages = [];
-  const shoppingPush = pushDelivery(database, async message => shoppingMessages.push(message));
+  const shoppingPush = pushDelivery(database, async (message) => shoppingMessages.push(message));
   await shoppingPush.shopping(family);
   assert.equal(shoppingMessages.length, 0);
   await v1('/shopping/push', { method: 'PUT', body: { enabled: true }, access: credentials });
@@ -233,19 +295,33 @@ test('device tokens are scoped, retired by FCM and reminders are deduplicated an
   assert.ok(shoppingMessages[1].data.body);
 
   const today = '2040-11-17';
-  await mobilePost('/entries', { kind: 'task', title: 'Reminder', dueOn: today, assigneeId: dashboard.memberId, reminderDays: 0 }, credentials);
+  await mobilePost(
+    '/entries',
+    { kind: 'task', title: 'Reminder', dueOn: today, assigneeId: dashboard.memberId, reminderDays: 0 },
+    credentials,
+  );
   const reminder = { today, now: new Date('2040-11-17T10:00:00Z') };
   const quiet = { assignments: false, reminders: false, swaps: true };
-  assert.deepEqual((await v1('/me/notification-settings', { method: 'PUT', body: quiet, access: credentials })).body, quiet);
+  assert.deepEqual(
+    (await v1('/me/notification-settings', { method: 'PUT', body: quiet, access: credentials })).body,
+    quiet,
+  );
   const sent = [];
-  const push = pushDelivery(database, async message => {
+  const push = pushDelivery(database, async (message) => {
     sent.push(message);
     throw Object.assign(new Error(), { code: 'messaging/registration-token-not-registered' });
   });
   await produceNotifications(database, push, reminder);
   assert.equal((await v1('/notifications', { access: credentials })).body.items.length, 0);
-  await v1('/me/notification-settings', { method: 'PUT', body: { ...quiet, reminders: true }, access: credentials });
-  await Promise.all([produceNotifications(database, push, reminder), produceNotifications(database, push, reminder)]);
+  await v1('/me/notification-settings', {
+    method: 'PUT',
+    body: { ...quiet, reminders: true },
+    access: credentials,
+  });
+  await Promise.all([
+    produceNotifications(database, push, reminder),
+    produceNotifications(database, push, reminder),
+  ]);
   const notices = (await v1('/notifications', { access: credentials })).body.items;
   assert.equal(notices.length, 1);
   assert.equal(notices[0].type, 'deadline');
@@ -261,7 +337,11 @@ test('device tokens are scoped, retired by FCM and reminders are deduplicated an
 test('verification is sent on registration and accepts only a current, single-use token', async () => {
   const email = `${randomUUID()}@test.invalid`;
   const { response } = await postJson('/auth/register', {
-    firstName: 'Ana', lastName: 'Test', email, phone: '+38640000111', password: 'integration-test',
+    firstName: 'Ana',
+    lastName: 'Test',
+    email,
+    phone: '+38640000111',
+    password: 'integration-test',
   });
   assert.equal(response.status, 201);
   const cookie = sessionCookie(response);
@@ -272,9 +352,12 @@ test('verification is sent on registration and accepts only a current, single-us
   assert.equal((await postJson('/auth/email/resend', {}, cookie)).response.status, 429);
   const account = await database.accounts.findOne({ email });
   assert.equal(account.emailVerification.hash, createHash('sha256').update(token).digest('hex'));
-  await database.accounts.updateOne({ email }, {
-    $set: { 'emailVerification.expiresAt': new Date(0), 'emailVerification.sentAt': new Date(0) },
-  });
+  await database.accounts.updateOne(
+    { email },
+    {
+      $set: { 'emailVerification.expiresAt': new Date(0), 'emailVerification.sentAt': new Date(0) },
+    },
+  );
   assert.equal((await postJson('/auth/email/verify', { token })).response.status, 400);
   assert.equal((await postJson('/auth/email/resend', {}, cookie)).response.status, 200);
   assert.equal((await postJson('/auth/email/verify', { token })).response.status, 400);
@@ -296,9 +379,12 @@ test('desktop linking requires browser approval and the original verifier, and c
   assert.equal((await postJson('/desktop/approve', { id })).response.status, 401);
   assert.equal((await postJson('/desktop/approve', { id }, webCookie)).response.status, 200);
   assert.equal((await postJson('/desktop/exchange', { id, verifier: '0'.repeat(64) })).response.status, 410);
-  const exchanges = await Promise.all([postJson('/desktop/exchange', { id, verifier }), postJson('/desktop/exchange', { id, verifier })]);
-  assert.deepEqual(exchanges.map(result => result.response.status).sort(), [200, 410]);
-  const success = exchanges.find(result => result.response.ok);
+  const exchanges = await Promise.all([
+    postJson('/desktop/exchange', { id, verifier }),
+    postJson('/desktop/exchange', { id, verifier }),
+  ]);
+  assert.deepEqual(exchanges.map((result) => result.response.status).sort(), [200, 410]);
+  const success = exchanges.find((result) => result.response.ok);
   const desktopCookie = sessionCookie(success.response);
   assert.deepEqual(success.data, { ok: true });
   assert.match(success.response.headers.get('set-cookie'), /HttpOnly/i);
@@ -316,14 +402,21 @@ test('an existing owner can accept an invitation and keep both spaces', async ()
   const { household } = (await dashboard(sessionCookie(host.response))).data;
   const invalid = await postJson('/households/join', { inviteCode: '0'.repeat(32) }, visitorCookie);
   assert.equal(invalid.response.status, 404);
-  const accepted = await postJson('/households/join', { inviteCode: household.inviteCode.toUpperCase() }, visitorCookie);
+  const accepted = await postJson(
+    '/households/join',
+    { inviteCode: household.inviteCode.toUpperCase() },
+    visitorCookie,
+  );
   assert.equal(accepted.response.status, 201);
   assert.equal(accepted.data.householdId, household.id);
   const selected = (await dashboard(visitorCookie, household.id)).data;
   assert.equal(selected.spaces.length, 2);
   assert.equal(selected.admin, false);
   assert.equal((await dashboard(visitorCookie, visitor.data.householdId)).data.admin, true);
-  assert.equal((await postJson('/households/join', { inviteCode: household.inviteCode }, visitorCookie)).response.status, 409);
+  assert.equal(
+    (await postJson('/households/join', { inviteCode: household.inviteCode }, visitorCookie)).response.status,
+    409,
+  );
 });
 
 test('owners can create and switch between isolated family spaces', async () => {
@@ -336,10 +429,16 @@ test('owners can create and switch between isolated family spaces', async () => 
   assert.equal(selected.admin, true);
   assert.equal(selected.spaces.length, 2);
   assert.equal(selected.household.name, 'Drugi dom');
-  const joined = await postJson('/households/join', { memberName: 'Luka', inviteCode: selected.household.inviteCode });
+  const joined = await postJson('/households/join', {
+    memberName: 'Luka',
+    inviteCode: selected.household.inviteCode,
+  });
   const member = sessionCookie(joined.response);
   assert.equal((await dashboard(member, first.data.householdId)).response.status, 403);
-  assert.equal((await postJson('/households', { householdName: 'Obvoz', expectedMembers: 1 }, member)).response.status, 409);
+  assert.equal(
+    (await postJson('/households', { householdName: 'Obvoz', expectedMembers: 1 }, member)).response.status,
+    409,
+  );
   const added = await postJson('/entries', { kind: 'task', title: 'Samo v drugem domu' }, owner, id);
   assert.equal(added.response.status, 201);
   assert.equal((await dashboard(owner)).data.entries.length, 0);
@@ -351,40 +450,72 @@ test('smart planning excludes sick members, uses child roles and checks the prev
   const owner = sessionCookie(created.response);
   const initial = (await dashboard(owner)).data;
   const inviteCode = initial.household.inviteCode;
-  const sick = sessionCookie((await postJson('/households/join', { memberName: 'Luka', inviteCode })).response);
-  const child = sessionCookie((await postJson('/households/join', { memberName: 'Ema', inviteCode })).response);
+  const sick = sessionCookie(
+    (await postJson('/households/join', { memberName: 'Luka', inviteCode })).response,
+  );
+  const child = sessionCookie(
+    (await postJson('/households/join', { memberName: 'Ema', inviteCode })).response,
+  );
   const sickId = (await dashboard(sick)).data.memberId;
   const childId = (await dashboard(child)).data.memberId;
-  const position = id => '/households/members/' + id + '/planning';
+  const position = (id) => '/households/members/' + id + '/planning';
 
   const settings = { familyRole: 'child', availability: 'sick' };
   assert.equal((await postJson(position(sickId), settings, sick)).response.status, 403);
-  assert.equal((await postJson(position(sickId), { ...settings, unavailableUntil: '2026-02-30' }, owner)).response.status, 400);
+  assert.equal(
+    (await postJson(position(sickId), { ...settings, unavailableUntil: '2026-02-30' }, owner)).response
+      .status,
+    400,
+  );
   assert.equal((await postJson(position(sickId), settings, owner)).response.status, 200);
-  assert.equal((await postJson(position(childId), { familyRole: 'child', availability: 'available' }, owner)).response.status, 200);
-  assert.equal((await dashboard(child)).data.members.find(person => person.id === sickId).availability, undefined);
+  assert.equal(
+    (await postJson(position(childId), { familyRole: 'child', availability: 'available' }, owner)).response
+      .status,
+    200,
+  );
+  assert.equal(
+    (await dashboard(child)).data.members.find((person) => person.id === sickId).availability,
+    undefined,
+  );
   assert.equal((await postJson('/planning/preview', {}, child)).response.status, 403);
 
-  await postJson('/entries', { kind: 'task', title: 'Zdravnik', category: 'zdravje', assigneeId: sickId }, owner);
+  await postJson(
+    '/entries',
+    { kind: 'task', title: 'Zdravnik', category: 'zdravje', assigneeId: sickId },
+    owner,
+  );
   await postJson('/entries', { kind: 'task', title: 'Zalij rože', category: 'dom' }, owner);
   let preview = (await postJson('/planning/preview', {}, owner)).data;
-  assert.deepEqual(preview.changes.map(item => [item.title, item.assigneeName]), [['Zdravnik', 'Ana Test'], ['Zalij rože', 'Ema Test']]);
-  assert.equal((await dashboard(owner)).data.entries.find(entry => entry.title === 'Zdravnik').assigneeId, sickId);
+  assert.deepEqual(
+    preview.changes.map((item) => [item.title, item.assigneeName]),
+    [
+      ['Zdravnik', 'Ana Test'],
+      ['Zalij rože', 'Ema Test'],
+    ],
+  );
+  assert.equal(
+    (await dashboard(owner)).data.entries.find((entry) => entry.title === 'Zdravnik').assigneeId,
+    sickId,
+  );
   await postJson('/entries', { kind: 'task', title: 'Nakup', category: 'opravki' }, owner);
-  assert.equal((await postJson('/planning/apply', { signature: preview.signature }, owner)).response.status, 409);
+  assert.equal(
+    (await postJson('/planning/apply', { signature: preview.signature }, owner)).response.status,
+    409,
+  );
   preview = (await postJson('/planning/preview', {}, owner)).data;
   const applied = await postJson('/planning/apply', { signature: preview.signature }, owner);
   assert.deepEqual(applied.data, { applied: 3, conflicts: 0 });
   const entries = (await dashboard(owner)).data.entries;
-  assert.equal(entries.find(entry => entry.title === 'Zdravnik').assigneeId, initial.memberId);
-  assert.equal(entries.find(entry => entry.title === 'Zalij rože').assigneeId, childId);
-  assert.equal(entries.find(entry => entry.title === 'Nakup').assigneeId, initial.memberId);
+  assert.equal(entries.find((entry) => entry.title === 'Zdravnik').assigneeId, initial.memberId);
+  assert.equal(entries.find((entry) => entry.title === 'Zalij rože').assigneeId, childId);
+  assert.equal(entries.find((entry) => entry.title === 'Nakup').assigneeId, initial.memberId);
 });
 
 function sessionCookie(response) {
   if (response.cookie) return response.cookie;
-  const cookie = response.headers.getSetCookie()
-    .find(value => value.startsWith('sotovor_session='))
+  const cookie = response.headers
+    .getSetCookie()
+    .find((value) => value.startsWith('sotovor_session='))
     ?.split(';', 1)[0];
   assert.match(cookie ?? '', /^sotovor_session=[a-f0-9]{64}$/);
   return cookie;
@@ -410,18 +541,22 @@ test('a household member can claim an unassigned task through the API', { timeou
   assert.equal(memberDashboard.response.status, 200);
   assert.notEqual(memberDashboard.data.memberId, ownerDashboard.data.memberId);
 
-  const createdTask = await postJson('/entries', {
-    kind: 'task',
-    title: 'CI claim task',
-  }, ownerCookie);
+  const createdTask = await postJson(
+    '/entries',
+    {
+      kind: 'task',
+      title: 'CI claim task',
+    },
+    ownerCookie,
+  );
   assert.equal(createdTask.response.status, 201);
-  const task = createdTask.data.entries.find(entry => entry.title === 'CI claim task');
+  const task = createdTask.data.entries.find((entry) => entry.title === 'CI claim task');
   assert.ok(task);
   assert.equal(task.assigneeId, null);
 
   const claimed = await postJson(`/tasks/${task.id}/claim`, {}, memberCookie);
   assert.equal(claimed.response.status, 200);
-  const claimedTask = claimed.data.entries.find(entry => entry.id === task.id);
+  const claimedTask = claimed.data.entries.find((entry) => entry.id === task.id);
   assert.equal(claimedTask.assigneeId, memberDashboard.data.memberId);
 
   const competingClaim = await postJson(`/tasks/${task.id}/claim`, {}, ownerCookie);
@@ -433,32 +568,52 @@ test('completion creates exactly one recurring task and rotates its assignee', a
   const owner = sessionCookie(created.response);
   const initial = (await dashboard(owner)).data;
   const joined = await postJson('/households/join', {
-    inviteCode: initial.household.inviteCode, memberName: 'Boris',
+    inviteCode: initial.household.inviteCode,
+    memberName: 'Boris',
   });
   const nextMember = (await dashboard(sessionCookie(joined.response))).data.memberId;
-  const added = await postJson('/entries', {
-    kind: 'task', title: 'Prevzem', dueOn: '2026-12-29',
-    assigneeId: initial.memberId, repeatDays: 7, rotate: true, reminderDays: 3,
-  }, owner);
+  const added = await postJson(
+    '/entries',
+    {
+      kind: 'task',
+      title: 'Prevzem',
+      dueOn: '2026-12-29',
+      assigneeId: initial.memberId,
+      repeatDays: 7,
+      rotate: true,
+      reminderDays: 3,
+    },
+    owner,
+  );
   assert.equal(added.response.status, 201);
   const path = `/tasks/${added.data.entries[0].id}/complete`;
   const results = await Promise.all([postJson(path, {}, owner), postJson(path, {}, owner)]);
-  assert.deepEqual(results.map(result => result.response.status).sort(), [200, 409]);
+  assert.deepEqual(results.map((result) => result.response.status).sort(), [200, 409]);
   const { entries } = (await dashboard(owner)).data;
   assert.equal(entries.length, 2);
-  const next = entries.find(entry => !entry.completedAt);
+  const next = entries.find((entry) => !entry.completedAt);
   assert.equal(next.dueOn, '2027-01-05');
   assert.equal(next.assigneeId, nextMember);
   assert.equal(next.reminderDays, 3);
 });
 
 test('voice notes are stored and accessible only within their household', async () => {
-  const owner = sessionCookie((await postJson('/households', { householdName: 'Zvok', memberName: 'Ana' })).response);
-  const other = sessionCookie((await postJson('/households', { householdName: 'Drugi', memberName: 'Jan' })).response);
+  const owner = sessionCookie(
+    (await postJson('/households', { householdName: 'Zvok', memberName: 'Ana' })).response,
+  );
+  const other = sessionCookie(
+    (await postJson('/households', { householdName: 'Drugi', memberName: 'Jan' })).response,
+  );
   const bytes = Buffer.from('1a45dfa30000', 'hex');
-  const added = await postJson('/entries', {
-    kind: 'task', title: 'Glas', voice: { mime: 'audio/webm', data: bytes.toString('base64') },
-  }, owner);
+  const added = await postJson(
+    '/entries',
+    {
+      kind: 'task',
+      title: 'Glas',
+      voice: { mime: 'audio/webm', data: bytes.toString('base64') },
+    },
+    owner,
+  );
   assert.equal(added.response.status, 201);
   const [task] = added.data.entries;
   assert.deepEqual(task.voice, { mime: 'audio/webm' });
@@ -470,25 +625,43 @@ test('voice notes are stored and accessible only within their household', async 
 });
 
 test('signed WhatsApp webhooks pair a sender and import each message once', async () => {
-  const owner = sessionCookie((await postJson('/households', { householdName: 'WhatsApp', memberName: 'Ana' })).response);
-  const { data: { code } } = await postJson('/whatsapp/pair', {}, owner);
+  const owner = sessionCookie(
+    (await postJson('/households', { householdName: 'WhatsApp', memberName: 'Ana' })).response,
+  );
+  const {
+    data: { code },
+  } = await postJson('/whatsapp/pair', {}, owner);
   const url = new URL('/webhooks/whatsapp', apiUrl);
-  assert.equal(await (await fetch(url + '?hub.mode=subscribe&hub.verify_token=test-verify&hub.challenge=42')).text(), '42');
+  assert.equal(
+    await (await fetch(url + '?hub.mode=subscribe&hub.verify_token=test-verify&hub.challenge=42')).text(),
+    '42',
+  );
 
   async function send(id, body, secret = whatsapp.secret) {
     const json = JSON.stringify({
-      object: 'whatsapp_business_account', entry: [{ changes: [{
-        field: 'messages', value: {
-          metadata: { phone_number_id: whatsapp.phoneId },
-          messages: [{ id, type: 'text', from: '38640123456', text: { body } }],
+      object: 'whatsapp_business_account',
+      entry: [
+        {
+          changes: [
+            {
+              field: 'messages',
+              value: {
+                metadata: { phone_number_id: whatsapp.phoneId },
+                messages: [{ id, type: 'text', from: '38640123456', text: { body } }],
+              },
+            },
+          ],
         },
-      }] }],
+      ],
     });
     const signature = createHmac('sha256', secret).update(json).digest('hex');
-    return (await fetch(url, {
-      method: 'POST', body: json,
-      headers: { 'content-type': 'application/json', 'x-hub-signature-256': 'sha256=' + signature },
-    })).status;
+    return (
+      await fetch(url, {
+        method: 'POST',
+        body: json,
+        headers: { 'content-type': 'application/json', 'x-hub-signature-256': 'sha256=' + signature },
+      })
+    ).status;
   }
 
   assert.equal(await send('pair', 'poveži ' + code, 'wrong'), 403);
@@ -518,7 +691,9 @@ test('signed WhatsApp webhooks pair a sender and import each message once', asyn
 });
 
 test('entries can be edited and removed with stale-write protection', async () => {
-  const owner = sessionCookie((await postJson('/households', { householdName: 'Urejanje', memberName: 'Ana' })).response);
+  const owner = sessionCookie(
+    (await postJson('/households', { householdName: 'Urejanje', memberName: 'Ana' })).response,
+  );
   const fields = { kind: 'event', title: 'Kosilo', dueOn: '2027-02-10' };
   const { data } = await postJson('/entries', fields, owner);
   const path = '/entries/' + data.entries[0].id;
@@ -532,11 +707,18 @@ test('entries can be edited and removed with stale-write protection', async () =
 });
 
 test('accounts cannot switch households and only the owner can approve leaving or change permissions', async () => {
-  const owner = sessionCookie((await postJson('/households', { householdName: 'Pravice', memberName: 'Ana' })).response);
+  const owner = sessionCookie(
+    (await postJson('/households', { householdName: 'Pravice', memberName: 'Ana' })).response,
+  );
   const original = (await dashboard(owner)).data;
-  const member = sessionCookie((await postJson('/households/join', {
-    memberName: 'Boris', inviteCode: original.household.inviteCode,
-  })).response);
+  const member = sessionCookie(
+    (
+      await postJson('/households/join', {
+        memberName: 'Boris',
+        inviteCode: original.household.inviteCode,
+      })
+    ).response,
+  );
   const current = (await dashboard(member)).data;
   const memberPath = '/households/members/' + current.memberId;
   assert.equal(current.household.inviteCode, undefined);
@@ -546,12 +728,30 @@ test('accounts cannot switch households and only the owner can approve leaving o
   const { data } = await postJson('/entries', fields, owner);
   const path = '/entries/' + data.entries[0].id + '/edit';
   assert.equal((await postJson(path, { ...fields, version: 0 }, member)).response.status, 403);
-  assert.equal((await postJson(memberPath + '/permissions', {
-    create: false, edit: false, move: true, remove: false,
-  }, owner)).response.status, 200);
+  assert.equal(
+    (
+      await postJson(
+        memberPath + '/permissions',
+        {
+          create: false,
+          edit: false,
+          move: true,
+          remove: false,
+        },
+        owner,
+      )
+    ).response.status,
+    200,
+  );
   assert.equal((await postJson('/entries', fields, member)).response.status, 403);
-  assert.equal((await postJson(path, { ...fields, title: 'Drugo', version: 0 }, member)).response.status, 403);
-  assert.equal((await postJson(path, { ...fields, dueOn: '2027-02-11', version: 0 }, member)).response.status, 200);
+  assert.equal(
+    (await postJson(path, { ...fields, title: 'Drugo', version: 0 }, member)).response.status,
+    403,
+  );
+  assert.equal(
+    (await postJson(path, { ...fields, dueOn: '2027-02-11', version: 0 }, member)).response.status,
+    200,
+  );
   assert.equal((await postJson('/households/leave', {}, member)).response.status, 200);
   assert.equal((await dashboard(member)).data.leaveRequested, true);
   assert.equal((await postJson(memberPath + '/remove', {}, owner)).response.status, 200);
@@ -563,20 +763,30 @@ test('shopping state is family scoped, preserves buyer attribution, and invalida
   const owner = sessionCookie(registered.response);
   const { householdId } = registered.data;
   const { data: board } = await dashboard(owner, householdId);
-  const joined = await postJson('/households/join', { inviteCode: board.household.inviteCode, memberName: 'Buyer' });
+  const joined = await postJson('/households/join', {
+    inviteCode: board.household.inviteCode,
+    memberName: 'Buyer',
+  });
   assert.equal(joined.response.status, 201);
   const buyerScope = { cookie: sessionCookie(joined.response), household: householdId };
   const scope = { cookie: owner, household: householdId };
-  const other = sessionCookie((await postJson('/households', { householdName: 'Other', memberName: 'Other' })).response);
+  const other = sessionCookie(
+    (await postJson('/households', { householdName: 'Other', memberName: 'Other' })).response,
+  );
   const stream = await fetch(apiUrl + '/v1/shopping/stream?household=' + householdId, {
-    headers: { cookie: owner }, signal: AbortSignal.timeout(5000),
+    headers: { cookie: owner },
+    signal: AbortSignal.timeout(5000),
   });
   assert.match(stream.headers.get('content-type'), /^text\/event-stream/);
   const reader = stream.body.pipeThrough(new TextDecoderStream()).getReader();
   try {
     assert.match((await reader.read()).value, /event: refresh/);
     assert.equal((await v1('/shopping', { ...scope, method: 'POST', body: { title: '   ' } })).status, 400);
-    const added = await v1('/shopping', { ...scope, method: 'POST', body: { title: 'Jabolka', quantity: ' 2 kg ' } });
+    const added = await v1('/shopping', {
+      ...scope,
+      method: 'POST',
+      body: { title: 'Jabolka', quantity: ' 2 kg ' },
+    });
     assert.equal(added.status, 201);
     assert.equal(added.body.quantity, '2 kg');
     assert.match((await reader.read()).value, /event: refresh/);
@@ -589,7 +799,10 @@ test('shopping state is family scoped, preserves buyer attribution, and invalida
     assert.equal(reset.body.checkedByName, null);
     assert.equal(reset.body.checkedAt, null);
     assert.deepEqual((await v1('/shopping/push', buyerScope)).body, { enabled: false });
-    assert.deepEqual((await v1('/shopping/push', { ...buyerScope, method: 'PUT', body: { enabled: true } })).body, { enabled: true });
+    assert.deepEqual(
+      (await v1('/shopping/push', { ...buyerScope, method: 'PUT', body: { enabled: true } })).body,
+      { enabled: true },
+    );
     assert.deepEqual((await v1('/shopping/push', scope)).body, { enabled: false });
     assert.equal((await v1(path, { ...scope, method: 'DELETE' })).status, 200);
     assert.deepEqual((await v1('/shopping', buyerScope)).body, []);
@@ -602,33 +815,42 @@ test('events support all-day and timed schedules without dropping legacy timing 
   const created = await postJson('/households', { householdName: 'Koledar', memberName: 'Ana' });
   const scope = { cookie: sessionCookie(created.response), household: created.data.householdId };
   const event = { kind: 'event', title: 'Nočni dogodek', dueOn: '2028-02-06' };
-  const create = body => v1('/entries', { ...scope, method: 'POST', body });
+  const create = (body) => v1('/entries', { ...scope, method: 'POST', body });
   const empty = await create(event);
   assert.equal(empty.status, 201);
   assert.equal(empty.body.entries[0].allDay, true);
   assert.equal(empty.body.entries[0].startTime, null);
   const timed = await create({ ...event, allDay: false, startTime: '23:40', durationMinutes: 50 });
   assert.equal(timed.status, 201);
-  const id = timed.body.entries.find(item => item.startTime === '23:40').id;
+  const id = timed.body.entries.find((item) => item.startTime === '23:40').id;
   const path = '/entries/' + id;
   const read = async () => (await v1(path, scope)).body;
-  const edit = body => v1(path + '/edit', { ...scope, method: 'POST', body: { ...event, ...body } });
+  const edit = (body) => v1(path + '/edit', { ...scope, method: 'POST', body: { ...event, ...body } });
   assert.equal((await read()).durationMinutes, 50);
   assert.equal((await edit({ title: 'Nov naslov', version: 0 })).status, 200);
   assert.equal((await read()).startTime, '23:40');
-  assert.equal((await edit({ allDay: true, startTime: null, durationMinutes: null, version: 1 })).status, 200);
+  assert.equal(
+    (await edit({ allDay: true, startTime: null, durationMinutes: null, version: 1 })).status,
+    200,
+  );
   assert.equal((await read()).allDay, true);
   assert.equal((await read()).durationMinutes, null);
   for (const invalid of [
-    { allDay: false }, { startTime: '24:01' }, { startTime: '8:00' },
-    { allDay: true, startTime: '09:00' }, { durationMinutes: 10 },
-    { startTime: '09:00', durationMinutes: 0 }, { startTime: '09:00', durationMinutes: 1441 },
-    { startTime: '09:00', durationMinutes: 2.5 }, { kind: 'task', startTime: '09:00' },
-  ]) assert.equal((await create({ ...event, ...invalid })).status, 400);
+    { allDay: false },
+    { startTime: '24:01' },
+    { startTime: '8:00' },
+    { allDay: true, startTime: '09:00' },
+    { durationMinutes: 10 },
+    { startTime: '09:00', durationMinutes: 0 },
+    { startTime: '09:00', durationMinutes: 1441 },
+    { startTime: '09:00', durationMinutes: 2.5 },
+    { kind: 'task', startTime: '09:00' },
+  ])
+    assert.equal((await create({ ...event, ...invalid })).status, 400);
 });
 
 test('private ICS only exposes current memberships and revokes previous links', async () => {
-  const create = async name => {
+  const create = async (name) => {
     const result = await postJson('/households', { householdName: name, memberName: name });
     return sessionCookie(result.response);
   };
@@ -641,8 +863,17 @@ test('private ICS only exposes current memberships and revokes previous links', 
   await postJson('/entries', { kind: 'task', title: 'Dated task', dueOn: '2028-09-15' }, owner);
   await postJson('/entries', { kind: 'task', title: 'Undated task' }, owner);
   await postJson('/entries', { kind: 'event', title: 'Outside event', dueOn: '2028-09-15' }, other);
-  await postJson('/entries', { kind: 'event', title: 'Č,;\\'.repeat(22), dueOn: '2028-09-15',
-    startTime: '23:30', durationMinutes: 120 }, owner);
+  await postJson(
+    '/entries',
+    {
+      kind: 'event',
+      title: 'Č,;\\'.repeat(22),
+      dueOn: '2028-09-15',
+      startTime: '23:30',
+      durationMinutes: 120,
+    },
+    owner,
+  );
   const generate = () => v1(path, { ...scope, method: 'POST', body: {} });
   const { status, body } = await generate();
   assert.equal(status, 201);
@@ -657,7 +888,7 @@ test('private ICS only exposes current memberships and revokes previous links', 
   assert.match(ics, /SUMMARY:Dated task\r\nDTSTART;VALUE=DATE:20280915/);
   assert.match(ics, /DTSTART:20280915T213000Z\r\nDTEND:20280915T233000Z/);
   assert.doesNotMatch(ics, /Undated task|Outside event/);
-  assert.ok(ics.split('\r\n').every(line => Buffer.byteLength(line) <= 75));
+  assert.ok(ics.split('\r\n').every((line) => Buffer.byteLength(line) <= 75));
   const newLink = (await generate()).body.path;
   assert.equal((await read()).status, 404);
   assert.equal((await read(newLink)).status, 200);
@@ -670,10 +901,19 @@ test('task details allow family collaboration and notify members other than the 
   const owner = sessionCookie(family.response);
   const { householdId } = family.data;
   const { data: board } = await dashboard(owner, householdId);
-  const joined = await postJson('/households/join', { inviteCode: board.household.inviteCode, memberName: 'Bor' });
+  const joined = await postJson('/households/join', {
+    inviteCode: board.household.inviteCode,
+    memberName: 'Bor',
+  });
   const member = sessionCookie(joined.response);
-  const other = sessionCookie((await postJson('/households', { householdName: 'Other', memberName: 'Other' })).response);
-  const created = await postJson('/entries', { kind: 'task', title: 'Plan', assigneeId: board.memberId }, owner);
+  const other = sessionCookie(
+    (await postJson('/households', { householdName: 'Other', memberName: 'Other' })).response,
+  );
+  const created = await postJson(
+    '/entries',
+    { kind: 'task', title: 'Plan', assigneeId: board.memberId },
+    owner,
+  );
   const root = '/tasks/' + created.data.entries[0].id;
   const scope = { cookie: member, household: householdId };
   const write = (path, body, method = 'POST') => v1(root + path, { ...scope, body, method });
@@ -688,7 +928,10 @@ test('task details allow family collaboration and notify members other than the 
   assert.equal(comment.status, 201);
   assert.equal(comment.body.comments[0].text, 'Ready');
   assert.equal(comment.body.comments[0].authorName, 'Bor Test');
-  assert.equal((await v1('/notifications', { cookie: owner, household: householdId })).body.items[0].type, 'task_comment');
+  assert.equal(
+    (await v1('/notifications', { cookie: owner, household: householdId })).body.items[0].type,
+    'task_comment',
+  );
   assert.equal((await v1('/notifications', scope)).body.items.length, 0);
   assert.equal((await postJson(root + '/complete', {}, owner)).response.status, 200);
   assert.equal((await write('/checklist', { title: 'Too late' })).status, 409);
@@ -698,18 +941,40 @@ test('planner weights existing workload by minutes and preserves estimates throu
   const family = await postJson('/households', { householdName: 'Weighted', memberName: 'Ana' });
   const owner = sessionCookie(family.response);
   const { data: board } = await dashboard(owner);
-  const member = await postJson('/households/join', { inviteCode: board.household.inviteCode, memberName: 'Bor' });
+  const member = await postJson('/households/join', {
+    inviteCode: board.household.inviteCode,
+    memberName: 'Bor',
+  });
   const { data: joined } = await dashboard(sessionCookie(member.response));
   for (const [title, assigneeId, estimatedMinutes] of [
-    ['Long', board.memberId, 120], ['Short one', joined.memberId, 5], ['Short two', joined.memberId, 5],
-  ]) assert.equal((await postJson('/entries', { kind: 'task', title, assigneeId, estimatedMinutes }, owner)).response.status, 201);
+    ['Long', board.memberId, 120],
+    ['Short one', joined.memberId, 5],
+    ['Short two', joined.memberId, 5],
+  ])
+    assert.equal(
+      (await postJson('/entries', { kind: 'task', title, assigneeId, estimatedMinutes }, owner)).response
+        .status,
+      201,
+    );
   for (const estimatedMinutes of [0, 1441, 3.5, '30']) {
-    assert.equal((await postJson('/entries', { kind: 'task', title: 'Invalid', estimatedMinutes }, owner)).response.status, 400);
+    assert.equal(
+      (await postJson('/entries', { kind: 'task', title: 'Invalid', estimatedMinutes }, owner)).response
+        .status,
+      400,
+    );
   }
-  const { data } = await postJson('/entries', { kind: 'task', title: 'Unassigned', estimatedMinutes: 20 }, owner);
-  const id = data.entries.find(entry => entry.title === 'Unassigned').id;
-  const edited = await postJson('/entries/' + id + '/edit', { kind: 'task', title: 'Edited', version: 0 }, owner);
-  assert.equal(edited.data.entries.find(entry => entry.id === id).estimatedMinutes, 20);
+  const { data } = await postJson(
+    '/entries',
+    { kind: 'task', title: 'Unassigned', estimatedMinutes: 20 },
+    owner,
+  );
+  const id = data.entries.find((entry) => entry.title === 'Unassigned').id;
+  const edited = await postJson(
+    '/entries/' + id + '/edit',
+    { kind: 'task', title: 'Edited', version: 0 },
+    owner,
+  );
+  assert.equal(edited.data.entries.find((entry) => entry.id === id).estimatedMinutes, 20);
   const preview = () => postJson('/planning/preview', {}, owner);
   const first = (await preview()).data;
   assert.deepEqual(first, (await preview()).data);
@@ -720,20 +985,44 @@ test('reward settings and task points are admin-only and leaderboard privacy is 
   const family = await postJson('/households', { householdName: 'Rewards', memberName: 'Ana' });
   const owner = sessionCookie(family.response);
   const { data: board } = await dashboard(owner);
-  const joined = await postJson('/households/join', { inviteCode: board.household.inviteCode, memberName: 'Otrok' });
+  const joined = await postJson('/households/join', {
+    inviteCode: board.household.inviteCode,
+    memberName: 'Otrok',
+  });
   const child = sessionCookie(joined.response);
   const { data: childBoard } = await dashboard(child);
-  assert.equal((await postJson('/households/members/' + childBoard.memberId + '/planning',
-    { familyRole: 'child', availability: 'available' }, owner)).response.status, 200);
-  const save = (cookie, leaderboard) => v1('/rewards', {
-    cookie, method: 'PUT', body: { leaderboard, rewards: [{ title: 'Izlet', points: 20 }] },
-  });
+  assert.equal(
+    (
+      await postJson(
+        '/households/members/' + childBoard.memberId + '/planning',
+        { familyRole: 'child', availability: 'available' },
+        owner,
+      )
+    ).response.status,
+    200,
+  );
+  const save = (cookie, leaderboard) =>
+    v1('/rewards', {
+      cookie,
+      method: 'PUT',
+      body: { leaderboard, rewards: [{ title: 'Izlet', points: 20 }] },
+    });
   assert.equal((await save(child, true)).status, 403);
   assert.equal((await save(owner, false)).status, 200);
-  assert.equal((await postJson('/entries', { kind: 'task', title: 'Denied', points: 5 }, child)).response.status, 403);
-  const task = await postJson('/entries', { kind: 'task', title: 'Pospravi', points: 10, assigneeId: childBoard.memberId }, owner);
+  assert.equal(
+    (await postJson('/entries', { kind: 'task', title: 'Denied', points: 5 }, child)).response.status,
+    403,
+  );
+  const task = await postJson(
+    '/entries',
+    { kind: 'task', title: 'Pospravi', points: 10, assigneeId: childBoard.memberId },
+    owner,
+  );
   const complete = () => postJson('/tasks/' + task.data.entries[0].id + '/complete', {}, child);
-  assert.deepEqual((await Promise.all([complete(), complete()])).map(r => r.response.status).sort(), [200, 409]);
+  assert.deepEqual(
+    (await Promise.all([complete(), complete()])).map((r) => r.response.status).sort(),
+    [200, 409],
+  );
   assert.deepEqual((await v1('/rewards', { cookie: owner })).body.scores, []);
   assert.equal((await v1('/rewards', { cookie: child })).body.scores[0].points, 10);
   assert.equal((await save(owner, true)).status, 200);
@@ -744,23 +1033,38 @@ test('weekly and monthly recurrence creates successors on completion and retains
   const family = await postJson('/households', { householdName: 'Recurring', memberName: 'Ana' });
   const cookie = sessionCookie(family.response);
   const { data: board } = await dashboard(cookie);
-  const joined = await postJson('/households/join', { inviteCode: board.household.inviteCode, memberName: 'Bor' });
+  const joined = await postJson('/households/join', {
+    inviteCode: board.household.inviteCode,
+    memberName: 'Bor',
+  });
   const { data: member } = await dashboard(sessionCookie(joined.response));
   const base = { kind: 'task', dueOn: '2028-01-31', assigneeId: board.memberId };
-  const add = fields => postJson('/entries', { ...base, ...fields }, cookie);
-  const complete = item => postJson('/tasks/' + item.id + '/complete', {}, cookie);
-  assert.equal((await add({ title: 'Invalid', recurrence: { type: 'weekly', weekdays: [0] } })).response.status, 400);
-  const weekly = await add({ title: 'Weekly', recurrence: { type: 'weekly', weekdays: [5, 1, 5] }, rotate: true });
-  const w = weekly.data.entries.find(item => item.title === 'Weekly');
+  const add = (fields) => postJson('/entries', { ...base, ...fields }, cookie);
+  const complete = (item) => postJson('/tasks/' + item.id + '/complete', {}, cookie);
+  assert.equal(
+    (await add({ title: 'Invalid', recurrence: { type: 'weekly', weekdays: [0] } })).response.status,
+    400,
+  );
+  const weekly = await add({
+    title: 'Weekly',
+    recurrence: { type: 'weekly', weekdays: [5, 1, 5] },
+    rotate: true,
+  });
+  const w = weekly.data.entries.find((item) => item.title === 'Weekly');
   assert.deepEqual(w.recurrence.weekdays, [1, 5]);
-  const nextWeek = (await complete(w)).data.entries.find(item => item.title === 'Weekly' && !item.completedAt);
+  const nextWeek = (await complete(w)).data.entries.find(
+    (item) => item.title === 'Weekly' && !item.completedAt,
+  );
   assert.equal(nextWeek.dueOn, '2028-02-04');
   assert.equal(nextWeek.assigneeId, member.memberId);
   const monthly = await add({ title: 'Monthly', recurrence: { type: 'monthly', dayOfMonth: 31 } });
-  const nextMonth = (await complete(monthly.data.entries.find(item => item.title === 'Monthly')))
-    .data.entries.find(item => item.title === 'Monthly' && !item.completedAt);
+  const nextMonth = (
+    await complete(monthly.data.entries.find((item) => item.title === 'Monthly'))
+  ).data.entries.find((item) => item.title === 'Monthly' && !item.completedAt);
   assert.equal(nextMonth.dueOn, '2028-02-29');
-  const march = (await complete(nextMonth)).data.entries.find(item => item.title === 'Monthly' && !item.completedAt);
+  const march = (await complete(nextMonth)).data.entries.find(
+    (item) => item.title === 'Monthly' && !item.completedAt,
+  );
   assert.equal(march.dueOn, '2028-03-31');
 });
 
@@ -776,42 +1080,55 @@ test('today widget returns only the current member’s open tasks due today', as
   await postJson('/entries', { ...myTask, title: 'Future', dueOn: '2099-01-01' }, cookie);
   await postJson('/entries', { kind: 'event', title: 'Event', dueOn }, cookie);
   assert.equal((await v1('/widget/today')).status, 401);
-  assert.deepEqual((await v1('/widget/today', { cookie })).body,
-    { householdId: family.data.householdId, tasks: [{ id: entry.id, title: myTask.title }] });
+  assert.deepEqual((await v1('/widget/today', { cookie })).body, {
+    householdId: family.data.householdId,
+    tasks: [{ id: entry.id, title: myTask.title }],
+  });
   assert.equal((await postJson('/tasks/' + entry.id + '/complete', {}, cookie)).response.status, 200);
   assert.deepEqual((await v1('/widget/today', { cookie })).body.tasks, []);
 });
 
 test('transcription is opt-in and family-scoped; configured providers receive only the audio', async () => {
-  const owner = sessionCookie((await postJson('/households', { householdName: 'Voice', memberName: 'Ana' })).response);
-  const other = sessionCookie((await postJson('/households', { householdName: 'Other voice', memberName: 'Bor' })).response);
+  const owner = sessionCookie(
+    (await postJson('/households', { householdName: 'Voice', memberName: 'Ana' })).response,
+  );
+  const other = sessionCookie(
+    (await postJson('/households', { householdName: 'Other voice', memberName: 'Bor' })).response,
+  );
   const voice = { mime: 'audio/webm', data: Buffer.from('1a45dfa300000001', 'hex').toString('base64') };
   const { data } = await postJson('/entries', { kind: 'task', title: 'Voice', voice }, owner);
   const path = '/entries/' + data.entries[0].id + '/transcription';
   assert.equal((await postJson(path, {}, owner)).response.status, 404);
   assert.equal((await v1(path, { cookie: other, method: 'POST', body: {} })).status, 404);
-  assert.deepEqual((await v1(path, { cookie: owner, method: 'POST', body: {} })).body,
-    { text: 'audio/webm:1a45dfa300000001' });
-  assert.equal(transcriptionProvider({}), null);
-  const provider = transcriptionProvider({
-    SOTOVOR_TRANSCRIPTION_ENABLED: '1', SOTOVOR_TRANSCRIPTION_URL: 'https://speech.example.invalid/transcribe',
-  }, async (_url, request) => {
-    assert.equal(request.redirect, 'error');
-    assert.equal(request.body.get('model'), 'whisper-1');
-    assert.equal(request.body.get('file').type, voice.mime);
-    assert.equal(Buffer.from(await request.body.get('file').arrayBuffer()).toString('base64'), voice.data);
-    assert.deepEqual([...request.body.keys()].sort(), ['file', 'model']);
-    return Response.json({ text: ' Mock transcript ' });
+  assert.deepEqual((await v1(path, { cookie: owner, method: 'POST', body: {} })).body, {
+    text: 'audio/webm:1a45dfa300000001',
   });
+  assert.equal(transcriptionProvider({}), null);
+  const provider = transcriptionProvider(
+    {
+      SOTOVOR_TRANSCRIPTION_ENABLED: '1',
+      SOTOVOR_TRANSCRIPTION_URL: 'https://speech.example.invalid/transcribe',
+    },
+    async (_url, request) => {
+      assert.equal(request.redirect, 'error');
+      assert.equal(request.body.get('model'), 'whisper-1');
+      assert.equal(request.body.get('file').type, voice.mime);
+      assert.equal(Buffer.from(await request.body.get('file').arrayBuffer()).toString('base64'), voice.data);
+      assert.deepEqual([...request.body.keys()].sort(), ['file', 'model']);
+      return Response.json({ text: ' Mock transcript ' });
+    },
+  );
   assert.equal(await provider.transcribe(Buffer.from(voice.data, 'base64'), voice.mime), 'Mock transcript');
 });
 
 test('appearance defaults to Slovenian and saves validated preferences per account', async () => {
-  const cookie = sessionCookie((await postJson('/households', { householdName: 'Appearance', memberName: 'Ana' })).response);
+  const cookie = sessionCookie(
+    (await postJson('/households', { householdName: 'Appearance', memberName: 'Ana' })).response,
+  );
   const path = '/me/appearance';
   assert.equal((await v1(path)).status, 401);
   assert.deepEqual((await v1(path, { cookie })).body, { language: 'sl', theme: 'dark' });
-  const save = body => v1(path, { cookie, method: 'PUT', body });
+  const save = (body) => v1(path, { cookie, method: 'PUT', body });
   assert.equal((await save({ language: 'xx', theme: 'light' })).status, 400);
   assert.equal((await save({ language: 'en', theme: 'blue' })).status, 400);
   const preferences = { language: 'en', theme: 'light' };

@@ -4,8 +4,19 @@ import { getTheme, setTheme } from './theme.js';
 import LanguageSelect from './LanguageSelect.jsx';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
-  CalendarDays, Check, Clipboard, House, LayoutGrid,
-  ListTodo, LogOut, Plus, ShoppingBasket, UserRound, UserRoundPlus, UsersRound, X,
+  CalendarDays,
+  Check,
+  Clipboard,
+  House,
+  LayoutGrid,
+  ListTodo,
+  LogOut,
+  Plus,
+  ShoppingBasket,
+  UserRound,
+  UserRoundPlus,
+  UsersRound,
+  X,
 } from 'lucide-react';
 import { Avatar, Calendar, Metrics, Tasks, Workload } from './Overview.jsx';
 import Notifications from './Notifications.jsx';
@@ -17,7 +28,7 @@ import FamilySettings from './FamilySettings.jsx';
 import { EmailVerificationReminder } from './EmailVerification.jsx';
 import CalendarSubscription from './CalendarSubscription.jsx';
 import MonthCalendar from './MonthCalendar.jsx';
-import Transcription from "./Transcription.jsx";
+import Transcription from './Transcription.jsx';
 import Rewards from './Rewards.jsx';
 import TaskDetails from './TaskDetails.jsx';
 import ShoppingList from './ShoppingList.jsx';
@@ -33,8 +44,12 @@ const pages = {
   workload: ['Razporeditev', UsersRound],
   profile: ['Profil', UserRound],
 };
-const inviteFromUrl = (new URLSearchParams(window.location.search).get('invite') ??
-  window.location.pathname.match(/^\/join\/([a-f0-9]{32})$/i)?.[1])?.trim().toLowerCase();
+const inviteFromUrl = (
+  new URLSearchParams(window.location.search).get('invite') ??
+  window.location.pathname.match(/^\/join\/([a-f0-9]{32})$/i)?.[1]
+)
+  ?.trim()
+  .toLowerCase();
 const initialInvite = /^[a-f0-9]{32}$/.test(inviteFromUrl ?? '') ? inviteFromUrl : '';
 
 function updateWorkspace(data, setData) {
@@ -47,21 +62,46 @@ function Dialog({ title, onClose, children }) {
   useEffect(() => {
     ref.current.showModal();
   }, []);
-  return <dialog ref={ref} aria-labelledby="dialog-title" onCancel={event => {
-    event.preventDefault();
-    onClose();
-  }}>
-    <div className="panel-heading"><h2 id="dialog-title">{title}</h2>
-      <button className="icon-button" onClick={onClose} aria-label={t('Zapri')}><X size={19} /></button>
-    </div>
-    {children}
-  </dialog>;
+  return (
+    <dialog
+      aria-modal="true"
+      ref={ref}
+      aria-labelledby="dialog-title"
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+    >
+      <div className="panel-heading">
+        <h2 id="dialog-title">{title}</h2>
+        <button className="icon-button" onClick={onClose} aria-label={t('Zapri')}>
+          <X size={19} />
+        </button>
+      </div>
+      {children}
+    </dialog>
+  );
 }
 
-function EntryDialog({ initialKind, initialDate, entry, permissions, members, admin, transcriptionEnabled, busy, error, onSave, onRemove, onClose }) {
+function EntryDialog({
+  initialKind,
+  initialDate,
+  entry,
+  permissions,
+  members,
+  admin,
+  transcriptionEnabled,
+  busy,
+  error,
+  onSave,
+  onRemove,
+  onClose,
+}) {
   const [kind, setKind] = useState(initialKind);
   const [allDay, setAllDay] = useState(!entry?.startTime);
-  const [repeatMode, setRepeatMode] = useState(entry?.recurrence?.type ?? (entry?.repeatDays ? 'interval' : 'none'));
+  const [repeatMode, setRepeatMode] = useState(
+    entry?.recurrence?.type ?? (entry?.repeatDays ? 'interval' : 'none'),
+  );
   const [repeatWeekdays, setRepeatWeekdays] = useState(entry?.recurrence?.weekdays ?? []);
   const [repeatDays, setRepeatDays] = useState(String(entry?.repeatDays ?? 0));
   const [removing, setRemoving] = useState(false);
@@ -69,105 +109,353 @@ function EntryDialog({ initialKind, initialDate, entry, permissions, members, ad
   const [recordingBusy, setRecordingBusy] = useState(false);
   const editContent = !entry || permissions.edit;
   const moveDate = !entry || permissions.move;
-  return <Dialog title={entry ? t('Uredi vnos') : t('Nov vnos')} onClose={onClose}>
-    <form onSubmit={event => {
-      event.preventDefault();
-      if (recordingBusy) return;
-      const values = Object.fromEntries(new FormData(event.currentTarget));
-      onSave({
-        kind, dueOn: moveDate ? values.dueOn || null : entry.dueOn,
-        ...(kind === 'event' && editContent ? {
-          allDay, startTime: allDay ? null : values.startTime,
-          durationMinutes: allDay || !values.durationMinutes ? null : Number(values.durationMinutes),
-        } : {}),
-        ...(kind === 'task' && editContent ? { estimatedMinutes: values.estimatedMinutes ? Number(values.estimatedMinutes) : null } : {}),
-        ...(kind === 'task' && admin ? { points: values.points ? Number(values.points) : null } : {}),
-        title: editContent ? values.title : entry.title, category: editContent ? values.category : entry.category,
-        assigneeId: editContent ? values.assigneeId || null : entry.assigneeId,
-        repeatDays: editContent ? (kind === 'task' && repeatMode === 'interval' ? Number(values.repeatDays) : 0) : entry.repeatDays ?? 0,
-        ...(kind === 'task' && editContent ? { recurrence: repeatMode === 'weekly'
-          ? { type: 'weekly', weekdays: repeatWeekdays } : repeatMode === 'monthly'
-            ? { type: 'monthly', dayOfMonth: Number(values.dayOfMonth) } : null } : {}),
-        rotate: editContent ? values.rotate === 'on' : entry.rotate ?? false,
-        reminderDays: editContent ? Number(values.reminderDays ?? 2) : entry.reminderDays ?? 2, voice,
-      });
-    }}>
-      {!entry && <label>{t('Vrsta')}<select name="kind" value={kind} onChange={event => setKind(event.target.value)}>
-        <option value="task">{t('Opravilo')}</option><option value="event">{t('Dogodek')}</option>
-      </select></label>}
-      <label>{t('Naslov')}<input name="title" readOnly={!editContent} defaultValue={entry?.title} maxLength="160" required placeholder={kind === 'task' ? t('Npr. Prevzem iz šole') : t('Npr. Družinsko kosilo')} /></label>
-      <div className="fields">
-        <label>{kind === 'event' ? t('Datum') : t('Rok')}<input type="date" name="dueOn" readOnly={!moveDate} defaultValue={entry?.dueOn ?? initialDate} required={kind === 'event' || repeatMode !== 'none'} /></label>
-        <label>{t('Kategorija')}<select name="category" disabled={!editContent} defaultValue={entry?.category ?? 'drugo'}>
-          {Object.entries(categories).map(([key, label]) => <option key={key} value={key}>{t(label)}</option>)}
-        </select></label>
-      </div>
-      {kind === 'event' && <label className="check-field">
-        <input type="checkbox" checked={allDay} disabled={!editContent} onChange={event => setAllDay(event.target.checked)} /> {t('Ves dan')}
-      </label>}
-      {kind === 'event' && !allDay && <div className="fields">
-        <label>{t('Začetek')}<input name="startTime" type="time" defaultValue={entry?.startTime ?? '09:00'} readOnly={!editContent} required /></label>
-        <label>{t('Trajanje (minute)')}<input name="durationMinutes" type="number" min="1" max="1440" defaultValue={entry?.durationMinutes ?? ''} readOnly={!editContent} /></label>
-      </div>}
-      {kind === 'task' && <label>{t('Dodeli članu')}<select name="assigneeId" disabled={!editContent} defaultValue={entry?.assigneeId ?? ''}>
-        <option value="">{t('Na voljo za prevzem')}</option>
-        {members.filter(member => !member.inactive).map(member => <option key={member.id} value={member.id}>{member.name}</option>)}
-      </select></label>}
-      {kind === 'task' && admin && <label>{t('Točke za otroka')}<input name="points" type="number" min="1" max="1000"
-        defaultValue={entry?.points ?? ''} /></label>}
-      {kind === 'task' && <label>{t('Ocena trajanja (minute)')}<input name="estimatedMinutes" type="number" min="1" max="1440"
-        defaultValue={entry?.estimatedMinutes ?? ''} readOnly={!editContent} /></label>}
-      {kind === 'task' && editContent && <>
-        <label>{t('Ponavljanje')}<select value={repeatMode} onChange={event => setRepeatMode(event.target.value)}>
-          <option value="none">{t('Brez ponavljanja')}</option><option value="interval">{t('Interval v dnevih')}</option>
-          <option value="weekly">{t('Tedensko')}</option><option value="monthly">{t('Mesečno')}</option>
-        </select></label>
-        {repeatMode === 'interval' && <label>{t('Ponovi čez dni')}<input name="repeatDays" type="number" min="1" max="3660" required
-          value={repeatDays} onChange={event => setRepeatDays(event.target.value)} /></label>}
-        {repeatMode === 'weekly' && <fieldset><legend>{t('Dnevi v tednu')}</legend>
-          {[1, 2, 3, 4, 5, 6, 7].map(day => <label className="check-field" key={day}>
-            <input type="checkbox" checked={repeatWeekdays.includes(day)} onChange={event => setRepeatWeekdays(previous =>
-              event.target.checked ? [...previous, day] : previous.filter(item => item !== day))} />
-            {new Intl.DateTimeFormat(getLanguage(), { weekday: 'long' }).format(new Date(2026, 0, 4 + day))}
-          </label>)}
-        </fieldset>}
-        {repeatMode === 'monthly' && <label>{t('Dan v mesecu')}<input name="dayOfMonth" type="number" min="1" max="31" required
-          defaultValue={entry?.recurrence?.dayOfMonth ?? 1} /></label>}
-        <label>{t('Opomni dni pred rokom')}<input name="reminderDays" type="number" min="0" max="30" defaultValue={entry?.reminderDays ?? 2} required /></label>
-        {repeatMode !== 'none' && <label className="check-field"><input name="rotate" type="checkbox" defaultChecked={entry?.rotate} />{' '}{t('Naslednjič dodeli naslednjemu članu')}</label>}
-      </>}
-      {entry?.voice && transcriptionEnabled && <Transcription entryId={entry.id} />}
-      {!entry && <VoiceRecorder onChange={setVoice} busy={busy || recordingBusy} setBusy={setRecordingBusy} />}
-      {error && <p className="error" role="alert">{errorText(error)}</p>}
-      {(editContent || moveDate) && <button className="primary" disabled={busy || recordingBusy || removing || (kind === 'task' && editContent && repeatMode === 'weekly' && !repeatWeekdays.length)}>{entry ? t('Shrani spremembe') : <><Plus size={19} />{kind === 'task' ? t('Dodaj opravilo') : t('Dodaj dogodek')}</>}</button>}
-      {entry && permissions.remove && (removing ? <div className="top-actions">
-        <button type="button" className="soft-button" onClick={() => setRemoving(false)} disabled={busy}>{t('Obdrži vnos')}</button>
-        <button type="button" className="danger-button soft-button" onClick={onRemove} disabled={busy}>{t('Potrdi odstranitev')}</button>
-      </div> : <button type="button" className="danger-button text-button" onClick={() => setRemoving(true)} disabled={busy}>{t('Odstrani vnos')}</button>)}
-    </form>
-  </Dialog>;
+  return (
+    <Dialog title={entry ? t('Uredi vnos') : t('Nov vnos')} onClose={onClose}>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (recordingBusy) return;
+          const values = Object.fromEntries(new FormData(event.currentTarget));
+          onSave({
+            kind,
+            dueOn: moveDate ? values.dueOn || null : entry.dueOn,
+            ...(kind === 'event' && editContent
+              ? {
+                  allDay,
+                  startTime: allDay ? null : values.startTime,
+                  durationMinutes: allDay || !values.durationMinutes ? null : Number(values.durationMinutes),
+                }
+              : {}),
+            ...(kind === 'task' && editContent
+              ? { estimatedMinutes: values.estimatedMinutes ? Number(values.estimatedMinutes) : null }
+              : {}),
+            ...(kind === 'task' && admin ? { points: values.points ? Number(values.points) : null } : {}),
+            title: editContent ? values.title : entry.title,
+            category: editContent ? values.category : entry.category,
+            assigneeId: editContent ? values.assigneeId || null : entry.assigneeId,
+            repeatDays: editContent
+              ? kind === 'task' && repeatMode === 'interval'
+                ? Number(values.repeatDays)
+                : 0
+              : (entry.repeatDays ?? 0),
+            ...(kind === 'task' && editContent
+              ? {
+                  recurrence:
+                    repeatMode === 'weekly'
+                      ? { type: 'weekly', weekdays: repeatWeekdays }
+                      : repeatMode === 'monthly'
+                        ? { type: 'monthly', dayOfMonth: Number(values.dayOfMonth) }
+                        : null,
+                }
+              : {}),
+            rotate: editContent ? values.rotate === 'on' : (entry.rotate ?? false),
+            reminderDays: editContent ? Number(values.reminderDays ?? 2) : (entry.reminderDays ?? 2),
+            voice,
+          });
+        }}
+      >
+        {!entry && (
+          <label>
+            {t('Vrsta')}
+            <select name="kind" value={kind} onChange={(event) => setKind(event.target.value)}>
+              <option value="task">{t('Opravilo')}</option>
+              <option value="event">{t('Dogodek')}</option>
+            </select>
+          </label>
+        )}
+        <label>
+          {t('Naslov')}
+          <input
+            name="title"
+            readOnly={!editContent}
+            defaultValue={entry?.title}
+            maxLength="160"
+            required
+            placeholder={kind === 'task' ? t('Npr. Prevzem iz šole') : t('Npr. Družinsko kosilo')}
+          />
+        </label>
+        <div className="fields">
+          <label>
+            {kind === 'event' ? t('Datum') : t('Rok')}
+            <input
+              type="date"
+              name="dueOn"
+              readOnly={!moveDate}
+              defaultValue={entry?.dueOn ?? initialDate}
+              required={kind === 'event' || repeatMode !== 'none'}
+            />
+          </label>
+          <label>
+            {t('Kategorija')}
+            <select name="category" disabled={!editContent} defaultValue={entry?.category ?? 'drugo'}>
+              {Object.entries(categories).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {t(label)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {kind === 'event' && (
+          <label className="check-field">
+            <input
+              type="checkbox"
+              checked={allDay}
+              disabled={!editContent}
+              onChange={(event) => setAllDay(event.target.checked)}
+            />{' '}
+            {t('Ves dan')}
+          </label>
+        )}
+        {kind === 'event' && !allDay && (
+          <div className="fields">
+            <label>
+              {t('Začetek')}
+              <input
+                name="startTime"
+                type="time"
+                defaultValue={entry?.startTime ?? '09:00'}
+                readOnly={!editContent}
+                required
+              />
+            </label>
+            <label>
+              {t('Trajanje (minute)')}
+              <input
+                name="durationMinutes"
+                type="number"
+                min="1"
+                max="1440"
+                defaultValue={entry?.durationMinutes ?? ''}
+                readOnly={!editContent}
+              />
+            </label>
+          </div>
+        )}
+        {kind === 'task' && (
+          <label>
+            {t('Dodeli članu')}
+            <select name="assigneeId" disabled={!editContent} defaultValue={entry?.assigneeId ?? ''}>
+              <option value="">{t('Na voljo za prevzem')}</option>
+              {members
+                .filter((member) => !member.inactive)
+                .map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
+                  </option>
+                ))}
+            </select>
+          </label>
+        )}
+        {kind === 'task' && admin && (
+          <label>
+            {t('Točke za otroka')}
+            <input name="points" type="number" min="1" max="1000" defaultValue={entry?.points ?? ''} />
+          </label>
+        )}
+        {kind === 'task' && (
+          <label>
+            {t('Ocena trajanja (minute)')}
+            <input
+              name="estimatedMinutes"
+              type="number"
+              min="1"
+              max="1440"
+              defaultValue={entry?.estimatedMinutes ?? ''}
+              readOnly={!editContent}
+            />
+          </label>
+        )}
+        {kind === 'task' && editContent && (
+          <>
+            <label>
+              {t('Ponavljanje')}
+              <select value={repeatMode} onChange={(event) => setRepeatMode(event.target.value)}>
+                <option value="none">{t('Brez ponavljanja')}</option>
+                <option value="interval">{t('Interval v dnevih')}</option>
+                <option value="weekly">{t('Tedensko')}</option>
+                <option value="monthly">{t('Mesečno')}</option>
+              </select>
+            </label>
+            {repeatMode === 'interval' && (
+              <label>
+                {t('Ponovi čez dni')}
+                <input
+                  name="repeatDays"
+                  type="number"
+                  min="1"
+                  max="3660"
+                  required
+                  value={repeatDays}
+                  onChange={(event) => setRepeatDays(event.target.value)}
+                />
+              </label>
+            )}
+            {repeatMode === 'weekly' && (
+              <fieldset>
+                <legend>{t('Dnevi v tednu')}</legend>
+                {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                  <label className="check-field" key={day}>
+                    <input
+                      type="checkbox"
+                      checked={repeatWeekdays.includes(day)}
+                      onChange={(event) =>
+                        setRepeatWeekdays((previous) =>
+                          event.target.checked ? [...previous, day] : previous.filter((item) => item !== day),
+                        )
+                      }
+                    />
+                    {new Intl.DateTimeFormat(getLanguage(), { weekday: 'long' }).format(
+                      new Date(2026, 0, 4 + day),
+                    )}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+            {repeatMode === 'monthly' && (
+              <label>
+                {t('Dan v mesecu')}
+                <input
+                  name="dayOfMonth"
+                  type="number"
+                  min="1"
+                  max="31"
+                  required
+                  defaultValue={entry?.recurrence?.dayOfMonth ?? 1}
+                />
+              </label>
+            )}
+            <label>
+              {t('Opomni dni pred rokom')}
+              <input
+                name="reminderDays"
+                type="number"
+                min="0"
+                max="30"
+                defaultValue={entry?.reminderDays ?? 2}
+                required
+              />
+            </label>
+            {repeatMode !== 'none' && (
+              <label className="check-field">
+                <input name="rotate" type="checkbox" defaultChecked={entry?.rotate} />{' '}
+                {t('Naslednjič dodeli naslednjemu članu')}
+              </label>
+            )}
+          </>
+        )}
+        {entry?.voice && transcriptionEnabled && <Transcription entryId={entry.id} />}
+        {!entry && (
+          <VoiceRecorder onChange={setVoice} busy={busy || recordingBusy} setBusy={setRecordingBusy} />
+        )}
+        {error && (
+          <p className="error" role="alert">
+            {errorText(error)}
+          </p>
+        )}
+        {(editContent || moveDate) && (
+          <button
+            className="primary"
+            disabled={
+              busy ||
+              recordingBusy ||
+              removing ||
+              (kind === 'task' && editContent && repeatMode === 'weekly' && !repeatWeekdays.length)
+            }
+          >
+            {entry ? (
+              t('Shrani spremembe')
+            ) : (
+              <>
+                <Plus size={19} />
+                {kind === 'task' ? t('Dodaj opravilo') : t('Dodaj dogodek')}
+              </>
+            )}
+          </button>
+        )}
+        {entry &&
+          permissions.remove &&
+          (removing ? (
+            <div className="top-actions">
+              <button
+                type="button"
+                className="soft-button"
+                onClick={() => setRemoving(false)}
+                disabled={busy}
+              >
+                {t('Obdrži vnos')}
+              </button>
+              <button type="button" className="danger-button soft-button" onClick={onRemove} disabled={busy}>
+                {t('Potrdi odstranitev')}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="danger-button text-button"
+              onClick={() => setRemoving(true)}
+              disabled={busy}
+            >
+              {t('Odstrani vnos')}
+            </button>
+          ))}
+      </form>
+    </Dialog>
+  );
 }
 
 function InviteDialog({ code, onClose, onRotate, busy, error }) {
   const [copied, setCopied] = useState(false);
   const input = useRef(null);
-  return <Dialog title={t('Povabi družinskega člana')} onClose={onClose}>
-    <p className="muted">{t('Pošlji povezavo ali kodo. Član po prijavi izbere »Pridruži se s povabilom«.')}</p>
-    <label className="invite-label">{t('Koda povabila')}<input ref={input} readOnly value={code} /></label>
-    <button className="primary" onClick={async () => {
-      try {
-        await navigator.clipboard.writeText(code);
-        setCopied(true);
-      } catch {
-        input.current.focus();
-        input.current.select();
-      }
-    }}>{copied ? <Check size={18} /> : <Clipboard size={18} />} {copied ? t('Koda je kopirana') : t('Kopiraj kodo')}</button>
-    <label className="invite-label family-switch">{t('Povezava za povabilo')}<input readOnly
-      value={`${window.location.origin}/join/${code}`} onFocus={event => event.target.select()} /></label>
-    <button className="text-button rotate-code" disabled={busy} onClick={() => { setCopied(false); onRotate(); }}>{t('Ustvari novo kodo')}</button>
-    {error && <p className="error" role="alert">{errorText(error)}</p>}
-  </Dialog>;
+  return (
+    <Dialog title={t('Povabi družinskega člana')} onClose={onClose}>
+      <p className="muted">
+        {t('Pošlji povezavo ali kodo. Član po prijavi izbere »Pridruži se s povabilom«.')}
+      </p>
+      <label className="invite-label">
+        {t('Koda povabila')}
+        <input ref={input} readOnly value={code} />
+      </label>
+      <button
+        className="primary"
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(code);
+            setCopied(true);
+          } catch {
+            input.current.focus();
+            input.current.select();
+          }
+        }}
+      >
+        {copied ? <Check size={18} /> : <Clipboard size={18} />}{' '}
+        {copied ? t('Koda je kopirana') : t('Kopiraj kodo')}
+      </button>
+      <label className="invite-label family-switch">
+        {t('Povezava za povabilo')}
+        <input
+          readOnly
+          value={`${window.location.origin}/join/${code}`}
+          onFocus={(event) => event.target.select()}
+        />
+      </label>
+      <button
+        className="text-button rotate-code"
+        disabled={busy}
+        onClick={() => {
+          setCopied(false);
+          onRotate();
+        }}
+      >
+        {t('Ustvari novo kodo')}
+      </button>
+      {error && (
+        <p className="error" role="alert">
+          {errorText(error)}
+        </p>
+      )}
+    </Dialog>
+  );
 }
 
 function WhatsAppDialog({ linked, onClose, onUpdate }) {
@@ -189,16 +477,36 @@ function WhatsAppDialog({ linked, onClose, onUpdate }) {
     }
   }
 
-  return <Dialog title={t('Vnos prek WhatsAppa')} onClose={onClose}>
-    <p>{linked ? t('Povezana številka lahko pošlje naslov opravila ali sporočilo »dogodek LLLL-MM-DD Naslov«.') :
-      t('Ustvari kodo in jo z izbrane številke pošlji na poslovno številko Sotovora.')}</p>
-    {code && <label className="invite-label">{t('Sporočilo za povezavo (velja 10 minut)')}<input readOnly value={'poveži ' + code} onFocus={event => event.target.select()} /></label>}
-    {error && <p className="error" role="alert">{errorText(error)}</p>}
-    <div className="top-actions">
-      <button className="primary" disabled={busy} onClick={() => change('pair')}>{t('Ustvari kodo')}</button>
-      {linked && <button className="soft-button" disabled={busy} onClick={() => change('unlink')}>{t('Prekini povezavo')}</button>}
-    </div>
-  </Dialog>;
+  return (
+    <Dialog title={t('Vnos prek WhatsAppa')} onClose={onClose}>
+      <p>
+        {linked
+          ? t('Povezana številka lahko pošlje naslov opravila ali sporočilo »dogodek LLLL-MM-DD Naslov«.')
+          : t('Ustvari kodo in jo z izbrane številke pošlji na poslovno številko Sotovora.')}
+      </p>
+      {code && (
+        <label className="invite-label">
+          {t('Sporočilo za povezavo (velja 10 minut)')}
+          <input readOnly value={'poveži ' + code} onFocus={(event) => event.target.select()} />
+        </label>
+      )}
+      {error && (
+        <p className="error" role="alert">
+          {errorText(error)}
+        </p>
+      )}
+      <div className="top-actions">
+        <button className="primary" disabled={busy} onClick={() => change('pair')}>
+          {t('Ustvari kodo')}
+        </button>
+        {linked && (
+          <button className="soft-button" disabled={busy} onClick={() => change('unlink')}>
+            {t('Prekini povezavo')}
+          </button>
+        )}
+      </div>
+    </Dialog>
+  );
 }
 
 export default function App() {
@@ -233,11 +541,11 @@ export default function App() {
       const saved = await request('/me/appearance', next, undefined, null, 'PUT');
       setLanguage(saved.language);
       setTheme(saved.theme);
-      setData(current => ({ ...current, profile: { ...current.profile, appearance: saved } }));
+      setData((current) => ({ ...current, profile: { ...current.profile, appearance: saved } }));
     });
   }
-  const onLanguage = language => updateAppearance({ language });
-  const onTheme = theme => updateAppearance({ theme });
+  const onLanguage = (language) => updateAppearance({ language });
+  const onTheme = (theme) => updateAppearance({ theme });
   const pending = useRef(false);
   const revision = useRef(0);
 
@@ -250,7 +558,7 @@ export default function App() {
       refreshing = true;
       const startedAt = revision.current;
       try {
-        const next = await request('/dashboard', undefined, controller.signal).catch(error => {
+        const next = await request('/dashboard', undefined, controller.signal).catch((error) => {
           if (error.status !== 403) throw error;
           return request('/dashboard', undefined, controller.signal, null);
         });
@@ -267,7 +575,11 @@ export default function App() {
       setToday(dateKey(new Date()));
       void refresh();
     }, 8000);
-    return () => { active = false; controller.abort(); clearInterval(timer); };
+    return () => {
+      active = false;
+      controller.abort();
+      clearInterval(timer);
+    };
   }, []);
 
   async function run(work) {
@@ -314,8 +626,10 @@ export default function App() {
       go('tasks');
       if (data?.permissions?.create) open('task');
     } else {
-      go(destination === 'reminders' || destination === 'recurring' ? 'tasks' : destination,
-        destination === 'reminders' ? 'due' : destination === 'recurring' ? 'recurring' : 'all');
+      go(
+        destination === 'reminders' || destination === 'recurring' ? 'tasks' : destination,
+        destination === 'reminders' ? 'due' : destination === 'recurring' ? 'recurring' : 'all',
+      );
     }
     setInApp(true);
   }
@@ -334,11 +648,24 @@ export default function App() {
     go('overview');
   }
 
-  if (data === undefined) return <main className="loading">
-    <Brand />
-    <LanguageSelect onChange={onLanguage} /><ThemeSelect onChange={onTheme} />
-    {error ? <><p role="alert">{errorText(error)}</p><button className="primary" onClick={() => location.reload()}>{t('Poskusi znova')}</button></> : <p role="status">{t('Odpiram družinski prostor …')}</p>}
-  </main>;
+  if (data === undefined)
+    return (
+      <main className="loading">
+        <Brand />
+        <LanguageSelect onChange={onLanguage} />
+        <ThemeSelect onChange={onTheme} />
+        {error ? (
+          <>
+            <p role="alert">{errorText(error)}</p>
+            <button className="primary" onClick={() => location.reload()}>
+              {t('Poskusi znova')}
+            </button>
+          </>
+        ) : (
+          <p role="status">{t('Odpiram družinski prostor …')}</p>
+        )}
+      </main>
+    );
   function logout() {
     return run(async () => {
       await request('/auth/logout', {}, undefined, null);
@@ -350,192 +677,483 @@ export default function App() {
   }
 
   const legacy = Boolean(data?.household && !data.profile);
-  const onAuth = (mode, fields) => run(async () => {
-    await request('/auth/' + mode, fields, undefined, null);
-    updateWorkspace(await request('/dashboard', undefined, undefined, null), setData);
-    go('profile');
-    setInApp(true);
-  });
-  if (desktopLink && !desktopBridge) return <DesktopApproval profile={data?.profile} {...{ legacy, busy, error, onAuth }} onLogout={logout} />;
+  const onAuth = (mode, fields) =>
+    run(async () => {
+      await request('/auth/' + mode, fields, undefined, null);
+      updateWorkspace(await request('/dashboard', undefined, undefined, null), setData);
+      go('profile');
+      setInApp(true);
+    });
+  if (desktopLink && !desktopBridge)
+    return <DesktopApproval profile={data?.profile} {...{ legacy, busy, error, onAuth }} onLogout={logout} />;
   if (desktopBridge && !data?.profile) return <DesktopSignIn />;
-  if (!inApp || !data?.profile) return <Landing signedIn={Boolean(data?.profile)} {...{ legacy, busy, error, onAuth }}
-    onLanguage={onLanguage} onTheme={onTheme} startWithInvite={Boolean(inviteCode)} onEnter={followShortcut} onJoin={() => open('join')} />;
+  if (!inApp || !data?.profile)
+    return (
+      <Landing
+        signedIn={Boolean(data?.profile)}
+        {...{ legacy, busy, error, onAuth }}
+        onLanguage={onLanguage}
+        onTheme={onTheme}
+        startWithInvite={Boolean(inviteCode)}
+        onEnter={followShortcut}
+        onJoin={() => open('join')}
+      />
+    );
 
-  if (!data.household) return <ChooseHousehold profile={data.profile} {...{ busy, error, inviteCode }}
-    verification={data.profile.emailVerificationPending && <EmailVerificationReminder />}
-    appearanceControls={<div className="top-actions appearance-controls"><LanguageSelect onChange={onLanguage} /><ThemeSelect onChange={onTheme} /></div>} startJoining={modal === 'join'} onLogout={logout} onSubmit={(joining, fields) => run(() => joinOrCreate(joining, fields))} />;
+  if (!data.household)
+    return (
+      <ChooseHousehold
+        profile={data.profile}
+        {...{ busy, error, inviteCode }}
+        verification={data.profile.emailVerificationPending && <EmailVerificationReminder />}
+        appearanceControls={
+          <div className="top-actions appearance-controls">
+            <LanguageSelect onChange={onLanguage} />
+            <ThemeSelect onChange={onTheme} />
+          </div>
+        }
+        startJoining={modal === 'join'}
+        onLogout={logout}
+        onSubmit={(joining, fields) => run(() => joinOrCreate(joining, fields))}
+      />
+    );
 
   const { household, memberId, members, entries, permissions } = data;
-  const member = members.find(member => member.id === memberId);
-  const tasks = entries.filter(entry => entry.kind === 'task');
+  const member = members.find((member) => member.id === memberId);
+  const tasks = entries.filter((entry) => entry.kind === 'task');
   const overview = page === 'overview';
   const canManage = permissions.edit || permissions.move || permissions.remove;
   function openDetails(task) {
     setEditing(task);
     setModal('task-details');
   }
-  const taskPanel = <Tasks {...{ tasks, members, memberId, today, filter, busy }} onFilter={setFilter} onDetails={openDetails} onEdit={canManage ? edit : undefined}
-    onAdd={permissions.create ? () => open('task') : undefined} onAction={(id, action) => run(async () => {
-      setData(await request(`/tasks/${id}/${action}`, {}));
-      setNotice({ claim: 'Opravilo je prevzeto.', cover: 'Opravilo je spet na voljo za prevzem.', complete: 'Opravilo je zaključeno.' }[action]);
-    })} />;
-
-  return <div className={`workspace${desktopBridge ? ' desktop-workspace' : ''}`}>
-    <aside className="sidebar">
-      <button className="brand-button" onClick={() => go('overview')} aria-label={t('Sotovor, pregled')}><Brand /></button>
-      <div className="household"><span><House size={17} /></span><div><strong>{household.name}</strong><small>{t('Družinski prostor')}</small></div></div>
-      <nav aria-label={t('Glavna navigacija')}>{Object.entries(pages).map(([key, [label, Icon]]) =>
-        <button key={key} aria-current={page === key ? 'page' : undefined} onClick={() => go(key)}><Icon size={19} /> {t(label)}</button>)}</nav>
-      <div className="sidebar-profile"><Avatar name={member.name} /><strong>{member.name}</strong></div>
-    </aside>
-    <main className="main">
-      <header className="topbar"><span><House size={16} />{household.name}</span>
-        <div className="top-actions">
-          <LanguageSelect onChange={onLanguage} /><ThemeSelect onChange={onTheme} />
-          <Notifications key={memberId} tasks={tasks} householdId={household.id}
-            onView={(next, task) => {
-              if (next === 'family') go('profile');
-              else go('tasks', next);
-              if (task) openDetails(task);
-            }} />
-          {data.admin && data.whatsapp?.enabled && <button className="soft-button" onClick={() => open('whatsapp')}>WhatsApp</button>}
-          {data.admin && <button className="soft-button" onClick={() => open('invite')}><UserRoundPlus size={17} />{' '}{t('Povabi člana')}</button>}
-          <button className="soft-button" type="button" onClick={logout} disabled={busy}><LogOut size={17} />{' '}{t('Odjava')}</button>
-        </div>
-      </header>
-      <div className="content" key={page + ':' + household.id}>
-        <div className="page-heading">
-          <div><p className="today-label"><CalendarDays size={16} /> {fullDate.format(new Date(today + 'T12:00:00'))}</p>
-            <h1>{overview ? t("Živjo, %0!", member.name) : t(pages[page][0])}</h1>
-            {overview && <p>{t('Tukaj je pregled vaših družinskih opravil in dogovorov.')}</p>}
-          </div>
-          {!['profile', 'shopping'].includes(page) && permissions.create && <button className="primary" onClick={() => open(page === 'calendar' ? 'event' : 'task')}><Plus size={20} />{' '}{t('Dodaj vnos')}</button>}
-        </div>
-        {error && !modal && <p className="error banner" role="alert">{errorText(error)}</p>}
-        {notice && <p className="notice banner" role="status">{Array.isArray(notice) ? t(...notice) : t(notice)}</p>}
-        {overview && <>
-          <Metrics {...{ tasks, memberId, today }} onFilter={next => go('tasks', next)} />
-          <div className="overview-grid">{taskPanel}<div className="right-stack">
-            <Calendar {...{ entries, today }} compact onOpen={() => go('calendar')} />
-            <Workload {...{ members, tasks, memberId }} compact onOpen={() => go('workload')} />
-          </div></div>
-        </>}
-        {page === 'tasks' && taskPanel}
-        {page === 'shopping' && <ShoppingList key={household.id} householdId={household.id} />}
-        {page === 'calendar' && <>
-          <CalendarSubscription />
-          <div className="calendar-view" aria-label={t('Pogled koledarja')}>
-            <button className="soft-button" aria-pressed={calendarView === 'month'} onClick={() => setCalendarView('month')}>{t('Mesec')}</button>
-            <button className="soft-button" aria-pressed={calendarView === 'week'} onClick={() => setCalendarView('week')}>{t('Teden')}</button>
-          </div>
-          {calendarView === 'month' ? <MonthCalendar {...{ entries, members, today }}
-            onAdd={permissions.create ? date => open('event', date) : undefined} onEdit={canManage ? edit : undefined} /> :
-            <Calendar {...{ entries, today }} onAdd={permissions.create ? () => open('event') : undefined} onEdit={canManage ? edit : undefined} />}
-        </>}
-        {page === 'workload' && <div className="right-stack">
-          <Workload {...{ members, tasks, memberId }} />
-          <Rewards key={household.id} householdId={household.id} admin={data.admin} />
-          {data.admin && <SmartPlanning busy={busy}
-            onPreview={(rebalance, setPlan) => run(async () => setPlan(await request('/planning/preview', { rebalance })))}
-            onApply={(fields, clearPlan) => run(async () => {
-              const result = await request('/planning/apply', fields);
-              clearPlan();
-              setData(await request('/dashboard'));
-              setNotice(result.conflicts
-                ? ['Uporabljene dodelitve: %0. Vmes spremenjena opravila: %1.', result.applied, result.conflicts]
-                : ['Uporabljene dodelitve: %0.', result.applied]);
-            })} />}
-        </div>}
-        {page === 'profile' && <div className="profile-grid"><section className="panel account-card">
-          <h2>{data.profile.firstName} {data.profile.lastName}</h2>
-          <p>{data.profile.email}<br />{data.profile.phone}</p>
-          {data.profile.emailVerificationPending && <EmailVerificationReminder />}
-          <p><strong>{household.name}</strong> · {data.admin ? t('Skrbnik') : t('Član')}</p>
-          {data.spaces?.length > 1 && <label className="family-switch">{t('Družinski prostor')}<select value={household.id} disabled={busy} onChange={event => {
-              const id = event.target.value;
-              run(async () => {
-                updateWorkspace(await request('/dashboard', undefined, undefined, id), setData);
-                setFilter('all');
-              });
-            }}>
-              {data.spaces.map(space => <option key={space.id} value={space.id}>{space.name}</option>)}
-            </select>
-          </label>}
-          <div className="hero-actions">
-            <button className="primary" onClick={() => go('overview')}>{t('Odpri nadzorno ploščo')}</button>
-            <a className="soft-button" href="/prenesi">{t('Prenesi')}</a>
-            {data.admin && <button className="soft-button" onClick={() => open('family')} disabled={busy}><Plus size={17} />{' '}{t('Nova družina')}</button>}
-            <button className="soft-button" onClick={() => open('join')} disabled={busy}>{t('Pridruži se s povabilom')}</button>
-          </div>
-          {!data.admin && (data.leaveRequested ? <p>{t('Prošnja za izstop čaka na skrbnika.')}</p> :
-            <button className="text-button" onClick={() => run(async () => {
-              await request('/households/leave', {});
-              setData(await request('/dashboard'));
-            })} disabled={busy}>{t('Zaprosi za izstop iz prostora')}</button>)}
-        </section>
-          {data.admin && <FamilySettings members={members} expectedMembers={household.expectedMembers} busy={busy} onInvite={() => open('invite')}
-            onChange={(id, action, fields = {}) => run(async () => {
-              await request(`/households/members/${id}/${action}`, fields);
-              setData(await request('/dashboard'));
-              setNotice('Sprememba je shranjena.');
-            })} />}
-        </div>}
-      </div>
-    </main>
-    {modal === 'invite' && data.admin && <InviteDialog code={household.inviteCode} {...{ busy, error }}
-      onClose={() => { setModal(null); setError(''); }}
-      onRotate={() => run(async () => {
-        await request('/households/invite/rotate', {});
-        setData(await request('/dashboard'));
-      })} />}
-    {modal === 'join' && <Dialog title={t('Pridruži se s povabilom')} onClose={() => { if (!busy) setModal(null); }}>
-      <form onSubmit={event => {
-        event.preventDefault();
-        const fields = new FormData(event.currentTarget);
-        run(() => joinOrCreate(true, { inviteCode: fields.get('inviteCode') }));
-      }}>
-        <label>{t('Koda povabila')}<input name="inviteCode" defaultValue={inviteCode} maxLength={32} required spellCheck={false} autoCapitalize="none" /></label>
-        {error && <p className="error" role="alert">{errorText(error)}</p>}
-        <button className="primary" disabled={busy}>{t('Pridruži se prostoru')}</button>
-      </form>
-    </Dialog>}
-    {modal === 'family' && data.admin && <Dialog title={t('Ustvari novo družino')} onClose={() => { if (!busy) setModal(null); }}>
-      <form onSubmit={event => {
-        event.preventDefault();
-        const fields = new FormData(event.currentTarget);
+  const taskPanel = (
+    <Tasks
+      {...{ tasks, members, memberId, today, filter, busy }}
+      onFilter={setFilter}
+      onDetails={openDetails}
+      onEdit={canManage ? edit : undefined}
+      onAdd={permissions.create ? () => open('task') : undefined}
+      onAction={(id, action) =>
         run(async () => {
-          const { householdId } = await request('/households', {
-            householdName: fields.get('householdName'), expectedMembers: Number(fields.get('expectedMembers')),
-          });
-          updateWorkspace(await request('/dashboard', undefined, undefined, householdId), setData);
-          setFilter('all');
-          setModal('invite');
-        });
-      }}>
-        <label>{t('Ime družine')}<input name="householdName" required maxLength={80} /></label>
-        <label>{t('Načrtovano število članov')}<input name="expectedMembers" type="number" min={1} max={100} defaultValue={4} required /></label>
-        {error && <p className="error" role="alert">{errorText(error)}</p>}
-        <button className="primary" disabled={busy}>{t('Ustvari družinski prostor')}</button>
-      </form>
-    </Dialog>}
-    {modal === 'whatsapp' && <WhatsAppDialog linked={data.whatsapp.linked} onClose={() => setModal(null)}
-      onUpdate={async () => setData(await request('/dashboard'))} />}
-    {modal === 'task-details' && <Dialog title={editing.title} onClose={() => setModal(null)}>
-      <TaskDetails key={editing.id} task={editing} householdId={household.id} transcriptionEnabled={data.transcriptionEnabled} />
-    </Dialog>}
-    {['task', 'event', 'edit'].includes(modal) && <EntryDialog initialKind={modal === 'edit' ? editing.kind : modal} initialDate={entryDate}
-      entry={modal === 'edit' ? editing : null} admin={data.admin} transcriptionEnabled={data.transcriptionEnabled} {...{ permissions, members, busy, error }}
-      onClose={() => { if (!pending.current) { setModal(null); setError(''); } }}
-      onRemove={() => run(async () => {
-        setData(await request(`/entries/${editing.id}/remove`, { version: editing.version ?? 0 }));
-        setModal(null);
-        setNotice('Vnos je odstranjen.');
-      })}
-      onSave={fields => run(async () => {
-        setData(await request(modal === 'edit' ? `/entries/${editing.id}/edit` : '/entries',
-          modal === 'edit' ? { ...fields, version: editing.version ?? 0 } : fields));
-        setModal(null);
-        setNotice(modal === 'edit' ? 'Spremembe so shranjene.' : fields.kind === 'event' ? 'Dogodek je dodan.' : 'Opravilo je dodano.');
-      })} />}
-  </div>;
+          setData(await request(`/tasks/${id}/${action}`, {}));
+          setNotice(
+            {
+              claim: 'Opravilo je prevzeto.',
+              cover: 'Opravilo je spet na voljo za prevzem.',
+              complete: 'Opravilo je zaključeno.',
+            }[action],
+          );
+        })
+      }
+    />
+  );
+
+  return (
+    <div className={`workspace${desktopBridge ? ' desktop-workspace' : ''}`}>
+      <aside className="sidebar">
+        <button className="brand-button" onClick={() => go('overview')} aria-label={t('Sotovor, pregled')}>
+          <Brand />
+        </button>
+        <div className="household">
+          <span>
+            <House size={17} />
+          </span>
+          <div>
+            <strong>{household.name}</strong>
+            <small>{t('Družinski prostor')}</small>
+          </div>
+        </div>
+        <nav aria-label={t('Glavna navigacija')}>
+          {Object.entries(pages).map(([key, [label, Icon]]) => (
+            <button key={key} aria-current={page === key ? 'page' : undefined} onClick={() => go(key)}>
+              <Icon size={19} /> {t(label)}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-profile">
+          <Avatar name={member.name} />
+          <strong>{member.name}</strong>
+        </div>
+      </aside>
+      <main className="main">
+        <header className="topbar">
+          <span>
+            <House size={16} />
+            {household.name}
+          </span>
+          <div className="top-actions">
+            <LanguageSelect onChange={onLanguage} />
+            <ThemeSelect onChange={onTheme} />
+            <Notifications
+              key={memberId}
+              tasks={tasks}
+              householdId={household.id}
+              onView={(next, task) => {
+                if (next === 'family') go('profile');
+                else go('tasks', next);
+                if (task) openDetails(task);
+              }}
+            />
+            {data.admin && data.whatsapp?.enabled && (
+              <button className="soft-button" onClick={() => open('whatsapp')}>
+                WhatsApp
+              </button>
+            )}
+            {data.admin && (
+              <button className="soft-button" onClick={() => open('invite')}>
+                <UserRoundPlus size={17} /> {t('Povabi člana')}
+              </button>
+            )}
+            <button className="soft-button" type="button" onClick={logout} disabled={busy}>
+              <LogOut size={17} /> {t('Odjava')}
+            </button>
+          </div>
+        </header>
+        <div className="content" key={page + ':' + household.id}>
+          <div className="page-heading">
+            <div>
+              <p className="today-label">
+                <CalendarDays size={16} /> {fullDate.format(new Date(today + 'T12:00:00'))}
+              </p>
+              <h1>{overview ? t('Živjo, %0!', member.name) : t(pages[page][0])}</h1>
+              {overview && <p>{t('Tukaj je pregled vaših družinskih opravil in dogovorov.')}</p>}
+            </div>
+            {!['profile', 'shopping'].includes(page) && permissions.create && (
+              <button className="primary" onClick={() => open(page === 'calendar' ? 'event' : 'task')}>
+                <Plus size={20} /> {t('Dodaj vnos')}
+              </button>
+            )}
+          </div>
+          {error && !modal && (
+            <p className="error banner" role="alert">
+              {errorText(error)}
+            </p>
+          )}
+          {notice && (
+            <p className="notice banner" role="status">
+              {Array.isArray(notice) ? t(...notice) : t(notice)}
+            </p>
+          )}
+          {overview && (
+            <>
+              <Metrics {...{ tasks, memberId, today }} onFilter={(next) => go('tasks', next)} />
+              <div className="overview-grid">
+                {taskPanel}
+                <div className="right-stack">
+                  <Calendar {...{ entries, today }} compact onOpen={() => go('calendar')} />
+                  <Workload {...{ members, tasks, memberId }} compact onOpen={() => go('workload')} />
+                </div>
+              </div>
+            </>
+          )}
+          {page === 'tasks' && taskPanel}
+          {page === 'shopping' && <ShoppingList key={household.id} householdId={household.id} />}
+          {page === 'calendar' && (
+            <>
+              <CalendarSubscription />
+              <div className="calendar-view" aria-label={t('Pogled koledarja')}>
+                <button
+                  className="soft-button"
+                  aria-pressed={calendarView === 'month'}
+                  onClick={() => setCalendarView('month')}
+                >
+                  {t('Mesec')}
+                </button>
+                <button
+                  className="soft-button"
+                  aria-pressed={calendarView === 'week'}
+                  onClick={() => setCalendarView('week')}
+                >
+                  {t('Teden')}
+                </button>
+              </div>
+              {calendarView === 'month' ? (
+                <MonthCalendar
+                  {...{ entries, members, today }}
+                  onAdd={permissions.create ? (date) => open('event', date) : undefined}
+                  onEdit={canManage ? edit : undefined}
+                />
+              ) : (
+                <Calendar
+                  {...{ entries, today }}
+                  onAdd={permissions.create ? () => open('event') : undefined}
+                  onEdit={canManage ? edit : undefined}
+                />
+              )}
+            </>
+          )}
+          {page === 'workload' && (
+            <div className="right-stack">
+              <Workload {...{ members, tasks, memberId }} />
+              <Rewards key={household.id} householdId={household.id} admin={data.admin} />
+              {data.admin && (
+                <SmartPlanning
+                  busy={busy}
+                  onPreview={(rebalance, setPlan) =>
+                    run(async () => setPlan(await request('/planning/preview', { rebalance })))
+                  }
+                  onApply={(fields, clearPlan) =>
+                    run(async () => {
+                      const result = await request('/planning/apply', fields);
+                      clearPlan();
+                      setData(await request('/dashboard'));
+                      setNotice(
+                        result.conflicts
+                          ? [
+                              'Uporabljene dodelitve: %0. Vmes spremenjena opravila: %1.',
+                              result.applied,
+                              result.conflicts,
+                            ]
+                          : ['Uporabljene dodelitve: %0.', result.applied],
+                      );
+                    })
+                  }
+                />
+              )}
+            </div>
+          )}
+          {page === 'profile' && (
+            <div className="profile-grid">
+              <section className="panel account-card">
+                <h2>
+                  {data.profile.firstName} {data.profile.lastName}
+                </h2>
+                <p>
+                  {data.profile.email}
+                  <br />
+                  {data.profile.phone}
+                </p>
+                {data.profile.emailVerificationPending && <EmailVerificationReminder />}
+                <p>
+                  <strong>{household.name}</strong> · {data.admin ? t('Skrbnik') : t('Član')}
+                </p>
+                {data.spaces?.length > 1 && (
+                  <label className="family-switch">
+                    {t('Družinski prostor')}
+                    <select
+                      value={household.id}
+                      disabled={busy}
+                      onChange={(event) => {
+                        const id = event.target.value;
+                        run(async () => {
+                          updateWorkspace(await request('/dashboard', undefined, undefined, id), setData);
+                          setFilter('all');
+                        });
+                      }}
+                    >
+                      {data.spaces.map((space) => (
+                        <option key={space.id} value={space.id}>
+                          {space.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                <div className="hero-actions">
+                  <button className="primary" onClick={() => go('overview')}>
+                    {t('Odpri nadzorno ploščo')}
+                  </button>
+                  <a className="soft-button" href="/prenesi">
+                    {t('Prenesi')}
+                  </a>
+                  {data.admin && (
+                    <button className="soft-button" onClick={() => open('family')} disabled={busy}>
+                      <Plus size={17} /> {t('Nova družina')}
+                    </button>
+                  )}
+                  <button className="soft-button" onClick={() => open('join')} disabled={busy}>
+                    {t('Pridruži se s povabilom')}
+                  </button>
+                </div>
+                {!data.admin &&
+                  (data.leaveRequested ? (
+                    <p>{t('Prošnja za izstop čaka na skrbnika.')}</p>
+                  ) : (
+                    <button
+                      className="text-button"
+                      onClick={() =>
+                        run(async () => {
+                          await request('/households/leave', {});
+                          setData(await request('/dashboard'));
+                        })
+                      }
+                      disabled={busy}
+                    >
+                      {t('Zaprosi za izstop iz prostora')}
+                    </button>
+                  ))}
+              </section>
+              {data.admin && (
+                <FamilySettings
+                  members={members}
+                  expectedMembers={household.expectedMembers}
+                  busy={busy}
+                  onInvite={() => open('invite')}
+                  onChange={(id, action, fields = {}) =>
+                    run(async () => {
+                      await request(`/households/members/${id}/${action}`, fields);
+                      setData(await request('/dashboard'));
+                      setNotice('Sprememba je shranjena.');
+                    })
+                  }
+                />
+              )}
+            </div>
+          )}
+        </div>
+      </main>
+      {modal === 'invite' && data.admin && (
+        <InviteDialog
+          code={household.inviteCode}
+          {...{ busy, error }}
+          onClose={() => {
+            setModal(null);
+            setError('');
+          }}
+          onRotate={() =>
+            run(async () => {
+              await request('/households/invite/rotate', {});
+              setData(await request('/dashboard'));
+            })
+          }
+        />
+      )}
+      {modal === 'join' && (
+        <Dialog
+          title={t('Pridruži se s povabilom')}
+          onClose={() => {
+            if (!busy) setModal(null);
+          }}
+        >
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              const fields = new FormData(event.currentTarget);
+              run(() => joinOrCreate(true, { inviteCode: fields.get('inviteCode') }));
+            }}
+          >
+            <label>
+              {t('Koda povabila')}
+              <input
+                name="inviteCode"
+                defaultValue={inviteCode}
+                maxLength={32}
+                required
+                spellCheck={false}
+                autoCapitalize="none"
+              />
+            </label>
+            {error && (
+              <p className="error" role="alert">
+                {errorText(error)}
+              </p>
+            )}
+            <button className="primary" disabled={busy}>
+              {t('Pridruži se prostoru')}
+            </button>
+          </form>
+        </Dialog>
+      )}
+      {modal === 'family' && data.admin && (
+        <Dialog
+          title={t('Ustvari novo družino')}
+          onClose={() => {
+            if (!busy) setModal(null);
+          }}
+        >
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              const fields = new FormData(event.currentTarget);
+              run(async () => {
+                const { householdId } = await request('/households', {
+                  householdName: fields.get('householdName'),
+                  expectedMembers: Number(fields.get('expectedMembers')),
+                });
+                updateWorkspace(await request('/dashboard', undefined, undefined, householdId), setData);
+                setFilter('all');
+                setModal('invite');
+              });
+            }}
+          >
+            <label>
+              {t('Ime družine')}
+              <input name="householdName" required maxLength={80} />
+            </label>
+            <label>
+              {t('Načrtovano število članov')}
+              <input name="expectedMembers" type="number" min={1} max={100} defaultValue={4} required />
+            </label>
+            {error && (
+              <p className="error" role="alert">
+                {errorText(error)}
+              </p>
+            )}
+            <button className="primary" disabled={busy}>
+              {t('Ustvari družinski prostor')}
+            </button>
+          </form>
+        </Dialog>
+      )}
+      {modal === 'whatsapp' && (
+        <WhatsAppDialog
+          linked={data.whatsapp.linked}
+          onClose={() => setModal(null)}
+          onUpdate={async () => setData(await request('/dashboard'))}
+        />
+      )}
+      {modal === 'task-details' && (
+        <Dialog title={editing.title} onClose={() => setModal(null)}>
+          <TaskDetails
+            key={editing.id}
+            task={editing}
+            householdId={household.id}
+            transcriptionEnabled={data.transcriptionEnabled}
+          />
+        </Dialog>
+      )}
+      {['task', 'event', 'edit'].includes(modal) && (
+        <EntryDialog
+          initialKind={modal === 'edit' ? editing.kind : modal}
+          initialDate={entryDate}
+          entry={modal === 'edit' ? editing : null}
+          admin={data.admin}
+          transcriptionEnabled={data.transcriptionEnabled}
+          {...{ permissions, members, busy, error }}
+          onClose={() => {
+            if (!pending.current) {
+              setModal(null);
+              setError('');
+            }
+          }}
+          onRemove={() =>
+            run(async () => {
+              setData(await request(`/entries/${editing.id}/remove`, { version: editing.version ?? 0 }));
+              setModal(null);
+              setNotice('Vnos je odstranjen.');
+            })
+          }
+          onSave={(fields) =>
+            run(async () => {
+              setData(
+                await request(
+                  modal === 'edit' ? `/entries/${editing.id}/edit` : '/entries',
+                  modal === 'edit' ? { ...fields, version: editing.version ?? 0 } : fields,
+                ),
+              );
+              setModal(null);
+              setNotice(
+                modal === 'edit'
+                  ? 'Spremembe so shranjene.'
+                  : fields.kind === 'event'
+                    ? 'Dogodek je dodan.'
+                    : 'Opravilo je dodano.',
+              );
+            })
+          }
+        />
+      )}
+    </div>
+  );
 }
