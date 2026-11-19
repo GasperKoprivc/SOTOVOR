@@ -117,7 +117,7 @@ jobs:
             Copy-Item -LiteralPath ($bundle.FullName + '.sig') -Destination "release-assets/$name.sig"
           }
           Set-Content -LiteralPath release-assets/windows-authenticode -Value $env:WINDOWS_AUTHENTICODE
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release-windows
           path: release-assets/
@@ -182,12 +182,12 @@ jobs:
           fi
           cp "$apk" "../../release-assets/Sotovor-$VERSION$suffix.apk"
           cp app/build/outputs/bundle/release/app-release.aab "../../release-assets/Sotovor-$VERSION$suffix.aab"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release-android
           path: release-assets/
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: android-r8-mapping-${{ needs.prepare.outputs.version }}
           path: apps/android/app/build/outputs/mapping/release/mapping.txt

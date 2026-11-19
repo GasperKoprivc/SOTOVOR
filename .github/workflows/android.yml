@@ -46,7 +46,7 @@ jobs:
           node scripts/audit-gradle.js
       - name: Lint, test and build without Firebase
         run: ./gradlew lintDebug testDebugUnitTest assembleDebug assembleRelease
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sotovor-android-debug
           path: apps/android/app/build/outputs/apk/debug/app-debug.apk
@@ -59,13 +59,13 @@ jobs:
             ./gradlew assembleDebug
             echo "firebase_apk=true" >> "$GITHUB_ENV"
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: env.firebase_apk == 'true'
         with:
           name: sotovor-android-firebase-debug
           path: apps/android/app/build/outputs/apk/debug/app-debug.apk
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: android-static-reports
