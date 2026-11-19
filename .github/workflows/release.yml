@@ -46,7 +46,7 @@ jobs:
       version: ${{ steps.release.outputs.version }}
       origin: ${{ steps.release.outputs.origin }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -76,7 +76,7 @@ jobs:
       SOTOVOR_BUILD_URL: ${{ needs.prepare.outputs.origin }}
       VERSION: ${{ needs.prepare.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -134,7 +134,7 @@ jobs:
       SOTOVOR_BUILD_URL: ${{ needs.prepare.outputs.origin }}
       VERSION: ${{ needs.prepare.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -200,7 +200,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
