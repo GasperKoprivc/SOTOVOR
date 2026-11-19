@@ -1,5 +1,7 @@
 # Sotovor
 
+> **Pregled pred objavo, 19. november 2026:** domena in VPS še nista vzpostavljena. Koda vsebuje pripravo za produkcijo, javni zagon pa še ni opravljen. Preverjene korake in preostale pogoje spremljamo v [seznamu za javno objavo](docs/LAUNCH_CHECKLIST.md); nastavitev produkcije, podpisov in Firebase je opisana v [navodilih za skrbnika](docs/HUMAN_TASKS.md).
+
 ### Manj usklajevanja. Več skupnega časa.
 
 **Sotovor je skupni družinski prostor za opravila, dogovore, koledar in pregled razporeditve dela.** Na enem mestu pokaže, kaj je treba urediti, kdo je kaj prevzel, kateri roki se bližajo in kako so obveznosti razdeljene med družinske člane.

@@ -19,12 +19,23 @@ To check rotation, temporarily run the backend with `SOTOVOR_MOBILE_ACCESS_SECON
 
 ```powershell
 cd apps/android
-.\gradlew.bat lintDebug testDebugUnitTest assembleDebug assembleRelease
+.\gradlew.bat ktlintCheck detekt lintDebug testDebugUnitTest assembleDebug assembleRelease dependencyInventory
 ```
 
 On macOS and Linux use `./gradlew`. CI uploads the debug APK as `sotovor-android-debug`. An unsigned release build exercises R8.
 
-With the emulator running, use `./gradlew connectedDebugAndroidTest` (or `gradlew.bat` on Windows) for the Compose UI tests. In the app, the workspace tabs open the dashboard, filtered task pages, calendar, workload, notifications and profile. Profile can revoke a device or export the account as a JSON file.
+Instrumented tests create disposable accounts and families. Use `compose.test.yaml` rather than your regular development database. From the repository root, start `docker compose -p sotovor-quality -f compose.test.yaml up -d --build --wait`. With an API 36 emulator running, execute these commands in `apps/android`:
+
+```powershell
+.\gradlew.bat assembleQa assembleDebug assembleDebugAndroidTest -PsotovorDebugUrl=http://127.0.0.1:3060/
+adb reverse tcp:3060 tcp:3060
+adb install -r app/build/outputs/apk/qa/app-qa.apk
+.\gradlew.bat connectedDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.r8=true' -PsotovorDebugUrl=http://127.0.0.1:3060/
+```
+
+Use `./gradlew` on Linux/macOS. CI runs the API 36 Google ATD image. UIAutomator drives the minified QA app; Compose tests drive the debug app. QA uses the production R8 rules with a local URL, separate package and test signature. After testing, remove the disposable stack with `docker compose -p sotovor-quality -f compose.test.yaml down --volumes` from the repository root. Full device acceptance, including TalkBack, push and verified HTTPS App Links, is in [ANDROID_MANUAL_TEST.md](../../docs/ANDROID_MANUAL_TEST.md).
+
+In the app, the workspace tabs open the dashboard, filtered task pages, calendar, workload, notifications and profile. Profile can revoke a device or export the account as a JSON file.
 
 ## Push, invite links and updates
 

@@ -48,6 +48,8 @@ form answers without that review. [Data safety guidance](https://support.google.
 Sotovor is operated by **[legal operator and contact email]**. We process your
 name, email, telephone number, account identifier and content you add to
 organize your family space. Members of that space can access shared content.
+Planning availability may include illness or reduced-capacity information you choose to enter. The deterministic planner runs on the Sotovor server without an external AI provider. The publisher must review Health information declarations and child-profile handling in the Data safety form.
+
 Your password is stored as a hash. Verification and password-reset emails are
 delivered through **[SMTP provider]**. Optional phone notifications use Google
 Firebase and a device registration token.

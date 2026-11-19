@@ -4,6 +4,18 @@ Use this as a dated sign-off record for the exact commit and release assets.
 Automated checks passing permits a release candidate. Production and human
 checks below remain release conditions until independently verified.
 
+## Readiness audit: 19 November 2026
+
+The owner confirmed that the domain and VPS have not been provisioned yet.
+The public-launch definition of done is therefore **not complete**.
+
+- No GitHub Release is published, and the `SOTOVOR_PRODUCTION_URL` and `DEPLOY_ENABLED` repository variables are not configured.
+- Docker Hub credentials and Tauri updater signing secrets are present; their private values were not read.
+- Production SSH, Android keystore and Firebase secret names are absent. Configure them using [HUMAN_TASKS.md](HUMAN_TASKS.md).
+- The local rehearsal passed 30 API tests, four browser cases and five instrumented Android tests, including the R8 QA voice/deep-link flow. Measurements are in [PERF.md](PERF.md).
+- The final CI result is recorded in [PR #25 checks](https://github.com/GasperKoprivc/SOTOVOR/pull/25/checks). A cancelled emulator run must complete successfully before the gate passes.
+- Public email delivery, production downloads, daily backups and signed-device/Firebase acceptance remain unverified until infrastructure and signing are configured. Installer rehearsals use a placeholder origin and are not production downloads.
+
 ## Automated quality gate
 
 - [ ] GitHub `CI`, `Android` and `Launch quality gate` pass for the release commit.
