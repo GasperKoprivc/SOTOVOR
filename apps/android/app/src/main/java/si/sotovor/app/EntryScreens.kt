@@ -3,14 +3,12 @@ package si.sotovor.app
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedButton
@@ -23,7 +21,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -155,10 +152,7 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
                     category = it
                 }
                 if (!task) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(allDay, { allDay = it }, enabled = canEdit && !state.busy)
-                        Text(stringResource(R.string.event_all_day))
-                    }
+                    ToggleRow(R.string.event_all_day, allDay, canEdit && !state.busy) { allDay = it }
                     if (!allDay) {
                         OutlinedButton(
                             enabled = canEdit && !state.busy,
@@ -212,11 +206,12 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
                     if (repeatMode == "weekly") {
                         (1..7).forEach { day ->
                             val code = day.digitToChar()
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(code in weekdays, { checked ->
-                                    weekdays = if (checked) weekdays + code else weekdays.replace(code.toString(), "")
-                                }, enabled = canEdit && !state.busy)
-                                Text(DayOfWeek.of(day).getDisplayName(TextStyle.FULL, locale))
+                            ToggleRow(
+                                DayOfWeek.of(day).getDisplayName(TextStyle.FULL, locale),
+                                code in weekdays,
+                                canEdit && !state.busy
+                            ) { checked ->
+                                weekdays = if (checked) weekdays + code else weekdays.replace(code.toString(), "")
                             }
                         }
                     }
@@ -229,10 +224,7 @@ fun EntryDialog(editor: EntryEditor, workspace: Workspace, state: WorkspaceState
                     }
                     InputField(R.string.remind_days, remind, canEdit && !state.busy, KeyboardType.Number) { remind = it.take(2) }
                     if (repeatMode != "none") {
-                        Row {
-                            Checkbox(rotate, { rotate = it }, enabled = canEdit && !state.busy)
-                            Text(stringResource(R.string.rotate_tasks))
-                        }
+                        ToggleRow(R.string.rotate_tasks, rotate, canEdit && !state.busy) { rotate = it }
                     }
                 }
                 if (!task && original?.dueOn != null) AddToPhoneCalendar(original)

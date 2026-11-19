@@ -3,9 +3,7 @@ package si.sotovor.app
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -93,10 +91,7 @@ private fun DeleteAccountDialog(owned: Boolean, state: WorkspaceState, model: Wo
             Column {
                 Text(stringResource(R.string.delete_account_message))
                 if (owned) {
-                    Row {
-                        Checkbox(confirmed, { confirmed = it })
-                        Text(stringResource(R.string.delete_owned_spaces))
-                    }
+                    ToggleRow(R.string.delete_owned_spaces, confirmed, !state.busy) { confirmed = it }
                 }
                 Field(R.string.password, password, { password = it }, KeyboardType.Password)
                 Status(state)

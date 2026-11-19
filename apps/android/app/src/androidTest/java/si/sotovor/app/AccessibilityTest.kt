@@ -15,9 +15,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -35,8 +39,11 @@ class AccessibilityTest {
                 MaterialTheme {
                     var email by remember { mutableStateOf("") }
                     var password by remember { mutableStateOf("") }
+                    var selected by remember { mutableStateOf(false) }
                     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
                         CredentialFields(email, password, { email = it }, { password = it })
+                        ToggleRow("Accessible option", selected, true) { selected = it }
+                        ToggleRow("Disabled option", false, false) { error("Disabled control was changed") }
                         Button(onClick = {}) { Text("Accessibility action") }
                     }
                 }
@@ -47,5 +54,10 @@ class AccessibilityTest {
         val bounds = action.getUnclippedBoundsInRoot()
         assertTrue(bounds.right - bounds.left >= 48.dp)
         assertTrue(bounds.bottom - bounds.top >= 48.dp)
+        val option = compose.onNodeWithText("Accessible option")
+        option.performScrollTo().assertIsDisplayed().assertIsOff().performClick().assertIsOn()
+        val optionBounds = option.getUnclippedBoundsInRoot()
+        assertTrue(optionBounds.bottom - optionBounds.top >= 48.dp)
+        compose.onNodeWithText("Disabled option").performScrollTo().assertIsNotEnabled()
     }
 }

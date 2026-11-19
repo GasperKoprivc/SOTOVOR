@@ -57,3 +57,25 @@ loading. Compare the same family and network conditions on each run.
   notification denial, large-font accessibility, two component tests, and
   UIAutomator driving login, real audio capture/playback, task completion and
   an OS-dispatched deep link in the minified QA app.
+
+### Accessibility follow-up, 19 November 2026
+
+After connecting Android checkbox labels, state and full-row touch targets,
+all five instrumented tests passed again. The 200% font-scale test also
+checks the labelled checkbox state, label activation, disabled state and
+minimum 48dp height.
+
+- Fresh unsigned production R8 APK: **3,409,196 bytes (3.25 MiB)**. The
+  generated manifest confirms min API 26, target API 36 and version `0.1.0`/`100`.
+- QA R8 APK: **3,421,828 bytes (3.26 MiB)**, SHA-256
+  `781BC87F6F3C3F8417BDD021D19036F0892EEF23ABEDE3E2E864F7F246F7C3A6`.
+- API 36 Google ATD, two virtual CPUs, 3 GiB RAM, software rendering,
+  720×1600 display at density 280, on the same Windows host. Five force-stopped
+  process starts reported TotalTime **514, 261, 270, 318, 316 ms**;
+  median **316 ms**. WaitTime was **516, 265, 274, 320, 320 ms**.
+
+This ATD result measures initial display and excludes server/workspace readiness.
+Its optimized image and different device configuration make it unsuitable for
+direct comparison with the ordinary Google Play emulator baseline above.
+It is not a physical-phone cold-start or Play Store download-size result.
+Production signing and Firebase are still absent from this rehearsal.
