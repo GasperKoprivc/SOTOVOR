@@ -9,7 +9,7 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.4",
     "firebase-admin": "^14.5.1",
-    "mongodb": "^7.0.0",
+    "mongodb": "^7.9.0",
     "music-metadata": "^12.6.0",
     "nodemailer": "^10.6.0"
   },
