@@ -414,6 +414,14 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
                 val billingMessage = when (detail?.code) {
                     "PLAN_REQUIRED" -> R.string.plan_required
                     "BILLING_DISABLED" -> R.string.billing_disabled
+                    "INVALID_BILLING_PLAN" -> R.string.invalid_billing_plan
+                    "BILLING_UNAVAILABLE" -> R.string.billing_unavailable
+                    "SUBSCRIPTION_EXISTS" -> R.string.subscription_exists
+                    "CHECKOUT_PENDING" -> R.string.checkout_pending
+                    "NO_SUBSCRIPTION" -> R.string.no_subscription
+                    "BILLING_RATE_LIMIT" -> R.string.billing_rate_limit
+                    "BILLING_DELETE_PENDING" -> R.string.billing_delete_pending
+                    "BILLING_INVALID_REQUEST" -> R.string.billing_invalid_request
                     "TRIAL_ALREADY_USED" -> R.string.trial_already_used
                     "INVALID_STATISTICS_RANGE" -> R.string.invalid_statistics_range
                     "PLANNING_PREVIEW_REQUIRED" -> R.string.planning_preview_required

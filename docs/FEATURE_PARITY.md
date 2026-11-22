@@ -181,3 +181,18 @@ member joins and voice reservations, monthly planner quotas, every existing
 feature gate, manual grants and downgrade-safe reads/export. The pure policy
 table covers exact clock edges and override validation. Run normal web and
 Android checks too. Operator commands are in [HUMAN_TASKS.md](HUMAN_TASKS.md#sotovor-pro-p1-operator-testing).
+
+## Sotovor Pro — P2 billing core
+
+| Capability                                    | Backend                                  | Web / Tauri                                        | Android                                       |
+| --------------------------------------------- | ---------------------------------------- | -------------------------------------------------- | --------------------------------------------- |
+| Hosted checkout / portal                      | Admin-only cookie and bearer API         | Hosted handoff + translated errors; settings UI P3 | Bearer API + localized errors; settings UI P3 |
+| Signed events, seven-day grace, expiry, audit | Shared canonical state                   | Existing feature gates consume same state          | Same server-enforced gates                    |
+| Mock lifecycle and reconciliation             | Tested DB-backed provider + operator CLI | Development hosted consent form                    | Same API; native billing UI P3                |
+| Welcome / failed payment / ends soon          | Shared mailer; SL/EN/DE                  | Portal email link; account language                | Same account language; SL/EN errors           |
+
+P2 does not silently ship a partial client subscription screen: purchase and
+management screens are explicitly scheduled for P3. Operators can test the
+whole core via the API in [BILLING.md](BILLING.md). Stripe is integrated but
+live accounts, credentials, tax/legal settings and a public domain still require
+the owner. Paddle remains an unselected P2b option.

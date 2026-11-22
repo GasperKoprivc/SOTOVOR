@@ -54,7 +54,7 @@ export function registerPaymentEndpoints(router, scope, runtime) {
     const { space, admin } = await scope(req);
     if (!admin) throw new HttpError(403, 'To lahko opravi samo skrbnik prostora.');
     if (Object.keys(req.body ?? {}).length)
-      throw new HttpError(400, 'Pošlji prazen objekt.', 'invalid_request');
+      throw new HttpError(400, 'Pošlji prazen objekt.', 'BILLING_INVALID_REQUEST');
     try {
       res.json(await runtime.portal(space, requestLanguage(req)));
     } catch (error) {

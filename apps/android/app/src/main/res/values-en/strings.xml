@@ -216,4 +216,12 @@
     <string name="trial_already_used">This space has already used its Sotovor Pro trial.</string>
     <string name="invalid_statistics_range">Choose a valid time range.</string>
     <string name="planning_preview_required">Create a planning proposal first.</string>
+    <string name="invalid_billing_plan">Choose monthly or yearly without sending price information.</string>
+    <string name="billing_unavailable">Billing is temporarily unavailable.</string>
+    <string name="subscription_exists">You already have a subscription. Manage it in the portal.</string>
+    <string name="checkout_pending">Checkout is already in progress. Use the open checkout page.</string>
+    <string name="no_subscription">You do not have a paid subscription yet.</string>
+    <string name="billing_rate_limit">Too many attempts. Try again later.</string>
+    <string name="billing_delete_pending">Checkout is in progress. Try deleting your account again in a few minutes.</string>
+    <string name="billing_invalid_request">Send an empty object.</string>
 </resources>

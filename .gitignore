@@ -23,3 +23,6 @@ apps/desktop/src-tauri/gen/
 playwright-report/
 test-results/
 quality-results/
+
+# Operator-supplied reviewed billing terms.
+/legal/

@@ -13,12 +13,15 @@ Namenjen je vsakodnevnim stvarem: pospravljanju, nakupom, prevzemu otrok, druži
 
 **React 19 · Vite 8 · Node.js 24+ · Express 5 · MongoDB · Tauri 2**
 
-**Sotovor Pro — P1:** dodano je strežniško preverjanje pravic, enkratni 14-dnevni
-preizkus na družinski prostor in operatorska dodelitev Pro. Plačil in zaslonov
-za naročnino še ni. Privzeti `SOTOVOR_BILLING_ENABLED=false` vsem odklene vse
-funkcije. Dogovorjeni ceni ostajata 3 EUR/mesec ali 30 EUR/leto z DDV.
-[Matrika in tehnične podrobnosti](docs/FEATURE_PARITY.md#sotovor-pro--p1-entitlements-no-payments-yet)
-· [Preizkus in operatorski ukazi](docs/HUMAN_TASKS.md#sotovor-pro-p1-operator-testing)
+**Sotovor Pro — P2:** strežniške pravice in enkratni 14-dnevni preizkus dopolnjujejo
+Stripe ter lokalni mock checkout, podpisani webhooki, sedemdnevni rok po neuspelem
+plačilu, dnevno usklajevanje stanja in e-pošta SL/EN/DE. Privzeti
+`SOTOVOR_BILLING_ENABLED=false` še vedno vsem odklene vse funkcije. Ceni sta
+3 EUR/mesec ali 30 EUR/leto z DDV na družinski prostor. Zasloni za upravljanje
+naročnine na odjemalcih sledijo v P3; resnična plačila še niso vključena.
+[Mock in Stripe testni postopek](docs/BILLING.md)
+· [Pravice in matrika](docs/FEATURE_PARITY.md)
+· [Človeške nastavitve pred plačili](docs/HUMAN_TASKS.md#sotovor-pro-p2-stripe-setup)
 
 ---
 

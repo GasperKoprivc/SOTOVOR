@@ -3,6 +3,140 @@ info: { title: Sotovor native API, version: 1.0.0 }
 servers: [{ url: /api/v1 }]
 security: [{ bearer: [] }, { browserSession: [] }]
 paths:
+  /spaces/{id}/billing/checkout:
+    post:
+      summary: Admin creates a hosted subscription checkout
+      description: Enabled billing only (404 otherwise). Price and return URLs are server-controlled. Rejects extra fields. Checks existing provider subscriptions and atomically reserves one checkout for 32 minutes. Cookie and bearer authentication have identical authorization. A return redirect never grants Pro.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[a-f0-9]{24}$' } }
+        - {
+            name: Accept-Language,
+            in: header,
+            schema: { type: string },
+            description: 'Hosted checkout locale (sl/en/de), otherwise account language',
+          }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [plan]
+              properties:
+                plan: { type: string, enum: [monthly, yearly] }
+      responses:
+        '200':
+          description: Hosted payment page; no card data passes through Sotovor
+          content: { application/json: { schema: { $ref: '#/components/schemas/BillingRedirect' } } }
+        '400': { description: INVALID_BILLING_PLAN (including injected prices or amounts) }
+        '401': { description: Sign in required }
+        '403': { description: Current family admin required or foreign Origin rejected }
+        '409': { description: SUBSCRIPTION_EXISTS or CHECKOUT_PENDING }
+        '429': { description: BILLING_RATE_LIMIT (12 billing checkout/portal requests per minute per IP) }
+        '503': { description: BILLING_UNAVAILABLE }
+  /spaces/{id}/billing/portal:
+    post:
+      summary: Admin creates a hosted subscription-management portal session
+      description: Enabled billing only. Provider handles cancellation, card updates and invoices. Empty body only. Never accepts client customer IDs or return URLs.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[a-f0-9]{24}$' } }
+        - { name: Accept-Language, in: header, schema: { type: string } }
+      requestBody:
+        content: { application/json: { schema: { type: object, additionalProperties: false } } }
+      responses:
+        '200':
+          description: Hosted portal URL
+          content: { application/json: { schema: { $ref: '#/components/schemas/BillingRedirect' } } }
+        '400': { description: BILLING_INVALID_REQUEST }
+        '401': { description: Sign in required }
+        '403': { description: Current family admin required or foreign Origin rejected }
+        '409': { description: NO_SUBSCRIPTION }
+        '429': { description: BILLING_RATE_LIMIT }
+        '503': { description: BILLING_UNAVAILABLE }
+  /webhooks/billing/{provider}:
+    servers: [{ url: / }]
+    post:
+      security: []
+      summary: Signature-gated raw billing webhook intake
+      description: Mounted before JSON, session, Origin and CSRF middleware. Enabled provider must match. Verifies raw bytes with a 5-minute signature tolerance, durably deduplicates provider/event ID, then responds before provider fetches, state changes and email. Worker re-fetches canonical subscription even for late events; failures stay retryable. Unknown signed event types are acknowledged without processing. No raw payload retained.
+      parameters:
+        - { name: provider, in: path, required: true, schema: { type: string, enum: [mock, stripe] } }
+        - { name: Stripe-Signature, in: header, schema: { type: string }, description: Required for Stripe }
+        - {
+            name: X-Sotovor-Signature,
+            in: header,
+            schema: { type: string },
+            description: Required for mock; millisecond timestamp and HMAC-SHA256 separated by a colon,
+          }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: true } } }
+      responses:
+        '202': { description: Durably received (including duplicate or unsupported signed events) }
+        '400': { description: 'Invalid signature, stale signature, body or provider' }
+        '413': { description: Raw body exceeds 256 KiB }
+        '429': { description: More than 240 webhook or mock-form submissions per minute per IP }
+        '503': { description: Durable intake unavailable; provider should retry }
+  /pogoji:
+    servers: [{ url: / }]
+    get:
+      security: []
+      summary: Checkout terms (enabled billing only)
+      parameters: [{ name: lang, in: query, schema: { type: string, enum: [sl, en, de] } }]
+      responses:
+        '200':
+          {
+            description: Human-provided UTF-8 terms or explicitly labeled testing draft,
+            content: { text/html: { schema: { type: string } } },
+          }
+  /billing/portal/{id}:
+    servers: [{ url: / }]
+    get:
+      security: []
+      summary: Safe email handoff to the authenticated subscription portal
+      description: Public HTML conveys no authority; its button performs the normal admin-only same-origin POST. Sign in first if needed.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[a-f0-9]{24}$' } }
+        - { name: lang, in: query, schema: { type: string, enum: [sl, en, de] } }
+      responses:
+        '200': { description: Portal entry page, content: { text/html: { schema: { type: string } } } }
+        '404': { description: Invalid space identifier }
+  /dev/mock-checkout:
+    servers: [{ url: / }]
+    get:
+      security: []
+      summary: Fake hosted checkout or portal (mock and non-production ONLY)
+      parameters:
+        - { name: session, in: query, schema: { type: string } }
+        - { name: portal, in: query, schema: { type: string } }
+      responses:
+        '200':
+          { description: Localized mock form or portal, content: { text/html: { schema: { type: string } } } }
+        '404': { description: 'Missing/expired session, disabled billing, Stripe or production environment' }
+    post:
+      security: []
+      summary: Complete fake checkout after explicit consent (non-production only)
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [session, csrf, consent]
+              properties:
+                session: { type: string }
+                csrf: { type: string }
+                consent: { type: string, enum: ['yes'] }
+      responses:
+        '303':
+          {
+            description: Redirect to fixed server success URL; queues signed event and does not directly activate Pro,
+          }
+        '400': { description: Invalid/expired capability or missing consent }
+        '403': { description: Foreign Origin }
+        '404': { description: Mock development route is not mounted }
+        '429': { description: Rate limited }
   /spaces/{id}/billing:
     get:
       summary: Read the selected family's subscription and effective entitlements
@@ -32,7 +166,7 @@ paths:
         '401': { description: Sign in required }
         '403': { description: Family administrator required }
         '409':
-          description: BILLING_DISABLED or TRIAL_ALREADY_USED
+          description: BILLING_DISABLED, TRIAL_ALREADY_USED or SUBSCRIPTION_EXISTS
           content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
   /statistics:
     get:
@@ -1513,6 +1647,12 @@ components:
             rewards: { type: boolean }
         trialEndsAt: { type: string, format: date-time, nullable: true }
         currentPeriodEnd: { type: string, format: date-time, nullable: true }
+    BillingRedirect:
+      type: object
+      required: [url]
+      additionalProperties: false
+      properties:
+        url: { type: string, format: uri }
     BillingSnapshot:
       type: object
       required: [enabled, entitlements, usage, subscription, mayManageBilling]
