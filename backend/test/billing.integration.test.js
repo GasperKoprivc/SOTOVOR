@@ -168,7 +168,7 @@ test('member limits hold under concurrent invitation acceptance and preserve dow
     5,
     5,
   );
-  await changeManualPro(database, String(f.id), 30);
+  await changeManualPro(database, String(f.id), 30, { now });
   const more = await account();
   assert.equal(
     (await call('/households/join', { auth: more.cookie, body: { inviteCode: f.space.inviteCode } })).status,
@@ -187,7 +187,7 @@ test('member limits hold under concurrent invitation acceptance and preserve dow
       },
     },
   );
-  await changeManualPro(database, String(f.id), null);
+  await changeManualPro(database, String(f.id), null, { now });
   const ninth = await account();
   required(
     await call('/households/join', { auth: ninth.cookie, body: { inviteCode: f.space.inviteCode } }),
@@ -234,7 +234,7 @@ test('only successful planner previews count, atomic quota resets monthly and gr
   await call('/entries', { auth: f.owner.token, body: { kind: 'task', title: 'Another task' } });
   await changeManualPro(database, String(f.id), 1, { reason: 'Beta tester', actor: 'integration-test', now });
   assert.equal((await call('/planning/preview', { auth: f.owner.cookie, body: {} })).status, 200);
-  await changeManualPro(database, String(f.id), null);
+  await changeManualPro(database, String(f.id), null, { now });
   now = new Date('2026-12-01T00:00:00Z');
   assert.equal((await call('/planning/preview', { auth: f.owner.token, body: {} })).status, 200);
   assert.equal(
@@ -332,7 +332,7 @@ test('feature gates cover cookie and bearer clients; downgrade preserves reading
 
 test('Pro member cap is 12, inactive members do not count, grants do not reset trial history', async () => {
   const f = await family();
-  await changeManualPro(database, String(f.id), 1);
+  await changeManualPro(database, String(f.id), 1, { now });
   await database.households.updateOne(
     { _id: f.id },
     {
@@ -357,18 +357,18 @@ test('Pro member cap is 12, inactive members do not count, grants do not reset t
   );
   const trial = await call('/spaces/' + f.id + '/billing/trial', { auth: f.owner.token, body: {} });
   assert.equal(trial.status, 201);
-  await changeManualPro(database, String(f.id), null);
+  await changeManualPro(database, String(f.id), null, { now });
   assert.equal(
     (await call('/spaces/' + f.id + '/billing', { auth: f.owner.cookie })).body.entitlements.reason,
     'trial',
   );
-  await changeManualPro(database, String(f.id), 1);
+  await changeManualPro(database, String(f.id), 1, { now });
   assert.equal(
     (await call('/spaces/' + f.id + '/billing/trial', { auth: f.owner.token, body: {} })).status,
     409,
   );
   await assert.rejects(changeManualPro(database, 'invalid', 2));
-  await assert.rejects(changeManualPro(database, String(f.id), 0));
+  await assert.rejects(changeManualPro(database, String(f.id), 0, { now }));
   await assert.rejects(changeManualPro(database, new ObjectId().toHexString(), 2));
 });
 
@@ -399,7 +399,7 @@ test('stored voice quota is concurrent-safe, counts old archived recordings and 
     (await database.entitlementUsage.findOne({ spaceId: other.id, feature: 'voiceNotes' })).count,
     0,
   );
-  await changeManualPro(database, String(f.id), 10);
+  await changeManualPro(database, String(f.id), 10, { now });
   assert.equal(
     (
       await call('/entries', {
@@ -447,10 +447,10 @@ test('verified WhatsApp deliveries cannot pair or import for a free or expired s
     });
   }
   assert.equal((await send('poveži ' + code)).status, 403);
-  await changeManualPro(database, String(f.id), 3);
+  await changeManualPro(database, String(f.id), 3, { now });
   assert.equal((await send('poveži ' + code)).status, 200);
   assert.equal((await send('opravilo Allowed')).status, 200);
-  await changeManualPro(database, String(f.id), null);
+  await changeManualPro(database, String(f.id), null, { now });
   assert.equal((await send('opravilo Blocked')).status, 403);
   assert.equal(await database.entries.countDocuments({ householdId: f.id }), 1);
 });
@@ -477,4 +477,69 @@ test('trial and support audit events survive an interrupted audit write and repl
   assert.equal((await billing.snapshot(f.space, true)).entitlements.reason, 'manual_grant');
   assert.equal(await database.billingAudit.countDocuments({ spaceId: f.id, action: 'manual_grant' }), 1);
   assert.equal((await database.subscriptions.findOne({ spaceId: f.id })).auditOutbox.length, 0);
+});
+
+test('statistics count only the requested task history and keep all-time server gated', async () => {
+  const f = await family();
+  const time = Date.now();
+  await database.entries.insertMany([
+    ...[6, 15, 45].map((days) => ({
+      householdId: f.id,
+      kind: 'task',
+      title: 'Done',
+      assigneeId: f.space.ownerId,
+      completedAt: new Date(time - days * 86400_000),
+    })),
+    { householdId: f.id, kind: 'task', title: 'Open', assigneeId: f.space.ownerId, completedAt: null },
+    {
+      householdId: f.id,
+      kind: 'event',
+      title: 'Not a task',
+      assigneeId: f.space.ownerId,
+      completedAt: new Date(time),
+    },
+    {
+      householdId: f.id,
+      kind: 'task',
+      title: 'Archived',
+      assigneeId: f.space.ownerId,
+      completedAt: new Date(time),
+      archivedAt: new Date(time),
+    },
+  ]);
+  for (const [range, done] of [
+    ['7', 1],
+    ['30', 2],
+  ]) {
+    const result = await call('/statistics?range=' + range, { auth: f.owner.token });
+    assert.deepEqual(result.body.members, [{ id: f.space.ownerId, open: 1, done }]);
+  }
+  assert.equal(
+    (await call('/statistics?range=bad', { auth: f.owner.token })).body.error.code,
+    'INVALID_STATISTICS_RANGE',
+  );
+  required(await call('/statistics?range=all', { auth: f.owner.token }), 'allTimeStatistics');
+  await changeManualPro(database, String(f.id), 1, { now });
+  assert.equal((await call('/statistics?range=all', { auth: f.owner.token })).body.members[0].done, 3);
+});
+
+test('explicit family/account deletion cleans its billing metadata without deleting another family', async () => {
+  const f = await family(),
+    other = await family();
+  await call('/spaces/' + f.id + '/billing/trial', { auth: f.owner.token, body: {} });
+  await database.entitlementUsage.insertOne({
+    spaceId: f.id,
+    feature: 'planningProposals',
+    period: '2026-11',
+    count: 1,
+  });
+  const result = await call('/me', {
+    auth: f.owner.token,
+    method: 'DELETE',
+    body: { password: 'billing-test-password', deleteOwnedFamilies: true },
+  });
+  assert.equal(result.status, 200);
+  for (const collection of [database.subscriptions, database.entitlementUsage, database.billingAudit])
+    assert.equal(await collection.countDocuments({ spaceId: f.id }), 0);
+  assert.equal((await call('/spaces/' + other.id + '/billing', { auth: other.owner.token })).status, 200);
 });
