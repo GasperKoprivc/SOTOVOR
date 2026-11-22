@@ -1,4 +1,4 @@
-import { localizedDate } from './i18n.js';
+import { localizedDate, getLanguage } from './i18n.js';
 
 export const categories = {
   dom: 'Dom',
@@ -63,7 +63,10 @@ export async function request(
   household = activeHousehold,
   method = body === undefined ? 'GET' : 'POST',
 ) {
-  const headers = household ? { 'X-Sotovor-Household': household } : {};
+  const headers = {
+    'Accept-Language': getLanguage(),
+    ...(household ? { 'X-Sotovor-Household': household } : {}),
+  };
   const options =
     body === undefined
       ? { signal, headers }

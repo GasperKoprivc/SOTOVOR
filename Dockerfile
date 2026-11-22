@@ -25,6 +25,7 @@ COPY frontend/package.json ./frontend/package.json
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY backend/src ./backend/src
+COPY scripts/grant-pro.js scripts/revoke-pro.js scripts/billing-reconcile.js scripts/billing-mock.js ./scripts/
 COPY --from=build /app/frontend/dist ./frontend/dist
 
 EXPOSE 3000

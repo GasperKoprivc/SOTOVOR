@@ -1,3 +1,4 @@
+import { lifecycleEvents } from './events.js';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 export function mockProvider(database, config, clock = () => new Date()) {
@@ -27,9 +28,9 @@ export function mockProvider(database, config, clock = () => new Date()) {
       );
       return { id: result.id, url: config.publicUrl + '/dev/mock-checkout?session=' + result.id };
     },
-    async createPortalSession({ customerId, returnUrl }) {
+    async createPortalSession({ customerId, returnUrl, locale }) {
       const id = randomBytes(24).toString('hex');
-      await records.insertOne({ _id: 'portal:' + id, kind: 'portal', customerId, returnUrl });
+      await records.insertOne({ _id: 'portal:' + id, kind: 'portal', customerId, returnUrl, locale });
       return { url: config.publicUrl + '/dev/mock-checkout?portal=' + id };
     },
     verifyAndParseWebhook(rawBody, headers) {
@@ -45,12 +46,14 @@ export function mockProvider(database, config, clock = () => new Date()) {
       const event = JSON.parse(rawBody);
       if (
         typeof event.id !== 'string' ||
+        !event.id ||
         event.id.length > 200 ||
         typeof event.type !== 'string' ||
         !/^mock_sub_[a-f0-9]+$/.test(event.subscriptionId ?? '') ||
         !Number.isFinite(Date.parse(event.createdAt))
       )
         throw new Error('Invalid event.');
+      if (!lifecycleEvents.has(event.type)) return null;
       return {
         id: event.id,
         type: event.type,

@@ -30,6 +30,10 @@ export async function connect() {
       billingEvents.createIndex({ doneAt: 1, retryAt: 1 }),
       billingMail.createIndex({ sentAt: 1, retryAt: 1 }),
       subscriptions.createIndex(
+        { provider: 1, providerCustomerId: 1 },
+        { unique: true, partialFilterExpression: { providerCustomerId: { $type: 'string' } } },
+      ),
+      subscriptions.createIndex(
         { provider: 1, providerSubscriptionId: 1 },
         { unique: true, partialFilterExpression: { providerSubscriptionId: { $type: 'string' } } },
       ),

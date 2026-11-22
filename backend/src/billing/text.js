@@ -12,6 +12,10 @@ export const labels = {
     terms: 'Pogoji uporabe',
     cancel: 'Prekliči',
     portal: 'Testni portal',
+    monthly: '3 EUR/mesec z DDV',
+    yearly: '30 EUR/leto z DDV',
+    back: 'Nazaj v Sotovor',
+    openPortal: 'Odpri portal naročnine',
     unavailable: 'Testna seja ni več na voljo.',
   },
   en: {
@@ -21,6 +25,10 @@ export const labels = {
     terms: 'Terms of service',
     cancel: 'Cancel',
     portal: 'Test portal',
+    monthly: 'EUR 3/month including VAT',
+    yearly: 'EUR 30/year including VAT',
+    back: 'Return to Sotovor',
+    openPortal: 'Open subscription portal',
     unavailable: 'The test session is no longer available.',
   },
   de: {
@@ -30,6 +38,10 @@ export const labels = {
     terms: 'Nutzungsbedingungen',
     cancel: 'Abbrechen',
     portal: 'Testportal',
+    monthly: '3 EUR/Monat einschließlich MwSt.',
+    yearly: '30 EUR/Jahr einschließlich MwSt.',
+    back: 'Zurück zu Sotovor',
+    openPortal: 'Abonnementportal öffnen',
     unavailable: 'Die Testsitzung ist nicht mehr verfügbar.',
   },
 };

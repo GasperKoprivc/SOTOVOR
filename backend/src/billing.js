@@ -3,6 +3,7 @@ import { HttpError } from './api-errors.js';
 import { validId } from './mobile-auth.js';
 import { assertLimit, billingConfiguration, getEntitlements, planRequired } from './entitlements.js';
 import { flushBillingAudit } from './billing-audit.js';
+import { registerPaymentEndpoints } from './billing/routes.js';
 
 export function createBilling(database, config = billingConfiguration(), clock = () => new Date()) {
   const { subscriptions, entitlementUsage, entries } = database;
@@ -104,6 +105,12 @@ export function createBilling(database, config = billingConfiguration(), clock =
   async function startTrial(space, actorAccountId) {
     if (!config.enabled) throw new HttpError(409, 'Obračunavanje ni omogočeno.', 'BILLING_DISABLED');
     await ensureSubscription(space._id);
+    const existing = await subscription(space);
+    if (
+      existing.providerSubscriptionId &&
+      !['canceled', 'incomplete_expired'].includes(existing.providerStatus ?? 'unknown')
+    )
+      throw new HttpError(409, 'Naročnino že imaš. Uredi jo v portalu.', 'SUBSCRIPTION_EXISTS');
     const now = clock();
     const event = {
       _id: new ObjectId(),
@@ -118,6 +125,11 @@ export function createBilling(database, config = billingConfiguration(), clock =
       {
         $set: {
           status: 'trialing',
+          plan: 'free',
+          providerSubscriptionId: null,
+          currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
+          graceUntil: null,
           trialUsedAt: now,
           trialEndsAt: new Date(+now + 14 * 86400_000),
           updatedAt: now,
@@ -177,7 +189,7 @@ export function createBilling(database, config = billingConfiguration(), clock =
   };
 }
 
-export function registerBilling(router, database, billing) {
+export function registerBilling(router, database, billing, runtime) {
   async function scope(req) {
     if (!req.account) throw new HttpError(401, 'Najprej se prijavi.');
     if (!validId(req.params.id)) throw new HttpError(404, 'Družinski prostor ne obstaja.');
@@ -202,4 +214,5 @@ export function registerBilling(router, database, billing) {
     await billing.startTrial(space, req.account._id);
     res.status(201).json(await billing.snapshot(space, true));
   });
+  registerPaymentEndpoints(router, scope, runtime);
 }

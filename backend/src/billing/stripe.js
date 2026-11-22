@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { lifecycleEvents } from './events.js';
 import { stripeApiVersion } from './config.js';
 import { consent, languageOf } from './text.js';
 
@@ -11,20 +12,19 @@ export function stripeProvider(
     const item = sub.items?.data?.[0];
     const price = idOf(item?.price);
     const plan = price === config.monthly ? 'monthly' : price === config.yearly ? 'yearly' : null;
-    if (
+    const unsupported = Boolean(
       !plan ||
       sub.items.data.length !== 1 ||
       item.quantity !== 1 ||
-      !/^[a-f0-9]{24}$/.test(sub.metadata?.spaceId ?? '')
-    )
-      throw new Error('Unrecognized billing subscription.');
+      !/^[a-f0-9]{24}$/.test(sub.metadata?.spaceId ?? ''),
+    );
     return {
       id: sub.id,
       customerId: idOf(sub.customer),
-      spaceId: sub.metadata.spaceId,
+      spaceId: sub.metadata?.spaceId ?? null,
       plan,
-      status: sub.status,
-      currentPeriodEnd: new Date((item.current_period_end ?? sub.current_period_end) * 1000),
+      status: unsupported ? 'unsupported' : sub.status,
+      currentPeriodEnd: new Date((item?.current_period_end ?? sub.current_period_end ?? 0) * 1000),
       cancelAtPeriodEnd: sub.cancel_at_period_end === true,
       trialEndsAt: sub.trial_end ? new Date(sub.trial_end * 1000) : null,
     };
@@ -56,14 +56,16 @@ export function stripeProvider(
       return client.checkout.sessions.create(
         {
           mode: 'subscription',
+          adaptive_pricing: { enabled: false },
           ui_mode: 'hosted',
           client_reference_id: String(space._id),
           metadata,
           subscription_data: { metadata },
           line_items: [{ price: plan === 'monthly' ? config.monthly : config.yearly, quantity: 1 }],
           ...(space.providerCustomerId
-            ? { customer: space.providerCustomerId }
+            ? { customer: space.providerCustomerId, customer_update: { address: 'auto' } }
             : { customer_email: customerEmail }),
+          billing_address_collection: config.automaticTax ? 'required' : 'auto',
           success_url: successUrl,
           cancel_url: cancelUrl,
           locale: lang,
@@ -87,10 +89,17 @@ export function stripeProvider(
         { idempotencyKey: space.checkoutKey },
       );
     },
-    createPortalSession: ({ customerId, returnUrl }) =>
-      client.billingPortal.sessions.create({ customer: customerId, return_url: returnUrl }),
+    createPortalSession: ({ customerId, returnUrl, locale }) =>
+      client.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: returnUrl,
+        locale: languageOf(locale),
+      }),
     verifyAndParseWebhook(rawBody, headers) {
       const event = client.webhooks.constructEvent(rawBody, headers['stripe-signature'], config.secret, 300);
+      if (!lifecycleEvents.has(event.type)) return null;
+      if (typeof event.id !== 'string' || !event.id || !Number.isFinite(event.created))
+        throw new Error('Invalid billing event.');
       const object = event.data.object;
       let subscriptionId;
       if (event.type.startsWith('customer.subscription.')) subscriptionId = object.id;
@@ -98,6 +107,8 @@ export function stripeProvider(
       else if (['invoice.payment_failed', 'invoice.paid', 'invoice.payment_succeeded'].includes(event.type))
         subscriptionId = idOf(object.parent?.subscription_details?.subscription ?? object.subscription);
       if (!subscriptionId) return null;
+      if (typeof subscriptionId !== 'string' || !subscriptionId.startsWith('sub_'))
+        throw new Error('Invalid subscription reference.');
       return {
         id: event.id,
         type: event.type,

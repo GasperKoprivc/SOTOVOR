@@ -4,6 +4,11 @@ import nodemailer from 'nodemailer';
 const hashToken = (token) => createHash('sha256').update(token).digest('hex');
 const cooldown = 60_000;
 const validity = 24 * 60 * 60 * 1000;
+const withMessages = (send, transport, from) =>
+  Object.assign(send, {
+    sendMessage: ({ to, subject, text, messageId }) =>
+      transport.sendMail({ from, to: { address: to, name: '' }, subject, text, messageId }),
+  });
 
 export function smtpVerification(env = process.env) {
   // The mail sink is enabled only in the disposable test stack.
@@ -14,15 +19,19 @@ export function smtpVerification(env = process.env) {
       secure: false,
       ignoreTLS: true,
     });
-    return async (email, token, purpose = 'verification') => {
-      const fragment = purpose === 'password' ? 'reset-password' : 'verify-email';
-      await transport.sendMail({
-        from: 'test@sotovor.invalid',
-        to: email,
-        subject: fragment,
-        text: new URL('/#' + fragment + '=' + token, env.SOTOVOR_PUBLIC_URL).href,
-      });
-    };
+    return withMessages(
+      async (email, token, purpose = 'verification') => {
+        const fragment = purpose === 'password' ? 'reset-password' : 'verify-email';
+        await transport.sendMail({
+          from: 'test@sotovor.invalid',
+          to: email,
+          subject: fragment,
+          text: new URL('/#' + fragment + '=' + token, env.SOTOVOR_PUBLIC_URL).href,
+        });
+      },
+      transport,
+      'test@sotovor.invalid',
+    );
   }
   const {
     SOTOVOR_SMTP_HOST: host,
@@ -57,25 +66,29 @@ export function smtpVerification(env = process.env) {
     greetingTimeout: 5000,
     socketTimeout: 10000,
   });
-  return async (email, token, purpose = 'verification') => {
-    const reset = purpose === 'password';
-    const link = new URL((reset ? '/#reset-password=' : '/#verify-email=') + token, publicUrl);
-    const subject = reset
-      ? 'Ponastavi geslo za Sotovor / Reset your password'
-      : 'Potrdi e-pošto za Sotovor / Verify your email';
-    await transport.sendMail({
-      from,
-      to: { address: email, name: '' },
-      subject,
-      text:
-        subject +
-        '\n\n' +
-        link.href +
-        (reset
-          ? '\n\nPovezava velja eno uro. / This link is valid for one hour.'
-          : '\n\nPovezava velja 24 ur. / This link is valid for 24 hours.'),
-    });
-  };
+  return withMessages(
+    async (email, token, purpose = 'verification') => {
+      const reset = purpose === 'password';
+      const link = new URL((reset ? '/#reset-password=' : '/#verify-email=') + token, publicUrl);
+      const subject = reset
+        ? 'Ponastavi geslo za Sotovor / Reset your password'
+        : 'Potrdi e-pošto za Sotovor / Verify your email';
+      await transport.sendMail({
+        from,
+        to: { address: email, name: '' },
+        subject,
+        text:
+          subject +
+          '\n\n' +
+          link.href +
+          (reset
+            ? '\n\nPovezava velja eno uro. / This link is valid for one hour.'
+            : '\n\nPovezava velja 24 ur. / This link is valid for 24 hours.'),
+      });
+    },
+    transport,
+    from,
+  );
 }
 
 export async function sendEmailVerification(accounts, account, send, reportFailure) {

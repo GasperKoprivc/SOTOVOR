@@ -1,0 +1,70 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, system-ui, sans-serif;
+  background: #142326;
+  color: #fff1e5;
+}
+body {
+  margin: 0;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(ellipse at top, #294c4b, transparent 70%);
+}
+main {
+  margin: 24px;
+  padding: clamp(24px, 5vw, 52px);
+  max-width: 640px;
+  border: 1px solid #5f7772;
+  border-radius: 20px;
+  background: #182c2e;
+  box-shadow: 0 24px 80px #0005;
+}
+.brand {
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  text-decoration: none;
+  font-size: 24px;
+}
+h1 {
+  font-size: clamp(28px, 5vw, 44px);
+  letter-spacing: -0.04em;
+}
+p,
+label {
+  line-height: 1.7;
+}
+a {
+  color: #f3b58d;
+}
+button {
+  display: block;
+  min-height: 48px;
+  padding: 12px 20px;
+  margin: 24px 0;
+  border: 1px solid #f3b58d;
+  border-radius: 8px;
+  background: #f3b58d;
+  color: #182c2e;
+  font: 700 16px inherit;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.6;
+}
+input[type='checkbox'] {
+  min-width: 24px;
+  min-height: 24px;
+  margin-right: 12px;
+  vertical-align: middle;
+}
+:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 5px;
+}
+.terms {
+  white-space: pre-wrap;
+}
+form {
+  margin-top: 24px;
+}
