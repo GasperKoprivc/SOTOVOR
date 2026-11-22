@@ -87,6 +87,7 @@ export function createApi(
     verificationMail,
     reportMailFailure = () => console.error('Verification email delivery failed.'),
     billing = createBilling(database),
+    billingRuntime,
   } = {},
 ) {
   const { households, entries, accounts, sessions, desktopLinks } = database;
@@ -177,7 +178,7 @@ export function createApi(
     next();
   });
 
-  registerBilling(router, database, billing);
+  registerBilling(router, database, billing, billingRuntime);
   registerCalendarSettings(router, database, billing);
   registerAppearance(router, database);
 
@@ -193,7 +194,7 @@ export function createApi(
       verificationEnabled: Boolean(verificationMail),
     });
     registerNotificationRoutes(router, database);
-    registerAccountData(router, database);
+    registerAccountData(router, database, billingRuntime?.closeSpaces);
   }
 
   const entryProjection = {

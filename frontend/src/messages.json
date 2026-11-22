@@ -849,5 +849,33 @@
   "Najprej pripravi predlog razporeditve.": {
     "en": "Create a planning proposal first.",
     "de": "Erstelle zuerst einen Planungsvorschlag."
+  },
+  "Izberi mesečni ali letni paket brez dodatnih podatkov o ceni.": {
+    "en": "Choose monthly or yearly without sending price information.",
+    "de": "Wähle monatlich oder jährlich ohne Preisangaben."
+  },
+  "Obračunavanje trenutno ni na voljo.": {
+    "en": "Billing is temporarily unavailable.",
+    "de": "Die Abrechnung ist vorübergehend nicht verfügbar."
+  },
+  "Naročnino že imaš. Uredi jo v portalu.": {
+    "en": "You already have a subscription. Manage it in the portal.",
+    "de": "Du hast bereits ein Abonnement. Verwalte es im Portal."
+  },
+  "Nakup je že v teku. Uporabi odprto plačilno stran.": {
+    "en": "Checkout is already in progress. Use the open checkout page.",
+    "de": "Ein Kauf läuft bereits. Nutze die geöffnete Zahlungsseite."
+  },
+  "Plačljive naročnine še nimaš.": {
+    "en": "You do not have a paid subscription yet.",
+    "de": "Du hast noch kein kostenpflichtiges Abonnement."
+  },
+  "Nakup je že v teku. Poskusi izbris znova čez nekaj minut.": {
+    "en": "Checkout is in progress. Try deleting your account again in a few minutes.",
+    "de": "Ein Kauf läuft. Versuche die Kontolöschung in einigen Minuten erneut."
+  },
+  "Pošlji prazen objekt.": {
+    "en": "Send an empty object.",
+    "de": "Sende ein leeres Objekt."
   }
 }

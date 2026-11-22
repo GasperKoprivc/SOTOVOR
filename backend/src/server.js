@@ -15,14 +15,24 @@ import { registerReleases, releaseConfiguration } from './releases.js';
 import { createShoppingList } from './shopping.js';
 import { createBilling } from './billing.js';
 import { billingConfiguration } from './entitlements.js';
+import { paymentConfiguration } from './billing/config.js';
+import { createProvider } from './billing/provider.js';
+import { createBillingRuntime } from './billing/runtime.js';
+import { registerBillingPublic } from './billing/routes.js';
 
 const host = process.env.SOTOVOR_HOST || '127.0.0.1';
 const port = Number(process.env.SOTOVOR_PORT || 3000);
 const dist = fileURLToPath(new URL('../../frontend/dist/', import.meta.url));
 const verificationMail = smtpVerification();
 const billingConfig = billingConfiguration();
+const paymentConfig = paymentConfiguration();
 const database = await connect();
 const billing = createBilling(database, billingConfig);
+const billingRuntime = paymentConfig.enabled
+  ? createBillingRuntime(database, billing, await createProvider(database, paymentConfig), paymentConfig, {
+      sendMail: verificationMail?.sendMessage,
+    })
+  : null;
 const push = await configurePush(database);
 const shopping = createShoppingList(database, push.shopping);
 const app = express();
@@ -37,6 +47,7 @@ app.use((_req, res, next) => {
   next();
 });
 const whatsapp = whatsappConfig();
+registerBillingPublic(app, billingRuntime, database);
 registerAppLinks(app);
 registerReleases(app, await releaseConfiguration());
 app.use('/api/v1', versionedErrors);
@@ -69,6 +80,7 @@ if (process.env.SOTOVOR_REQUIRE_SMTP === '1') {
 app.post(['/api/entries', '/api/v1/entries'], express.json({ limit: '3mb' }));
 const apiOptions = {
   billing,
+  billingRuntime,
   shopping,
   push,
   transcription: transcriptionProvider(),
@@ -96,6 +108,7 @@ app.use(handleError);
 
 const server = app.listen(port, host);
 const stopNotifications = scheduleNotifications(database, push);
+const stopBilling = billingRuntime?.schedule() ?? (() => {});
 server.once('listening', () => {
   const address = host === '0.0.0.0' ? '127.0.0.1' : host;
   const url = `http://${address.includes(':') ? `[${address}]` : address}:${server.address().port}`;
@@ -105,6 +118,7 @@ server.once('listening', () => {
 });
 server.once('error', async (error) => {
   stopNotifications();
+  stopBilling();
   console.error(error.code === 'EADDRINUSE' ? `Vrata ${port} so že v uporabi.` : error.message);
   await database.client.close();
   process.exitCode = 1;
@@ -112,6 +126,7 @@ server.once('error', async (error) => {
 for (const signal of ['SIGINT', 'SIGTERM']) {
   process.once(signal, () => {
     stopNotifications();
+    stopBilling();
     server.close(() => void database.client.close());
   });
 }

@@ -216,4 +216,12 @@
     <string name="trial_already_used">Preizkus Sotovor Pro je bil v tem prostoru že uporabljen.</string>
     <string name="invalid_statistics_range">Izberi veljavno obdobje.</string>
     <string name="planning_preview_required">Najprej pripravi predlog razporeditve.</string>
+    <string name="invalid_billing_plan">Izberi mesečni ali letni paket brez dodatnih podatkov o ceni.</string>
+    <string name="billing_unavailable">Obračunavanje trenutno ni na voljo.</string>
+    <string name="subscription_exists">Naročnino že imaš. Uredi jo v portalu.</string>
+    <string name="checkout_pending">Nakup je že v teku. Uporabi odprto plačilno stran.</string>
+    <string name="no_subscription">Plačljive naročnine še nimaš.</string>
+    <string name="billing_rate_limit">Preveč poskusov. Poskusi pozneje.</string>
+    <string name="billing_delete_pending">Nakup je že v teku. Poskusi izbris znova čez nekaj minut.</string>
+    <string name="billing_invalid_request">Pošlji prazen objekt.</string>
 </resources>

@@ -22,7 +22,7 @@ export function billingConfiguration(env = process.env) {
   if (!['true', 'false'].includes(enabled)) throw new Error('SOTOVOR_BILLING_ENABLED must be true or false.');
   if (enabled === 'false') return { ...defaultBillingConfig, enabled: false };
   const provider = env.SOTOVOR_BILLING_PROVIDER || 'mock';
-  if (provider !== 'mock') throw new Error('Only the mock billing provider is available in P1.');
+  if (!['mock', 'stripe'].includes(provider)) throw new Error('Unsupported billing provider.');
   const config = { enabled: true, provider };
   for (const tier of ['free', 'pro']) {
     config[tier] = {};

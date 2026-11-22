@@ -11,7 +11,8 @@ provider for this phase. Existing public-launch setup tasks below still apply.
    setting up the VPS. Leave `SOTOVOR_BILLING_ENABLED=false` for a free launch
    or self-hosting; all features are unlocked and billing UI stays absent.
 2. For an isolated test, set `SOTOVOR_BILLING_ENABLED=true` and
-   `SOTOVOR_BILLING_PROVIDER=mock`, then restart the server. The provider does
+   `SOTOVOR_BILLING_PROVIDER=mock`, a local `SOTOVOR_PUBLIC_URL` and a random
+   `SOTOVOR_BILLING_WEBHOOK_SECRET` (at least 16 characters), then restart the server. The provider does
    not contact a payment service. Examples list every `SOTOVOR_LIMIT_FREE_*`
    and `SOTOVOR_LIMIT_PRO_*` override. Integers or `unlimited` control counts;
    `true`/`false` control features. These defaults live in one policy file,
@@ -45,11 +46,35 @@ provider for this phase. Existing public-launch setup tasks below still apply.
    account export contains retained family data. Never delete a family's data
    to simulate expiry.
 
-Before P2/live payments, a human must create and verify the provider/business
-account, create the agreed tax-inclusive monthly/yearly products and prices,
-review tax settings and consumer/legal text, and register verified webhooks.
-Use provider test mode first. Exact provider integration steps and secret names
-will be added with P2; do not invent keys or treat mock state as payment evidence.
+## Sotovor Pro P2: Stripe setup
+
+Follow [BILLING.md](BILLING.md) in **Stripe test mode first**. The owner must:
+
+1. Create/verify the Stripe business account; choose the appropriate business
+   identity and payout settings. Do not send secret keys through chat.
+2. Create the agreed inclusive EUR 3/month and EUR 30/year recurring prices;
+   put their IDs and `sk_test_...` in private environment settings. Exact CLI
+   commands, all variable names and validation rules are in BILLING.md.
+3. Configure Customer Portal invoice access, payment-method updates, cancellation
+   at period end and only the two permitted price options. Configure provider
+   receipts. Review tax registrations; only enable automatic tax after that review.
+4. Use `stripe listen` locally, then register the public HTTPS webhook endpoint
+   when a domain/VPS exist. Use the matching `whsec_...` secret and listed event
+   types. Confirm signing, duplicate deliveries and reconciliation in test mode.
+5. Review withdrawal/immediate-service consent, recurring terms, refunds,
+   privacy, business/contact details and invoice/tax obligations with a qualified
+   human. Supply reviewed UTF-8 `legal/pogoji.txt`; for Compose set the container
+   path `/app/legal/pogoji.txt`. The default `/pogoji` copy is a testing draft,
+   not approved terms. Stripe live keys fail startup without reviewed-file
+   configuration and HTTPS; a file's presence does not substitute for review.
+6. Verify actual SMTP delivery of welcome, payment-failed and ends-soon mail
+   in the user's language, the portal link, backups and restore. Complete the
+   manual test checklist before separately enabling live mode. No real charges
+   or public deployment were performed by this phase.
+7. Leave provider choice as Stripe unless separately deciding on a Merchant
+   of Record. Paddle/P2b is optional and not implemented. Turning the billing
+   flag off does not cancel existing provider renewals; cancel/migrate them
+   deliberately before disabling a paying installation.
 
 ## Domain, VPS and DNS
 

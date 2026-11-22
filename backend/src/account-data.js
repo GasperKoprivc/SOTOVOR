@@ -17,6 +17,7 @@ export function registerAccountData(
     entitlementUsage,
     billingAudit,
   },
+  beforeFamilyDeletion = async () => {},
 ) {
   router.get('/me/export', async (req, res) => {
     if (!req.account) throw new HttpError(401, 'Najprej se prijavi.');
@@ -93,6 +94,7 @@ export function registerAccountData(
       { $set: { deletionFamilyIds: owned } },
     );
     if (!locked.matchedCount) throw new HttpError(409, 'Račun se je spremenil. Poskusi znova.');
+    await beforeFamilyDeletion(owned);
 
     const ownedScope = { householdId: { $in: owned } };
     await households.deleteMany({ _id: { $in: owned }, ownerAccountId: accountId });
