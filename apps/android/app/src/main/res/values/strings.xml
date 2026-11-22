@@ -212,4 +212,8 @@
     <string name="appearance_light">Svetli način</string>
     <string name="appearance_system">Sistemski videz</string>
     <string name="plan_required">Za to možnost potrebuješ Sotovor Pro.</string>
+    <string name="billing_disabled">Obračunavanje ni omogočeno.</string>
+    <string name="trial_already_used">Preizkus Sotovor Pro je bil v tem prostoru že uporabljen.</string>
+    <string name="invalid_statistics_range">Izberi veljavno obdobje.</string>
+    <string name="planning_preview_required">Najprej pripravi predlog razporeditve.</string>
 </resources>

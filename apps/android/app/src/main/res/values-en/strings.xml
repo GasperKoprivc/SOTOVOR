@@ -212,4 +212,8 @@
     <string name="appearance_light">Light mode</string>
     <string name="appearance_system">System appearance</string>
     <string name="plan_required">This feature requires Sotovor Pro.</string>
+    <string name="billing_disabled">Billing is not enabled.</string>
+    <string name="trial_already_used">This space has already used its Sotovor Pro trial.</string>
+    <string name="invalid_statistics_range">Choose a valid time range.</string>
+    <string name="planning_preview_required">Create a planning proposal first.</string>
 </resources>

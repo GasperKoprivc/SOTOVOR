@@ -401,15 +401,28 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
             } catch (_: IOException) {
                 mutable.update { it.copy(problemResource = R.string.offline) }
             } catch (error: HttpException) {
-                val message = runCatching {
+                val detail = runCatching {
                     val body = error.response()?.errorBody()?.string() ?: return@runCatching null
-                    val detail = json.decodeFromString<ApiError>(body).error
-                    if (detail.code == "PLAN_REQUIRED") {
-                        mutable.update { it.copy(problemResource = R.string.plan_required) }
-                        null
-                    } else detail.message
+                    json.decodeFromString<ApiError>(body).error
                 }.getOrNull()
-                mutable.update { it.copy(problem = message, problemResource = if (message == null) it.problemResource ?: R.string.error_generic else null) }
+                val billingMessage = when (detail?.code) {
+                    "PLAN_REQUIRED" -> R.string.plan_required
+                    "BILLING_DISABLED" -> R.string.billing_disabled
+                    "TRIAL_ALREADY_USED" -> R.string.trial_already_used
+                    "INVALID_STATISTICS_RANGE" -> R.string.invalid_statistics_range
+                    "PLANNING_PREVIEW_REQUIRED" -> R.string.planning_preview_required
+                    else -> null
+                }
+                mutable.update {
+                    it.copy(
+                        problem = if (billingMessage != null) null else detail?.message,
+                        problemResource = when {
+                            billingMessage != null -> billingMessage
+                            detail == null -> R.string.error_generic
+                            else -> null
+                        }
+                    )
+                }
             } catch (_: Exception) {
                 mutable.update { it.copy(problemResource = R.string.error_generic) }
             } finally {

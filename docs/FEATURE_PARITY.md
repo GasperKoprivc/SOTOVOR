@@ -103,3 +103,79 @@ shares them across clients. The public download page remains Slovenian.
 
 The responsive web app is available today. The [iOS options evaluation](IOS_OPTIONS.md)
 covers a future installable web app or native client.
+
+## Sotovor Pro — P1 entitlements (no payments yet)
+
+The owner's prices are **EUR 3/month including VAT** or **EUR 30/year including
+VAT** (two months free). The subscription belongs to a family space, and all
+current members share its entitlements. Only that space's admin can start its
+one-time, card-free **14-day trial**. P1 does not offer checkout, cancellation,
+payment-provider integration or billing screens; those belong to later phases.
+
+`SOTOVOR_BILLING_ENABLED=false` is the default. It unlocks **all** features and
+removes all quotas, including the member cap. No billing UI is displayed.
+Enable `SOTOVOR_BILLING_ENABLED=true` with `SOTOVOR_BILLING_PROVIDER=mock` to test
+Free, trial, expiry and support grants. P1 supports only mock; an enabled unknown
+provider or invalid override fails startup. No new dependency was added.
+
+| Feature                                                                                                                    | Free                     | Pro                       | P1 enforcement / clients                                                                                                                                                                                                         |
+| -------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Current members                                                                                                            | 5                        | 12                        | Atomic invite acceptance; both cookie and bearer clients. Inactive members do not count. Existing over-limit members keep access.                                                                                                |
+| Successful smart-planner previews                                                                                          | 2 per UTC calendar month | Unlimited                 | Atomic space/month counters. Invalid requests and previews with no proposed changes do not count. Apply requires an issued preview; confirming it does not consume a second proposal.                                            |
+| WhatsApp                                                                                                                   | No                       | Yes                       | Pair/unlink, pairing delivery and message imports are checked on the server. Verified blocked webhook deliveries return PLAN_REQUIRED and may be retried by Meta. Existing imports remain readable.                              |
+| Private ICS                                                                                                                | No                       | Yes                       | Creating/rotating a link requires Pro in the selected space. Every feed read rechecks each family's entitlement and includes only eligible families; revocation stays free.                                                      |
+| Shopping lists                                                                                                             | One shared list          | One shared list currently | **Additional active shopping lists: not applicable yet.** No list collection, list-creation endpoint or multi-list UI exists. The existing list and all its items remain free. Limits are reserved for later multi-list support. |
+| Stored voice notes                                                                                                         | 20                       | Unlimited                 | Atomic reservations; recordings retained on archived entries still count because they are stored. Existing audio remains playable/exportable. Existing 30-second / 2 MB validation is unchanged.                                 |
+| Transcription                                                                                                              | No                       | Yes                       | Requires both entitlement and the separate transcription feature/provider flag.                                                                                                                                                  |
+| Completed-work statistics                                                                                                  | 7 / 30 days              | Also all time             | `/statistics` validates the range; web/Tauri and Android check it before enabling the all-time view. Raw historic records remain readable/exportable.                                                                            |
+| Child points and rewards                                                                                                   | Read existing data       | Configure/use             | Existing feature is gated for new settings/points and new point awards. Daily task completion remains free even after downgrade.                                                                                                 |
+| Daily tasks, claim/swap/complete, calendar, recurrence, overview, notifications, Android widget, apps, export and deletion | Free                     | Included                  | No Pro requirement.                                                                                                                                                                                                              |
+
+### State and API
+
+`backend/src/entitlements.js` is the single policy source. Its pure
+`getEntitlements(space, subscription, now, config)` has no clock, DB or env side
+effects. Disabled billing wins, followed by a future support grant, an unexpired
+trial, active subscription, past-due grace, or the paid-through canceled period.
+At the exact expiry instant the corresponding timed grant stops working.
+An active state is authoritative; future payment reconciliation must expire it
+when appropriate. Past-due state uses `graceUntil`; P2 must set this to seven
+days from the payment-failure transition rather than extend it on retries.
+
+The `subscriptions` collection has a unique `spaceId` (Mongo ObjectId).
+Provider identifiers are nullable and are never returned to ordinary clients.
+`entitlement_usage` has a unique `(spaceId, feature, period)` index; planner
+periods are `YYYY-MM` in UTC and stored-recording periods are `stored`.
+`billing_audit` records trial starts and manual grants/revocations with actor,
+timestamp and support reason. New spaces initialize their subscription record;
+existing spaces have effective Free defaults until a trial or support grant
+initializes one. No plan expiry deletes records.
+
+- `GET /api/v1/spaces/:id/billing`: any current member; effective limits,
+  features, usage, sanitized subscription status/plan/paid-through date and admin flag.
+- `POST /api/v1/spaces/:id/billing/trial` with `{}`: admin only; once per space,
+  including after expiry. Concurrent requests cannot create two trials.
+- `GET /api/v1/statistics?range=7|30|all`: selected family through the existing
+  `X-Sotovor-Household` header; all-time reports require the configured feature.
+
+All these endpoints also exist under the legacy `/api` prefix. A blocked feature
+returns HTTP 403 with `{ "error": { "code": "PLAN_REQUIRED", "message": "…",
+"details": { "feature": "ics", "limit": null, "current": null,
+"upgradeUrl": "/?space=<id>#profil" } } }`. The upgrade URL reserves the
+profile entry point for P3; it does not imply that payment UI exists. Web/Tauri show the translated
+generic notice and Android maps the code to its local resources. Billing UI and
+trial buttons on all clients are intentionally deferred to P3, not silently missing.
+
+Account export includes the caller's accessible spaces' entries (including
+base64 audio) and shopping items without provider or session credentials.
+Explicit account/family deletion cleans up owned-space billing metadata; this
+is separate from plan expiry and is never triggered by downgrade.
+
+### Verification
+
+Run the existing Mongo-backed `npm test`; `billing.integration.test.js` covers
+cookie/bearer isolation, admin-only/once-only trials, expiry, simultaneous
+member joins and voice reservations, monthly planner quotas, every existing
+feature gate, manual grants and downgrade-safe reads/export. The pure policy
+table covers exact clock edges and override validation. Run normal web and
+Android checks too. Operator commands are in [HUMAN_TASKS.md](HUMAN_TASKS.md#sotovor-pro-p1-operator-testing).

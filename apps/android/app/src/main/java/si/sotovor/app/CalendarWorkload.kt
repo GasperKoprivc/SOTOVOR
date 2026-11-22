@@ -151,7 +151,9 @@ fun WorkloadPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceVi
         SectionTitle(R.string.workload)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf(7 to R.string.days_7, 30 to R.string.days_30, 0 to R.string.all_time).forEach { (number, label) ->
-                FilterChip(days == number, { model.statisticsRange(number) { days = number } }, { Text(stringResource(label)) }, enabled = !state.busy)
+                FilterChip(days == number, {
+                    model.statisticsRange(number) { days = number }
+                }, { Text(stringResource(label)) }, enabled = !state.busy)
             }
         }
         WorkloadBars(workspace, days)

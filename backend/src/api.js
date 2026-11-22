@@ -496,7 +496,8 @@ export function createApi(
 
   router.get('/statistics', async (req, res) => {
     const range = req.query.range ?? '30';
-    if (!['7', '30', 'all'].includes(range)) throw new HttpError(400, 'Izberi veljavno obdobje.');
+    if (!['7', '30', 'all'].includes(range))
+      throw new HttpError(400, 'Izberi veljavno obdobje.', 'INVALID_STATISTICS_RANGE');
     if (range === 'all') await billing.assertFeature(req.household, 'allTimeStatistics');
     const since = range === 'all' ? null : new Date(Date.now() - Number(range) * 86400_000);
     const counts = await entries
@@ -630,7 +631,8 @@ export function createApi(
     const plan = planTasks(tasks, req.household.members, householdDay(), rebalance);
     const fingerprint = hash(JSON.stringify(plan));
     if (action === 'preview') {
-      await billing.consume(req.household, 'planningProposals');
+      if (plan.changes.length)
+        await billing.consume(req.household, 'planningProposals', 0, { lastProposalSignature: fingerprint });
       return res.json({
         changes: plan.changes.map(({ id, title, assigneeName }) => ({ id, title, assigneeName })),
         skipped: plan.skipped,
@@ -641,6 +643,7 @@ export function createApi(
     if (signature !== fingerprint)
       throw new HttpError(409, 'Opravila ali razpoložljivost so se spremenili. Pripravi nov predlog.');
     if (!plan.changes.length) return res.json({ applied: 0, conflicts: 0 });
+    await billing.assertPlanningApproval(req.household, fingerprint);
     const now = new Date();
     const result = await entries.bulkWrite(
       plan.changes.map((change) => ({

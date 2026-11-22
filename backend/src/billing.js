@@ -15,7 +15,7 @@ export function createBilling(database, config = billingConfiguration(), clock =
   }
   const period = () => clock().toISOString().slice(0, 7); // Calendar months use UTC.
 
-  async function consume(space, name, currentCount = 0) {
+  async function consume(space, name, currentCount = 0, details = {}) {
     if (!config.enabled) return async () => {};
     const value = await entitlements(space);
     const scope = {
@@ -33,7 +33,7 @@ export function createBilling(database, config = billingConfiguration(), clock =
     const limit = value.limits[name];
     const used = await entitlementUsage.findOneAndUpdate(
       { ...scope, ...(limit === null ? {} : { count: { $lt: limit } }) },
-      { $inc: { count: 1 }, $set: { updatedAt: clock() } },
+      { $inc: { count: 1 }, $set: { updatedAt: clock(), ...details } },
       { returnDocument: 'after' },
     );
     if (!used) {
@@ -47,6 +47,18 @@ export function createBilling(database, config = billingConfiguration(), clock =
     if (!config.enabled) return async () => {};
     const count = await entries.countDocuments({ householdId: space._id, voice: { $exists: true } });
     return consume(space, 'voiceNotes', count);
+  }
+
+  async function assertPlanningApproval(space, signature) {
+    if (!config.enabled) return;
+    if (
+      !(await entitlementUsage.findOne({
+        spaceId: space._id,
+        feature: 'planningProposals',
+        lastProposalSignature: signature,
+      }))
+    )
+      throw new HttpError(409, 'Najprej pripravi predlog razporeditve.', 'PLANNING_PREVIEW_REQUIRED');
   }
 
   async function memberLimit(space) {
@@ -148,6 +160,7 @@ export function createBilling(database, config = billingConfiguration(), clock =
 
   return {
     config,
+    assertPlanningApproval,
     entitlements,
     assertFeature,
     memberLimit,
