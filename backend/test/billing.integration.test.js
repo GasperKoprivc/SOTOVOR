@@ -454,3 +454,27 @@ test('verified WhatsApp deliveries cannot pair or import for a free or expired s
   assert.equal((await send('opravilo Blocked')).status, 403);
   assert.equal(await database.entries.countDocuments({ householdId: f.id }), 1);
 });
+
+test('trial and support audit events survive an interrupted audit write and replay once', async () => {
+  const f = await family();
+  const faulty = {
+    ...database,
+    billingAudit: {
+      updateOne: async () => {
+        throw new Error('Simulated audit outage');
+      },
+    },
+  };
+  const failingBilling = createBilling(faulty, config, () => now);
+  await assert.rejects(failingBilling.startTrial(f.space, new ObjectId()));
+  const pending = await database.subscriptions.findOne({ spaceId: f.id });
+  assert.equal(pending.status, 'trialing');
+  assert.equal(pending.auditOutbox.length, 1);
+  assert.equal((await billing.snapshot(f.space, true)).entitlements.reason, 'trial');
+  await billing.snapshot(f.space, true);
+  assert.equal(await database.billingAudit.countDocuments({ spaceId: f.id, action: 'trial_started' }), 1);
+  await assert.rejects(changeManualPro(faulty, String(f.id), 2, { now }));
+  assert.equal((await billing.snapshot(f.space, true)).entitlements.reason, 'manual_grant');
+  assert.equal(await database.billingAudit.countDocuments({ spaceId: f.id, action: 'manual_grant' }), 1);
+  assert.equal((await database.subscriptions.findOne({ spaceId: f.id })).auditOutbox.length, 0);
+});

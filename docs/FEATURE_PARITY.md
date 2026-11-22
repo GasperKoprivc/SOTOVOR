@@ -147,7 +147,9 @@ Provider identifiers are nullable and are never returned to ordinary clients.
 `entitlement_usage` has a unique `(spaceId, feature, period)` index; planner
 periods are `YYYY-MM` in UTC and stored-recording periods are `stored`.
 `billing_audit` records trial starts and manual grants/revocations with actor,
-timestamp and support reason. New spaces initialize their subscription record;
+timestamp and support reason. A durable outbox is stored atomically with each
+trial/grant state change and replayed idempotently on the next billing read or
+operator action if an audit write is interrupted. New spaces initialize their subscription record;
 existing spaces have effective Free defaults until a trial or support grant
 initializes one. No plan expiry deletes records.
 

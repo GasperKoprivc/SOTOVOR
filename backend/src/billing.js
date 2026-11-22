@@ -2,12 +2,13 @@ import { ObjectId } from 'mongodb';
 import { HttpError } from './api-errors.js';
 import { validId } from './mobile-auth.js';
 import { assertLimit, billingConfiguration, getEntitlements, planRequired } from './entitlements.js';
+import { flushBillingAudit } from './billing-audit.js';
 
 export function createBilling(database, config = billingConfiguration(), clock = () => new Date()) {
-  const { subscriptions, entitlementUsage, billingAudit, entries } = database;
+  const { subscriptions, entitlementUsage, entries } = database;
   const subscription = (space) => subscriptions.findOne({ spaceId: space._id });
   async function entitlements(space) {
-    return getEntitlements(space, await subscription(space), clock(), config);
+    return getEntitlements(space, config.enabled ? await subscription(space) : null, clock(), config);
   }
   async function assertFeature(space, name) {
     const value = await entitlements(space);
@@ -69,6 +70,7 @@ export function createBilling(database, config = billingConfiguration(), clock =
   }
 
   async function snapshot(space, mayManage) {
+    await flushBillingAudit(database, space._id);
     const sub = await subscription(space);
     const proposals = await entitlementUsage.findOne({
       spaceId: space._id,
@@ -103,6 +105,14 @@ export function createBilling(database, config = billingConfiguration(), clock =
     if (!config.enabled) throw new HttpError(409, 'Obračunavanje ni omogočeno.', 'BILLING_DISABLED');
     await ensureSubscription(space._id);
     const now = clock();
+    const event = {
+      _id: new ObjectId(),
+      spaceId: space._id,
+      actorAccountId,
+      action: 'trial_started',
+      at: now,
+      trialEndsAt: new Date(+now + 14 * 86400_000),
+    };
     const result = await subscriptions.findOneAndUpdate(
       { spaceId: space._id, trialUsedAt: null },
       {
@@ -112,22 +122,17 @@ export function createBilling(database, config = billingConfiguration(), clock =
           trialEndsAt: new Date(+now + 14 * 86400_000),
           updatedAt: now,
         },
+        $push: { auditOutbox: event },
       },
       { returnDocument: 'after' },
     );
+    await flushBillingAudit(database, space._id);
     if (!result)
       throw new HttpError(
         409,
         'Preizkus Sotovor Pro je bil v tem prostoru že uporabljen.',
         'TRIAL_ALREADY_USED',
       );
-    await billingAudit.insertOne({
-      spaceId: space._id,
-      actorAccountId,
-      action: 'trial_started',
-      at: now,
-      trialEndsAt: result.trialEndsAt,
-    });
   }
 
   async function ensureSubscription(spaceId) {

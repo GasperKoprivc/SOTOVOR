@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { createBilling } from './billing.js';
 import { validId } from './mobile-auth.js';
+import { flushBillingAudit } from './billing-audit.js';
 
 export async function changeManualPro(
   database,
@@ -17,18 +18,20 @@ export async function changeManualPro(
   if (!(await database.households.findOne({ _id: id }))) throw new Error('Space not found.');
   await createBilling(database).ensureSubscription(id);
   const until = days === null ? null : new Date(+now + days * 86400_000);
-  await database.subscriptions.updateOne(
-    { spaceId: id },
-    { $set: { manualGrantUntil: until, updatedAt: now } },
-  );
-  await database.billingAudit.insertOne({
+  const event = {
+    _id: new ObjectId(),
     spaceId: id,
     action: days === null ? 'manual_grant_revoked' : 'manual_grant',
     actor,
     reason: reason.trim(),
     manualGrantUntil: until,
     at: now,
-  });
+  };
+  await database.subscriptions.updateOne(
+    { spaceId: id },
+    { $set: { manualGrantUntil: until, updatedAt: now }, $push: { auditOutbox: event } },
+  );
+  await flushBillingAudit(database, id);
   return until;
 }
 
