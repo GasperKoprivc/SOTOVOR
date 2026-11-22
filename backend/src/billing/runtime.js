@@ -337,6 +337,15 @@ export function createBillingRuntime(
       throw new HttpError(503, 'Obračunavanje trenutno ni na voljo.', 'BILLING_UNAVAILABLE');
     await billing.ensureSubscription(space._id);
     const record = await subscriptions.findOne({ spaceId: space._id });
+    // A completed checkout may still be waiting for a missed/delayed webhook.
+    // Check the previous hosted session before its reservation can be replaced.
+    if (record.checkoutSessionId) {
+      const pendingId = await provider.getCheckoutSubscription(record.checkoutSessionId);
+      if (pendingId && !terminal(await provider.getSubscription(pendingId))) {
+        await sync(pendingId);
+        throw new HttpError(409, 'Naročnino že imaš. Uredi jo v portalu.', 'SUBSCRIPTION_EXISTS');
+      }
+    }
     if (record.providerSubscriptionId && record.provider !== config.provider)
       throw new HttpError(409, 'Naročnino že imaš. Uredi jo v portalu.', 'SUBSCRIPTION_EXISTS');
     if (

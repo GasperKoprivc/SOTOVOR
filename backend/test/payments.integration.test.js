@@ -487,3 +487,15 @@ test('checkout throttles repeated requests and an expired subscription can be re
   assert.equal(limited.status, 429);
   assert.equal(limited.body.error.code, 'BILLING_RATE_LIMIT');
 });
+
+test('checkout cannot duplicate a completed purchase after reservation expiry when its webhook is missing', async () => {
+  const f = await family(),
+    id = await complete(f);
+  await database.billingEvents.deleteMany({ subscriptionId: id });
+  now = new Date(+now + 33 * 60000);
+  const result = await call(path(f, 'checkout'), { auth: f.owner.token, body: { plan: 'yearly' } });
+  assert.equal(result.status, 409);
+  assert.equal(result.body.error.code, 'SUBSCRIPTION_EXISTS');
+  assert.equal((await snapshot(f)).subscription.status, 'active');
+  assert.equal(await database.mockBilling.countDocuments({ kind: 'checkout', spaceId: String(f.id) }), 1);
+});
