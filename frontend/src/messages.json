@@ -832,5 +832,22 @@
   "Nov družinski član": { "en": "New family member", "de": "Neues Familienmitglied" },
   "Pozabljeno geslo": { "en": "Forgot password", "de": "Passwort vergessen" },
   "Prenesi": { "en": "Download", "de": "Download" },
-  "Naloži aplikacijo": { "en": "Get the app", "de": "App herunterladen" }
+  "Naloži aplikacijo": { "en": "Get the app", "de": "App herunterladen" },
+  "Za to možnost potrebuješ Sotovor Pro.": {
+    "en": "This feature requires Sotovor Pro.",
+    "de": "Für diese Funktion benötigst du Sotovor Pro."
+  },
+  "Obračunavanje ni omogočeno.": {
+    "en": "Billing is not enabled.",
+    "de": "Die Abrechnung ist nicht aktiviert."
+  },
+  "Preizkus Sotovor Pro je bil v tem prostoru že uporabljen.": {
+    "en": "This space has already used its Sotovor Pro trial.",
+    "de": "Dieser Familienbereich hat die Testphase von Sotovor Pro bereits genutzt."
+  },
+  "Izberi veljavno obdobje.": { "en": "Choose a valid time range.", "de": "Wähle einen gültigen Zeitraum." },
+  "Najprej pripravi predlog razporeditve.": {
+    "en": "Create a planning proposal first.",
+    "de": "Erstelle zuerst einen Planungsvorschlag."
+  }
 }

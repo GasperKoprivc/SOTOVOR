@@ -1,13 +1,33 @@
 import { HttpError } from './api-errors.js';
+import { ObjectId } from 'mongodb';
 import { publicProfile, verifyPassword } from './accounts.js';
 
 export function registerAccountData(
   router,
-  { accounts, households, entries, shoppingItems, notifications, sessions, mobileSessions, devices },
+  {
+    accounts,
+    households,
+    entries,
+    shoppingItems,
+    notifications,
+    sessions,
+    mobileSessions,
+    devices,
+    subscriptions,
+    entitlementUsage,
+    billingAudit,
+  },
 ) {
   router.get('/me/export', async (req, res) => {
     if (!req.account) throw new HttpError(401, 'Najprej se prijavi.');
     const registeredAt = req.account._id.getTimestamp();
+    const spaceIds = req.spaces.map((space) => new ObjectId(space.id));
+    const exportedEntries = await entries
+      .find({ householdId: { $in: spaceIds } }, { projection: { nextOccurrence: 0, whatsappMessageId: 0 } })
+      .toArray();
+    const exportedShopping = await shoppingItems
+      .find({ householdId: { $in: spaceIds } }, { projection: { whatsappMessageId: 0 } })
+      .toArray();
     const registeredDevices = await mobileSessions
       .find(
         { accountId: req.account._id },
@@ -24,6 +44,19 @@ export function registerAccountData(
       shoppingPush: req.account.shoppingPush === true,
       notificationSettings: req.account.notificationSettings ?? {},
       devices: registeredDevices,
+      entries: exportedEntries.map(({ _id, householdId, voice, ...entry }) => ({
+        id: String(_id),
+        spaceId: String(householdId),
+        ...entry,
+        ...(voice
+          ? { voice: { mime: voice.mime, data: Buffer.from(voice.bytes.value()).toString('base64') } }
+          : {}),
+      })),
+      shoppingItems: exportedShopping.map(({ _id, householdId, ...item }) => ({
+        id: String(_id),
+        spaceId: String(householdId),
+        ...item,
+      })),
     });
   });
   router.delete('/me', async (req, res) => {
@@ -66,6 +99,10 @@ export function registerAccountData(
     await Promise.all([
       entries.deleteMany(ownedScope),
       shoppingItems.deleteMany(ownedScope),
+      subscriptions.deleteMany({ spaceId: { $in: owned } }),
+      entitlementUsage.deleteMany({ spaceId: { $in: owned } }),
+      billingAudit.deleteMany({ spaceId: { $in: owned } }),
+      billingAudit.updateMany({ actorAccountId: accountId }, { $unset: { actorAccountId: '' } }),
       notifications.deleteMany({ $or: [ownedScope, { accountId }] }),
       households.updateMany(
         { $or: [{ 'members.accountId': accountId }, { 'members.guestAccountId': accountId }] },

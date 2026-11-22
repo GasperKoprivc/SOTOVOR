@@ -65,7 +65,7 @@ export function calendarFeed(entries) {
   return lines.concat('END:VCALENDAR', '').map(fold).join('\r\n');
 }
 
-export function registerCalendarFeed(router, { accounts, households, entries }) {
+export function registerCalendarFeed(router, { accounts, households, entries }, billing) {
   router.get('/calendar/feed/:file', async (req, res) => {
     res.set({ 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow' });
     const token = /^([a-f0-9]{64})\.ics$/.exec(req.params.file)?.[1];
@@ -75,7 +75,7 @@ export function registerCalendarFeed(router, { accounts, households, entries }) 
       { projection: { _id: 1 } },
     );
     if (!owner) throw new HttpError(404, 'Koledar ni dostopen.');
-    const families = await households
+    let families = await households
       .find(
         {
           members: {
@@ -88,6 +88,14 @@ export function registerCalendarFeed(router, { accounts, households, entries }) 
         { projection: { _id: 1 } },
       )
       .toArray();
+    if (billing?.config.enabled) {
+      const allowed = await Promise.all(
+        families.map(async (space) => (await billing.entitlements(space)).features.ics),
+      );
+      const original = families;
+      families = families.filter((_space, index) => allowed[index]);
+      if (!families.length && original.length) await billing.assertFeature(original[0], 'ics');
+    }
     const items = await entries
       .find(
         {
@@ -103,13 +111,17 @@ export function registerCalendarFeed(router, { accounts, households, entries }) 
   });
 }
 
-export function registerCalendarSettings(router, { accounts }) {
+export function registerCalendarSettings(router, { accounts }, billing) {
   router.get('/calendar/subscription', (req, res) => {
     if (!req.account) throw new HttpError(401, 'Najprej se prijavi.');
     res.json({ active: Boolean(req.account.calendarTokenHash) });
   });
   router.post('/calendar/subscription', async (req, res) => {
     if (!req.account) throw new HttpError(401, 'Najprej se prijavi.');
+    if (billing?.config.enabled) {
+      if (!req.household) throw new HttpError(401, 'Najprej se pridruži družinskemu prostoru.');
+      await billing.assertFeature(req.household, 'ics');
+    }
     const token = randomBytes(32).toString('hex');
     const result = await accounts.updateOne(
       { _id: req.account._id, deletionFamilyIds: { $exists: false } },

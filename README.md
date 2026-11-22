@@ -13,6 +13,13 @@ Namenjen je vsakodnevnim stvarem: pospravljanju, nakupom, prevzemu otrok, druži
 
 **React 19 · Vite 8 · Node.js 24+ · Express 5 · MongoDB · Tauri 2**
 
+**Sotovor Pro — P1:** dodano je strežniško preverjanje pravic, enkratni 14-dnevni
+preizkus na družinski prostor in operatorska dodelitev Pro. Plačil in zaslonov
+za naročnino še ni. Privzeti `SOTOVOR_BILLING_ENABLED=false` vsem odklene vse
+funkcije. Dogovorjeni ceni ostajata 3 EUR/mesec ali 30 EUR/leto z DDV.
+[Matrika in tehnične podrobnosti](docs/FEATURE_PARITY.md#sotovor-pro--p1-entitlements-no-payments-yet)
+· [Preizkus in operatorski ukazi](docs/HUMAN_TASKS.md#sotovor-pro-p1-operator-testing)
+
 ---
 
 ## Vsebina

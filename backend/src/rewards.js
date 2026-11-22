@@ -28,6 +28,7 @@ export function registerRewards(router, { households, entries }, requireAdmin) {
 
   router.put('/rewards', async (req, res) => {
     requireAdmin(req);
+    await req.billing.assertFeature(req.household, 'rewards');
     const { leaderboard, rewards } = req.body;
     if (
       typeof leaderboard !== 'boolean' ||

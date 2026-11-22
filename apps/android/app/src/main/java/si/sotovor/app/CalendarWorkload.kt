@@ -146,12 +146,14 @@ internal fun eventClock(minutes: Int): String = "%02d:%02d".format(Locale.ROOT, 
 
 @Composable
 fun WorkloadPage(workspace: Workspace, state: WorkspaceState, model: WorkspaceViewModel) {
-    var days by rememberSaveable { mutableIntStateOf(30) }
+    var days by rememberSaveable(workspace.household?.id) { mutableIntStateOf(30) }
     PanelScreen {
         SectionTitle(R.string.workload)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf(7 to R.string.days_7, 30 to R.string.days_30, 0 to R.string.all_time).forEach { (number, label) ->
-                FilterChip(days == number, { days = number }, { Text(stringResource(label)) })
+                FilterChip(days == number, {
+                    model.statisticsRange(number) { days = number }
+                }, { Text(stringResource(label)) }, enabled = !state.busy)
             }
         }
         WorkloadBars(workspace, days)

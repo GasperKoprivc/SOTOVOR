@@ -14,6 +14,9 @@ import retrofit2.http.Query
 import retrofit2.http.Streaming
 
 interface SotovorApi {
+    @GET("statistics")
+    suspend fun checkStatistics(@Header("X-Sotovor-Household") household: String, @Query("range") range: String)
+
     @POST("mobile/auth/login")
     suspend fun login(@Body login: Login): Credentials
 
@@ -156,7 +159,10 @@ interface SotovorApi {
     suspend fun calendarSubscription(): CalendarSubscription
 
     @POST("calendar/subscription")
-    suspend fun createCalendarSubscription(@Body input: Empty = Empty()): CalendarSubscription
+    suspend fun createCalendarSubscription(
+        @Header("X-Sotovor-Household") household: String,
+        @Body input: Empty = Empty()
+    ): CalendarSubscription
 
     @DELETE("calendar/subscription")
     suspend fun revokeCalendarSubscription(): CalendarSubscription

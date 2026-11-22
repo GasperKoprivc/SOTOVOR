@@ -3,6 +3,84 @@ info: { title: Sotovor native API, version: 1.0.0 }
 servers: [{ url: /api/v1 }]
 security: [{ bearer: [] }, { browserSession: [] }]
 paths:
+  /spaces/{id}/billing:
+    get:
+      summary: Read the selected family's subscription and effective entitlements
+      description: All current members may read this. Disabled billing unlocks every feature; clients must not show billing UI when enabled is false. No provider credentials or customer IDs are exposed.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[a-f0-9]{24}$' } }
+      responses:
+        '200':
+          description: Space-scoped billing snapshot
+          content: { application/json: { schema: { $ref: '#/components/schemas/BillingSnapshot' } } }
+        '401': { description: Sign in required }
+        '403': { description: Current family membership required }
+  /spaces/{id}/billing/trial:
+    post:
+      summary: Admin starts the one-time 14-day trial without a payment card
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, pattern: '^[a-f0-9]{24}$' } }
+      requestBody:
+        {
+          required: true,
+          content: { application/json: { schema: { type: object, additionalProperties: false } } },
+        }
+      responses:
+        '201':
+          description: Trial started and audited; duplicate trial requests cannot start a second trial
+          content: { application/json: { schema: { $ref: '#/components/schemas/BillingSnapshot' } } }
+        '401': { description: Sign in required }
+        '403': { description: Family administrator required }
+        '409':
+          description: BILLING_DISABLED or TRIAL_ALREADY_USED
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+  /statistics:
+    get:
+      summary: Family completed-work statistics with server-enforced time ranges
+      parameters:
+        - $ref: '#/components/parameters/ShoppingHousehold'
+        - { name: range, in: query, schema: { type: string, enum: ['7', '30', all], default: '30' } }
+      responses:
+        '200':
+          description: Open task counts and completed tasks in the requested rolling-day range
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [range, members]
+                properties:
+                  range: { type: string, enum: ['7', '30', all] }
+                  members:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, open, done]
+                      properties:
+                        id: { type: string }
+                        open: { type: integer, minimum: 0 }
+                        done: { type: integer, minimum: 0 }
+        '400': { description: Invalid range }
+        '403': { $ref: '#/components/responses/PlanRequired' }
+  /whatsapp/pair:
+    post:
+      summary: Admin creates a temporary WhatsApp pairing code for a Pro family
+      parameters: [{ $ref: '#/components/parameters/ShoppingHousehold' }]
+      requestBody: { required: true, content: { application/json: { schema: { type: object } } } }
+      responses:
+        '200':
+          description: Pairing code
+          content: { application/json: { schema: { type: object, properties: { code: { type: string } } } } }
+        '403': { $ref: '#/components/responses/PlanRequired' }
+        '404': { description: WhatsApp integration not configured }
+  /whatsapp/unlink:
+    post:
+      summary: Admin unlinks the WhatsApp sender for a Pro family
+      parameters: [{ $ref: '#/components/parameters/ShoppingHousehold' }]
+      requestBody: { required: true, content: { application/json: { schema: { type: object } } } }
+      responses:
+        '200': { description: Sender disconnected }
+        '403': { $ref: '#/components/responses/PlanRequired' }
+        '404': { description: WhatsApp integration not configured }
   /me/appearance:
     get:
       summary: Read effective language and theme preferences for this account
@@ -36,6 +114,7 @@ paths:
         - { name: id, in: path, required: true, schema: { type: string, pattern: '^[a-f0-9]{24}$' } }
       requestBody: { required: true, content: { application/json: { schema: { type: object } } } }
       responses:
+        '403': { $ref: '#/components/responses/PlanRequired' }
         '200':
           {
             description: Transient transcription,
@@ -121,7 +200,7 @@ paths:
             description: Saved,
             content: { application/json: { schema: { $ref: '#/components/schemas/Ok' } } },
           }
-        '403': { description: Administrator required }
+        '403': { $ref: '#/components/responses/PlanRequired' }
   /tasks/{id}/comments:
     post:
       summary: Post a comment and notify other members
@@ -250,8 +329,10 @@ paths:
           }
     post:
       summary: Create or replace the authenticated account's subscription link
+      parameters: [{ $ref: '#/components/parameters/ShoppingHousehold' }]
       requestBody: { required: true, content: { application/json: { schema: { type: object } } } }
       responses:
+        '403': { $ref: '#/components/responses/PlanRequired' }
         '201':
           {
             description: This is the only response that returns the private path,
@@ -272,6 +353,7 @@ paths:
       parameters:
         - { name: file, in: path, required: true, schema: { type: string, pattern: '^[a-f0-9]{64}[.]ics$' } }
       responses:
+        '403': { $ref: '#/components/responses/PlanRequired' }
         '200':
           {
             description: Calendar entries for current memberships,
@@ -724,6 +806,7 @@ paths:
           'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/Invite' } } },
         }
       responses:
+        '403': { $ref: '#/components/responses/PlanRequired' }
         '201':
           {
             'description': 'Successful response',
@@ -997,6 +1080,7 @@ paths:
           'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/EntryInput' } } },
         }
       responses:
+        '403': { $ref: '#/components/responses/PlanRequired' }
         '201':
           {
             'description': 'Successful response',
@@ -1028,6 +1112,7 @@ paths:
           'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/EntryEdit' } } },
         }
       responses:
+        '403': { $ref: '#/components/responses/PlanRequired' }
         '200':
           {
             'description': 'Successful response',
@@ -1345,6 +1430,7 @@ paths:
           'content': { 'application/json': { 'schema': { '$ref': '#/components/schemas/PlanOptions' } } },
         }
       responses:
+        '403': { $ref: '#/components/responses/PlanRequired' }
         '200':
           {
             'description': 'Successful response',
@@ -1385,6 +1471,9 @@ components:
     ShoppingHousehold:
       { name: X-Sotovor-Household, in: header, schema: { type: string, pattern: '^[a-f0-9]{24}$' } }
   responses:
+    PlanRequired:
+      description: PLAN_REQUIRED when the feature or quota needs Pro; ordinary permission errors also use HTTP 403. Enforcement covers cookie and bearer sessions. Existing data stays readable and exportable after downgrade.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
     ShoppingError:
       {
         description: Shopping request failed,
@@ -1394,6 +1483,69 @@ components:
     bearer: { type: http, scheme: bearer, bearerFormat: opaque }
     browserSession: { type: apiKey, in: cookie, name: sotovor_session }
   schemas:
+    Entitlements:
+      type: object
+      required: [isPro, reason, limits, features, trialEndsAt, currentPeriodEnd]
+      properties:
+        isPro: { type: boolean }
+        reason:
+          {
+            type: string,
+            enum: [billing_disabled, manual_grant, trial, active, grace, canceled_period, free],
+          }
+        limits:
+          type: object
+          description: Null means unlimited. Defaults are configurable through SOTOVOR_LIMIT_FREE_* and SOTOVOR_LIMIT_PRO_*.
+          required: [members, planningProposals, shoppingLists, voiceNotes]
+          properties:
+            members: { type: integer, minimum: 0, nullable: true }
+            planningProposals: { type: integer, minimum: 0, nullable: true }
+            shoppingLists: { type: integer, minimum: 0, nullable: true }
+            voiceNotes: { type: integer, minimum: 0, nullable: true }
+        features:
+          type: object
+          required: [whatsapp, ics, transcription, allTimeStatistics, rewards]
+          properties:
+            whatsapp: { type: boolean }
+            ics: { type: boolean }
+            transcription: { type: boolean }
+            allTimeStatistics: { type: boolean }
+            rewards: { type: boolean }
+        trialEndsAt: { type: string, format: date-time, nullable: true }
+        currentPeriodEnd: { type: string, format: date-time, nullable: true }
+    BillingSnapshot:
+      type: object
+      required: [enabled, entitlements, usage, subscription, mayManageBilling]
+      properties:
+        enabled: { type: boolean }
+        mayManageBilling: { type: boolean }
+        entitlements: { $ref: '#/components/schemas/Entitlements' }
+        usage:
+          type: object
+          required: [period, planningProposals, members, voiceNotes, shoppingLists]
+          properties:
+            period: { type: string, pattern: '^\d{4}-\d{2}$', description: UTC calendar month }
+            planningProposals: { type: integer, minimum: 0 }
+            members: { type: integer, minimum: 0 }
+            voiceNotes: { type: integer, minimum: 0 }
+            shoppingLists:
+              {
+                type: integer,
+                enum: [1],
+                description: Only the existing single shared list is implemented in P1,
+              }
+        subscription:
+          type: object
+          properties:
+            plan: { type: string, enum: [free, pro_monthly, pro_yearly] }
+            status: { type: string, enum: [none, trialing, active, past_due, canceled, expired] }
+            trialUsedAt: { type: string, format: date-time, nullable: true }
+            trialEndsAt: { type: string, format: date-time, nullable: true }
+            currentPeriodEnd:
+              { type: string, format: date-time, nullable: true, description: Renewal or paid-through date }
+            cancelAtPeriodEnd: { type: boolean }
+            graceUntil: { type: string, format: date-time, nullable: true }
+            manualGrantUntil: { type: string, format: date-time, nullable: true }
     Appearance:
       type: object
       required: [language, theme]
@@ -1494,7 +1646,22 @@ components:
               {
                 'type': 'object',
                 'required': ['code', 'message'],
-                'properties': { 'code': { 'type': 'string' }, 'message': { 'type': 'string' } },
+                'properties':
+                  {
+                    'code': { 'type': 'string' },
+                    'message': { 'type': 'string' },
+                    'details':
+                      {
+                        'type': 'object',
+                        'properties':
+                          {
+                            'feature': { 'type': 'string' },
+                            'limit': { 'type': 'integer', 'nullable': true },
+                            'current': { 'type': 'integer', 'nullable': true },
+                            'upgradeUrl': { 'type': 'string' },
+                          },
+                      },
+                  },
               },
           },
       }

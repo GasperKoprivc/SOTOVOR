@@ -1,5 +1,56 @@
 # Production setup you control
 
+## Sotovor Pro P1 operator testing
+
+P1 is entitlements only: **no real payments, checkout, products or provider
+webhooks exist yet**. The agreed consumer prices remain EUR 3/month or EUR
+30/year, including VAT. Do not collect card details or enable a live payment
+provider for this phase. Existing public-launch setup tasks below still apply.
+
+1. Copy `.env.example` for local `start.bat`, or `.env.production.example` when
+   setting up the VPS. Leave `SOTOVOR_BILLING_ENABLED=false` for a free launch
+   or self-hosting; all features are unlocked and billing UI stays absent.
+2. For an isolated test, set `SOTOVOR_BILLING_ENABLED=true` and
+   `SOTOVOR_BILLING_PROVIDER=mock`, then restart the server. The provider does
+   not contact a payment service. Examples list every `SOTOVOR_LIMIT_FREE_*`
+   and `SOTOVOR_LIMIT_PRO_*` override. Integers or `unlimited` control counts;
+   `true`/`false` control features. These defaults live in one policy file,
+   `backend/src/entitlements.js`. Extra shopping-list limits are reserved until
+   multi-list support exists.
+3. Register an admin and another account, create a family and accept its invite.
+   Inspect `GET /api/v1/spaces/<spaceId>/billing` using a normal authenticated
+   browser or bearer API request. The non-admin must have
+   `mayManageBilling=false`. POST `{}` to the matching `/billing/trial` path
+   as admin; try again and verify `TRIAL_ALREADY_USED`. No payment card is involved.
+4. Operators can grant or revoke a support/beta allowance from the project root:
+
+   ```powershell
+   $env:SOTOVOR_MONGO_URI = 'mongodb://127.0.0.1:27027'
+   $env:SOTOVOR_DB = 'sotovor'
+   $env:SOTOVOR_BILLING_OPERATOR = 'your-operator-name'
+   node scripts/grant-pro.js <spaceId> 30 --reason 'Beta tester'
+   node scripts/revoke-pro.js <spaceId> --reason 'Beta period finished'
+   ```
+
+   Use the database actually serving the app. On Linux set those environment
+   variables with `export` instead. To load a private env file, set
+   `SOTOVOR_ENV_FILE` to its absolute path. The scripts use the existing Node
+   dependencies, validate the space/days/reason, and always close the DB client.
+   They are operator tools, not HTTP routes; keep database credentials private.
+   Revocation clears **only the manual allowance**, not a trial or future paid
+   subscription. A grant sets an allowance from now; it does not buy a plan.
+
+5. Confirm the audit records in `billing_audit` and test a downgraded space:
+   existing members and audio remain usable, ordinary tasks still work and the
+   account export contains retained family data. Never delete a family's data
+   to simulate expiry.
+
+Before P2/live payments, a human must create and verify the provider/business
+account, create the agreed tax-inclusive monthly/yearly products and prices,
+review tax settings and consumer/legal text, and register verified webhooks.
+Use provider test mode first. Exact provider integration steps and secret names
+will be added with P2; do not invent keys or treat mock state as payment evidence.
+
 ## Domain, VPS and DNS
 
 1. Buy a domain or choose a subdomain of a domain you already control.

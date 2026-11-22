@@ -26,6 +26,7 @@ class FamilyRepository @Inject constructor(
     private val store: SessionStore
 ) {
     val sessions = store.sessions
+    suspend fun checkStatistics(household: String, range: String) = api.checkStatistics(household, range)
 
     suspend fun login(email: String, password: String) = withContext(Dispatchers.IO) {
         val credentials = publicApi.login(Login(email.trim(), password, Build.MODEL.take(80).ifBlank { "Android" }))
@@ -88,7 +89,7 @@ class FamilyRepository @Inject constructor(
     suspend fun rewards(id: String) = api.rewards(id)
     suspend fun saveRewards(id: String, settings: RewardSettings) = api.saveRewards(id, settings)
     suspend fun calendarSubscription() = api.calendarSubscription()
-    suspend fun createCalendarSubscription() = api.createCalendarSubscription()
+    suspend fun createCalendarSubscription(household: String) = api.createCalendarSubscription(household)
     suspend fun revokeCalendarSubscription() = api.revokeCalendarSubscription()
     suspend fun shopping(id: String) = api.shopping(id)
     suspend fun shoppingPush(id: String) = api.shoppingPush(id)

@@ -36,7 +36,9 @@ export function handleError(error, _req, res, next) {
   if (res.headersSent) return next(error);
   if (error instanceof HttpError) {
     const body =
-      error.code && res.locals.versionedApi ? { code: error.code, message: error.message } : error.message;
+      error.code && (res.locals.versionedApi || error.code === 'PLAN_REQUIRED')
+        ? { code: error.code, message: error.message, ...(error.details ? { details: error.details } : {}) }
+        : error.message;
     return res.status(error.status).json({ error: body });
   }
   if (error.type === 'entity.parse.failed')

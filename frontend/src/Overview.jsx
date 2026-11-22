@@ -1,5 +1,5 @@
 import { clockTime, eventBlock } from './event-time.js';
-import { t } from './i18n.js';
+import { t, errorText } from './i18n.js';
 import { useState } from 'react';
 import {
   ArrowRight,
@@ -25,6 +25,7 @@ import {
   shortDate,
   voiceUrl,
   weekday,
+  request,
 } from './data.js';
 
 export function Avatar({ name, index = 0 }) {
@@ -443,7 +444,21 @@ export function Calendar({ entries, today, compact, onOpen, onAdd, onEdit }) {
 
 export function Workload({ members, tasks, memberId, compact, onOpen }) {
   const [days, setDays] = useState('30');
-  const since = days === 'all' || compact ? 0 : +addDays(new Date(), -Number(days));
+  const [problem, setProblem] = useState('');
+  const [checking, setChecking] = useState(false);
+  async function selectRange(range) {
+    setChecking(true);
+    setProblem('');
+    try {
+      await request('/statistics?range=' + range);
+      setDays(range);
+    } catch (error) {
+      setProblem(errorText(error.message));
+    } finally {
+      setChecking(false);
+    }
+  }
+  const since = days === 'all' ? 0 : +addDays(new Date(), -Number(days));
   const rows = members.map((member, index) => {
     const assigned = tasks.filter((task) => task.assigneeId === member.id);
     const done = assigned.filter((task) => task.completedAt && Date.parse(task.completedAt) >= since).length;
@@ -462,13 +477,14 @@ export function Workload({ members, tasks, memberId, compact, onOpen }) {
       {!compact && (
         <label className="workload-filter">
           {t('Obdobje za zaključena opravila')}
-          <select value={days} onChange={(event) => setDays(event.target.value)}>
+          <select value={days} disabled={checking} onChange={(event) => void selectRange(event.target.value)}>
             <option value="7">{t('Zadnjih 7 dni')}</option>
             <option value="30">{t('Zadnjih 30 dni')}</option>
             <option value="all">{t('Vse od začetka')}</option>
           </select>
         </label>
       )}
+      {problem && <p role="alert">{problem}</p>}
       <ul className="load-list">
         {rows.map((row) => (
           <li key={row.id}>

@@ -18,7 +18,13 @@ export async function connect() {
     const mobileSessions = db.collection('mobileSessions');
     const devices = db.collection('devices');
     const notifications = db.collection('notifications');
+    const subscriptions = db.collection('subscriptions');
+    const entitlementUsage = db.collection('entitlement_usage');
+    const billingAudit = db.collection('billing_audit');
     await Promise.all([
+      subscriptions.createIndex({ spaceId: 1 }, { unique: true }),
+      entitlementUsage.createIndex({ spaceId: 1, feature: 1, period: 1 }, { unique: true }),
+      billingAudit.createIndex({ spaceId: 1, at: -1 }),
       households.createIndex({ inviteCode: 1 }, { unique: true }),
       households.createIndex({ 'members.sessionHash': 1 }),
       households.createIndex({ 'members.accountId': 1 }, { unique: true, sparse: true }),
@@ -65,6 +71,9 @@ export async function connect() {
       mobileSessions,
       devices,
       notifications,
+      subscriptions,
+      entitlementUsage,
+      billingAudit,
     };
   } catch (error) {
     await client.close();
