@@ -37,6 +37,11 @@ before(async () => {
     transcription: { transcribe: async () => 'test transcript' },
   };
   app.use('/api/v1', createApi(database, { ...options, versioned: true }));
+  app.use(
+    '/disabled/api/v1',
+    versionedErrors,
+    createApi(database, { ...options, transcription: null, versioned: true }),
+  );
   app.use('/api', createApi(database, options));
   app.use(handleError);
   server = app.listen(0, '127.0.0.1');
@@ -281,6 +286,16 @@ test('feature gates cover cookie and bearer clients; downgrade preserves reading
   required(
     await call('/entries/' + entryId + '/transcription', { auth: f.owner.token, body: {} }),
     'transcription',
+  );
+  const unavailable = await fetch(base + '/disabled/api/v1/entries/' + entryId + '/transcription', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + f.owner.token, 'Content-Type': 'application/json' },
+    body: '{}',
+  });
+  assert.equal(
+    unavailable.status,
+    404,
+    'A disabled transcription provider must not be advertised as an available Pro feature.',
   );
   await call('/spaces/' + f.id + '/billing/trial', { auth: f.owner.token, body: {} });
   const subscription = await call('/calendar/subscription', { auth: f.owner.token, body: {} });
