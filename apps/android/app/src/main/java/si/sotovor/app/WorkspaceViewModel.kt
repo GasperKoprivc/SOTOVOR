@@ -336,6 +336,12 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
         household()?.let { repository.memberAction(it, id, action) }
         load()
     }
+    fun statisticsRange(days: Int, allowed: () -> Unit) = update {
+        val scope = checkNotNull(household())
+        repository.checkStatistics(scope, if (days == 0) "all" else days.toString())
+        if (scope == household()) allowed()
+    }
+
     fun clearPlan() = mutable.update { it.copy(plan = null) }
     fun preview(rebalance: Boolean) = update {
         val id = household() ?: return@update
@@ -397,9 +403,13 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
             } catch (error: HttpException) {
                 val message = runCatching {
                     val body = error.response()?.errorBody()?.string() ?: return@runCatching null
-                    json.decodeFromString<ApiError>(body).error.message
+                    val detail = json.decodeFromString<ApiError>(body).error
+                    if (detail.code == "PLAN_REQUIRED") {
+                        mutable.update { it.copy(problemResource = R.string.plan_required) }
+                        null
+                    } else detail.message
                 }.getOrNull()
-                mutable.update { it.copy(problem = message, problemResource = if (message == null) R.string.error_generic else null) }
+                mutable.update { it.copy(problem = message, problemResource = if (message == null) it.problemResource ?: R.string.error_generic else null) }
             } catch (_: Exception) {
                 mutable.update { it.copy(problemResource = R.string.error_generic) }
             } finally {

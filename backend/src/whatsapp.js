@@ -1,5 +1,6 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { raw, Router } from 'express';
+import { createBilling } from './billing.js';
 
 export function whatsappConfig() {
   const {
@@ -31,7 +32,13 @@ function parseText(body) {
   if (title.length <= 160) return { kind: 'task', title, dueOn: null };
 }
 
-export function createWhatsApp({ households, entries }, { secret, verify, phoneId }, shopping) {
+export function createWhatsApp(
+  database,
+  { secret, verify, phoneId },
+  shopping,
+  billing = createBilling(database),
+) {
+  const { households, entries } = database;
   const router = Router();
   router.get('/', (req, res) => {
     const challenge = req.query['hub.challenge'];
@@ -72,6 +79,12 @@ export function createWhatsApp({ households, entries }, { secret, verify, phoneI
           const body = typeof message.text?.body === 'string' ? message.text.body.trim() : '';
           const pairing = /^poveži\s+([a-f0-9]{24})$/iu.exec(body);
           if (pairing) {
+            const target = await households.findOne({
+              'whatsappPairing.hash': codeHash(pairing[1].toLowerCase()),
+              'whatsappPairing.expiresAt': { $gt: new Date() },
+            });
+            if (!target) continue;
+            await billing.assertFeature(target, 'whatsapp');
             try {
               await households.updateOne(
                 {
@@ -89,6 +102,7 @@ export function createWhatsApp({ households, entries }, { secret, verify, phoneI
           if (!input) continue;
           const household = await households.findOne({ whatsappSender: message.from });
           if (!household) continue;
+          await billing.assertFeature(household, 'whatsapp');
           if (input.kind === 'shopping') {
             await shopping?.add(household, { title: input.title, whatsappMessageId: message.id });
             continue;

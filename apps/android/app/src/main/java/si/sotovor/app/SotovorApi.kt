@@ -14,6 +14,9 @@ import retrofit2.http.Query
 import retrofit2.http.Streaming
 
 interface SotovorApi {
+    @GET("statistics")
+    suspend fun checkStatistics(@Header("X-Sotovor-Household") household: String, @Query("range") range: String)
+
     @POST("mobile/auth/login")
     suspend fun login(@Body login: Login): Credentials
 

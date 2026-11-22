@@ -26,6 +26,7 @@ class FamilyRepository @Inject constructor(
     private val store: SessionStore
 ) {
     val sessions = store.sessions
+    suspend fun checkStatistics(household: String, range: String) = api.checkStatistics(household, range)
 
     suspend fun login(email: String, password: String) = withContext(Dispatchers.IO) {
         val credentials = publicApi.login(Login(email.trim(), password, Build.MODEL.take(80).ifBlank { "Android" }))

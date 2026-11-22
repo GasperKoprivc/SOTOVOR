@@ -211,4 +211,5 @@
     <string name="appearance_dark">Temni način</string>
     <string name="appearance_light">Svetli način</string>
     <string name="appearance_system">Sistemski videz</string>
+    <string name="plan_required">Za to možnost potrebuješ Sotovor Pro.</string>
 </resources>

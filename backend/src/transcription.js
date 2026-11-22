@@ -41,6 +41,7 @@ export function transcriptionProvider(env = process.env, fetcher = fetch) {
 export function registerTranscription(router, { entries }, provider) {
   const active = new Set();
   router.post('/entries/:id/transcription', async (req, res) => {
+    await req.billing.assertFeature(req.household, 'transcription');
     if (!provider || !validId(req.params.id)) throw new HttpError(404, 'Prepis ni na voljo.');
     const entry = await entries.findOne(
       { _id: new ObjectId(req.params.id), householdId: req.household._id, archivedAt: null },

@@ -1,4 +1,6 @@
 import { randomBytes } from 'node:crypto';
+import { createBilling, registerBilling } from './billing.js';
+import { requireFeature } from './entitlements.js';
 import { parseBuffer } from 'music-metadata';
 import { HttpError, handleError } from './api-errors.js';
 import { bearerSession, hash, registerMobileAuth, validId } from './mobile-auth.js';
@@ -84,11 +86,12 @@ export function createApi(
     whatsappEnabled = false,
     verificationMail,
     reportMailFailure = () => console.error('Verification email delivery failed.'),
+    billing = createBilling(database),
   } = {},
 ) {
   const { households, entries, accounts, sessions, desktopLinks } = database;
   const router = Router();
-  if (versioned) registerCalendarFeed(router, database);
+  if (versioned) registerCalendarFeed(router, database, billing);
   const cookieOptions = { httpOnly: true, sameSite: 'strict', path: '/' };
 
   async function startSession(req, res, accountId) {
@@ -170,10 +173,12 @@ export function createApi(
       req.household = selected;
       req.member = selected && getMember(selected);
     }
+    req.billing = billing;
     next();
   });
 
-  registerCalendarSettings(router, database);
+  registerBilling(router, database, billing);
+  registerCalendarSettings(router, database, billing);
   registerAppearance(router, database);
 
   registerDesktopAuth(router, {
@@ -383,9 +388,33 @@ export function createApi(
           const inviteCode = requiredText(req.body.inviteCode, 32, 'Koda povabila').toLowerCase();
           if (!/^[a-f0-9]{32}$/.test(inviteCode))
             throw new HttpError(400, 'Koda povabila mora imeti 32 znakov.');
+          const target = await households.findOne({ inviteCode });
+          if (!target) throw new HttpError(404, 'Koda povabila ni veljavna ali je bila zamenjana.');
+          if (
+            target.ownerAccountId?.equals(req.account._id) ||
+            target.members.some(
+              (m) => m.accountId?.equals(req.account._id) || m.guestAccountId?.equals(req.account._id),
+            )
+          )
+            throw new HttpError(409, 'V tem družinskem prostoru si že.');
+          const limit = await billing.memberLimit(target);
           const invited = await households.findOneAndUpdate(
             {
               inviteCode,
+              ...(limit === null
+                ? {}
+                : {
+                    $expr: {
+                      $lt: [
+                        {
+                          $size: {
+                            $filter: { input: '$members', as: 'm', cond: { $ne: ['$$m.inactive', true] } },
+                          },
+                        },
+                        limit,
+                      ],
+                    },
+                  }),
               ownerAccountId: { $ne: req.account._id },
               'members.accountId': { $ne: req.account._id },
               'members.guestAccountId': { $ne: req.account._id },
@@ -394,6 +423,8 @@ export function createApi(
             { returnDocument: 'after', projection: { _id: 1 } },
           );
           if (!invited) {
+            const current = await households.findOne({ inviteCode });
+            if (current) await billing.memberLimit(current);
             if (await households.findOne({ inviteCode }, { projection: { _id: 1 } })) {
               throw new HttpError(409, 'V tem družinskem prostoru si že.');
             }
@@ -413,6 +444,7 @@ export function createApi(
             expectedMembers,
             ownerAccountId: req.account._id,
           });
+          await billing.ensureSubscription(result.insertedId);
           return res.status(201).json({ householdId: String(result.insertedId) });
         }
       } catch (error) {
@@ -461,6 +493,45 @@ export function createApi(
   }
 
   registerRewards(router, database, requireAdmin);
+
+  router.get('/statistics', async (req, res) => {
+    const range = req.query.range ?? '30';
+    if (!['7', '30', 'all'].includes(range)) throw new HttpError(400, 'Izberi veljavno obdobje.');
+    if (range === 'all') await billing.assertFeature(req.household, 'allTimeStatistics');
+    const since = range === 'all' ? null : new Date(Date.now() - Number(range) * 86400_000);
+    const counts = await entries
+      .aggregate([
+        { $match: { householdId: req.household._id, kind: 'task', archivedAt: null } },
+        {
+          $group: {
+            _id: '$assigneeId',
+            open: { $sum: { $cond: [{ $eq: [{ $ifNull: ['$completedAt', null] }, null] }, 1, 0] } },
+            done: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $ne: [{ $ifNull: ['$completedAt', null] }, null] },
+                      ...(since ? [{ $gte: ['$completedAt', since] }] : []),
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+          },
+        },
+      ])
+      .toArray();
+    res.json({
+      range,
+      members: req.household.members.map((member) => {
+        const row = counts.find((row) => row._id === member.id);
+        return { id: member.id, open: row?.open ?? 0, done: row?.done ?? 0 };
+      }),
+    });
+  });
 
   router.post('/households/invite/rotate', async (req, res) => {
     requireAdmin(req);
@@ -559,6 +630,7 @@ export function createApi(
     const plan = planTasks(tasks, req.household.members, householdDay(), rebalance);
     const fingerprint = hash(JSON.stringify(plan));
     if (action === 'preview') {
+      await billing.consume(req.household, 'planningProposals');
       return res.json({
         changes: plan.changes.map(({ id, title, assigneeName }) => ({ id, title, assigneeName })),
         skipped: plan.skipped,
@@ -592,7 +664,7 @@ export function createApi(
     res.json({ applied: result.modifiedCount, conflicts: plan.changes.length - result.modifiedCount });
   });
 
-  router.post('/whatsapp/pair', async (req, res) => {
+  router.post('/whatsapp/pair', requireFeature('whatsapp'), async (req, res) => {
     requireAdmin(req);
     if (!whatsappEnabled) throw new HttpError(404, 'WhatsApp še ni nastavljen.');
     const code = randomBytes(12).toString('hex');
@@ -607,7 +679,7 @@ export function createApi(
     res.json({ code });
   });
 
-  router.post('/whatsapp/unlink', async (req, res) => {
+  router.post('/whatsapp/unlink', requireFeature('whatsapp'), async (req, res) => {
     requireAdmin(req);
     if (!whatsappEnabled) throw new HttpError(404, 'WhatsApp še ni nastavljen.');
     await households.updateOne(
@@ -729,14 +801,21 @@ export function createApi(
       throw new HttpError(403, 'Nimaš dovoljenja za dodajanje vnosov.');
     const fields = entryFields(req);
     const voice = await parseVoice(req.body.voice, versioned);
-    await entries.insertOne({
-      ...fields,
-      householdId: req.household._id,
-      assignedAt: fields.assigneeId ? new Date() : null,
-      completedAt: null,
-      createdAt: new Date(),
-      ...(voice ? { voice } : {}),
-    });
+    if (fields.points != null) await billing.assertFeature(req.household, 'rewards');
+    const releaseVoice = voice ? await billing.reserveVoice(req.household) : null;
+    try {
+      await entries.insertOne({
+        ...fields,
+        householdId: req.household._id,
+        assignedAt: fields.assigneeId ? new Date() : null,
+        completedAt: null,
+        createdAt: new Date(),
+        ...(voice ? { voice } : {}),
+      });
+    } catch (error) {
+      await releaseVoice?.();
+      throw error;
+    }
     res.status(201).json(await currentDashboard(req));
   });
 
@@ -757,6 +836,8 @@ export function createApi(
       throw new HttpError(409, 'Vnos se je spremenil. Zapri obrazec in ga znova odpri.');
     }
     const fields = action === 'remove' ? { archivedAt: new Date() } : entryFields(req, entry);
+    if (action === 'edit' && fields.points != null && fields.points !== entry.points)
+      await billing.assertFeature(req.household, 'rewards');
     if (action === 'edit' && fields.kind !== entry.kind)
       throw new HttpError(400, 'Vrste vnosa ni mogoče spremeniti.');
     if (action === 'edit' && fields.dueOn !== entry.dueOn && !rights.move) {
@@ -849,7 +930,12 @@ export function createApi(
     if (action === 'complete') {
       const current = await entries.findOne(condition, { projection: { voice: 0 } });
       if (!current) throw new HttpError(409, 'Stanje opravila se je spremenilo ali pa dejanje ni na voljo.');
-      if (req.member.familyRole === 'child' && current.points) changes.complete.earnedPoints = current.points;
+      if (
+        req.member.familyRole === 'child' &&
+        current.points &&
+        (await billing.entitlements(req.household)).features.rewards
+      )
+        changes.complete.earnedPoints = current.points;
       condition.version = current.version ?? null;
       const next = nextOccurrence(
         current,

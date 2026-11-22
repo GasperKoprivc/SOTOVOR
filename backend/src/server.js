@@ -13,12 +13,16 @@ import { scheduleNotifications } from './notifications.js';
 import { registerReleases, releaseConfiguration } from './releases.js';
 
 import { createShoppingList } from './shopping.js';
+import { createBilling } from './billing.js';
+import { billingConfiguration } from './entitlements.js';
 
 const host = process.env.SOTOVOR_HOST || '127.0.0.1';
 const port = Number(process.env.SOTOVOR_PORT || 3000);
 const dist = fileURLToPath(new URL('../../frontend/dist/', import.meta.url));
 const verificationMail = smtpVerification();
+const billingConfig = billingConfiguration();
 const database = await connect();
+const billing = createBilling(database, billingConfig);
 const push = await configurePush(database);
 const shopping = createShoppingList(database, push.shopping);
 const app = express();
@@ -49,7 +53,7 @@ app.get('/readyz', async (_req, res) => {
 app.get(['/api/health', '/api/v1/health'], (_req, res) =>
   res.json({ service: 'sotovor', desktopAuth: true, desktopCookie: true }),
 );
-if (whatsapp) app.use('/webhooks/whatsapp', createWhatsApp(database, whatsapp, shopping));
+if (whatsapp) app.use('/webhooks/whatsapp', createWhatsApp(database, whatsapp, shopping, billing));
 if (process.env.SOTOVOR_REQUIRE_SMTP === '1') {
   app.post(
     ['/api/auth/register', '/api/v1/auth/register'],
@@ -64,6 +68,7 @@ if (process.env.SOTOVOR_REQUIRE_SMTP === '1') {
 }
 app.post(['/api/entries', '/api/v1/entries'], express.json({ limit: '3mb' }));
 const apiOptions = {
+  billing,
   shopping,
   push,
   transcription: transcriptionProvider(),
