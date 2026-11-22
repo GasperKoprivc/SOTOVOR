@@ -59,7 +59,7 @@ test('billing startup configuration validates only enabled billing settings', ()
   );
   for (const env of [
     { SOTOVOR_BILLING_ENABLED: '1' },
-    { SOTOVOR_BILLING_ENABLED: 'true', SOTOVOR_BILLING_PROVIDER: 'stripe' },
+    { SOTOVOR_BILLING_ENABLED: 'true', SOTOVOR_BILLING_PROVIDER: 'unsupported' },
     { SOTOVOR_BILLING_ENABLED: 'true', SOTOVOR_LIMIT_FREE_MEMBERS: '-1' },
     { SOTOVOR_BILLING_ENABLED: 'true', SOTOVOR_LIMIT_FREE_ICS: '1' },
   ]) {

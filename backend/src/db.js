@@ -21,7 +21,18 @@ export async function connect() {
     const subscriptions = db.collection('subscriptions');
     const entitlementUsage = db.collection('entitlement_usage');
     const billingAudit = db.collection('billing_audit');
+    const billingEvents = db.collection('billing_events');
+    const billingJobs = db.collection('billing_jobs');
+    const billingMail = db.collection('billing_mail');
+    const mockBilling = db.collection('mock_billing');
     await Promise.all([
+      billingEvents.createIndex({ provider: 1, id: 1 }, { unique: true }),
+      billingEvents.createIndex({ doneAt: 1, retryAt: 1 }),
+      billingMail.createIndex({ sentAt: 1, retryAt: 1 }),
+      subscriptions.createIndex(
+        { provider: 1, providerSubscriptionId: 1 },
+        { unique: true, partialFilterExpression: { providerSubscriptionId: { $type: 'string' } } },
+      ),
       subscriptions.createIndex({ spaceId: 1 }, { unique: true }),
       entitlementUsage.createIndex({ spaceId: 1, feature: 1, period: 1 }, { unique: true }),
       billingAudit.createIndex({ spaceId: 1, at: -1 }),
@@ -74,6 +85,10 @@ export async function connect() {
       subscriptions,
       entitlementUsage,
       billingAudit,
+      billingEvents,
+      billingJobs,
+      billingMail,
+      mockBilling,
     };
   } catch (error) {
     await client.close();
