@@ -329,6 +329,7 @@ paths:
           }
     post:
       summary: Create or replace the authenticated account's subscription link
+      parameters: [{ $ref: '#/components/parameters/ShoppingHousehold' }]
       requestBody: { required: true, content: { application/json: { schema: { type: object } } } }
       responses:
         '403': { $ref: '#/components/responses/PlanRequired' }

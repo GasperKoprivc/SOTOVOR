@@ -136,7 +136,13 @@ class WorkspaceViewModel @Inject constructor(private val repository: FamilyRepos
     }
 
     fun changeCalendarSubscription(revoke: Boolean) = update {
-        val subscription = if (revoke) repository.revokeCalendarSubscription() else repository.createCalendarSubscription()
+        val subscription = if (revoke) {
+            repository.revokeCalendarSubscription()
+        } else {
+            repository.createCalendarSubscription(
+                checkNotNull(household())
+            )
+        }
         mutable.update { it.copy(calendarSubscription = subscription) }
     }
 

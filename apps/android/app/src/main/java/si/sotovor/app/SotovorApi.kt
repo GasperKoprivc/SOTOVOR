@@ -159,7 +159,10 @@ interface SotovorApi {
     suspend fun calendarSubscription(): CalendarSubscription
 
     @POST("calendar/subscription")
-    suspend fun createCalendarSubscription(@Body input: Empty = Empty()): CalendarSubscription
+    suspend fun createCalendarSubscription(
+        @Header("X-Sotovor-Household") household: String,
+        @Body input: Empty = Empty()
+    ): CalendarSubscription
 
     @DELETE("calendar/subscription")
     suspend fun revokeCalendarSubscription(): CalendarSubscription
