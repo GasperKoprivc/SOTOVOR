@@ -4,7 +4,7 @@ Use this as a dated sign-off record for the exact commit and release assets.
 Automated checks passing permits a release candidate. Production and human
 checks below remain release conditions until independently verified.
 
-## Readiness audit: 19 November 2026
+## Readiness audit: 22 November 2026
 
 The owner confirmed that the domain and VPS have not been provisioned yet.
 The public-launch definition of done is therefore **not complete**.
@@ -13,8 +13,35 @@ The public-launch definition of done is therefore **not complete**.
 - Docker Hub credentials and Tauri updater signing secrets are present; their private values were not read.
 - Production SSH, Android keystore and Firebase secret names are absent. Configure them using [HUMAN_TASKS.md](HUMAN_TASKS.md).
 - The local rehearsal passed 30 API tests, four browser cases and five instrumented Android tests, including the R8 QA voice/deep-link flow. Measurements are in [PERF.md](PERF.md).
-- The final CI result is recorded in [PR #25 checks](https://github.com/GasperKoprivc/SOTOVOR/pull/25/checks). A cancelled emulator run must complete successfully before the gate passes.
+- Baseline `1cee4a7` passed [CI](https://github.com/GasperKoprivc/SOTOVOR/actions/runs/44497238741), [Android](https://github.com/GasperKoprivc/SOTOVOR/actions/runs/44497238816) and [Launch quality gate](https://github.com/GasperKoprivc/SOTOVOR/actions/runs/44497238702), including the emulator tests. Every subsequent release commit must pass the gate again.
 - Public email delivery, production downloads, daily backups and signed-device/Firebase acceptance remain unverified until infrastructure and signing are configured. Installer rehearsals use a placeholder origin and are not production downloads.
+
+### Requirement-by-requirement evidence
+
+| Phase 6 requirement                | Implementation and evidence                                                                          | Remaining acceptance                                                                       |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 1. Web/backend lint and formatting | `eslint.config.js`, `.prettierrc.json`, root npm scripts and `ci.yml`                                | Gate must pass on the final release commit.                                                |
+| 2. Android static checks           | `app/build.gradle.kts`, `config/detekt.yml`, `android.yml`; selected Lint warnings are errors        | Reviewed advisories are documented below.                                                  |
+| 3. Web E2E                         | `e2e/family.spec.js`, Mailpit in `compose.test.yaml`, desktop and phone Playwright projects          | Real production SMTP is a separate acceptance check.                                       |
+| 4. Android E2E                     | `FamilyFlowTest`, `R8FlowTest`, Compose accessibility tests, API 36 emulator job                     | Physical-device scenarios in `ANDROID_MANUAL_TEST.md`.                                     |
+| 5. Accessibility                   | Browser axe/keyboard assertions, labelled checkbox rows, 48dp targets and 200% font test             | Human TalkBack, visual contrast and launcher/widget review.                                |
+| 6. Android release readiness       | R8 QA workflow, installer rehearsal, `PERF.md`, `PLAY_STORE_CHECKLIST.md`; target API 36             | Final signing, Firebase push, physical device and human Play/privacy review.               |
+| 7. Authenticated API load          | `scripts/load-test.js`, `PERF.md`; CI retains raw reports                                            | Measure the actual VPS after provisioning.                                                 |
+| 8. Dependencies                    | npm audit, resolved Maven OSV audit, Dependabot for npm/Gradle/Actions/Docker, version-pinned images | Continue scheduled audits; major Android toolchain upgrades require coordinated migration. |
+| 9. Launch sign-off                 | This checklist, `DEPLOY.md`, `HUMAN_TASKS.md`, production TLS/auth/backup/restore integration test   | Public HTTPS, real email, signing, downloads and operational backups need infrastructure.  |
+
+The installer workflow supersedes the old raw-Windows-executable PR #4.
+The Windows startup smoke test from PR #1 is adapted to the current launcher:
+it installs dependencies and builds in an isolated temporary checkout, then
+checks reuse of a fixture server with browser and desktop launch disabled.
+It does not test a fresh MongoDB installation or real browser launch.
+
+The separate Android toolchain proposals #32 (AGP 9.5.1), #35 (Gradle 9.9.1)
+and #36 (Hilt 2.60.1) fail before app compilation. AGP 9.5.1 requires Gradle
+9.6+, while Gradle 9.9.1 fails with the current AGP service API and the Hilt
+proposal fails plugin application. Retain the audited, green AGP 8.13.2 /
+Gradle 8.13 / Hilt 2.57.2 combination rather than merge incompatible updates.
+These optional upgrades are not a prerequisite for the existing API 36 target.
 
 ## Automated quality gate
 
