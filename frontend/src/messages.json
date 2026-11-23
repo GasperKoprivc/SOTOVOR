@@ -877,5 +877,321 @@
   "Pošlji prazen objekt.": {
     "en": "Send an empty object.",
     "de": "Sende ein leeres Objekt."
+  },
+  "Več družinskih članov": {
+    "en": "More family members",
+    "de": "Mehr Familienmitglieder"
+  },
+  "Več pametnih predlogov": {
+    "en": "More smart plans",
+    "de": "Mehr intelligente Vorschläge"
+  },
+  "Več glasovnih beležk": {
+    "en": "More voice notes",
+    "de": "Mehr Sprachnotizen"
+  },
+  "Statistika za ves čas": {
+    "en": "All-time statistics",
+    "de": "Statistiken für den gesamten Zeitraum"
+  },
+  "Nakupovalni seznami": {
+    "en": "Shopping lists",
+    "de": "Einkaufslisten"
+  },
+  "Pro odklene to možnost za celoten družinski prostor. Osnovna opravila in koledar ostajajo brezplačni.": {
+    "en": "Pro unlocks this feature for your whole family space. Basic tasks and the calendar remain free.",
+    "de": "Pro schaltet diese Funktion für den gesamten Familienbereich frei. Grundlegende Aufgaben und der Kalender bleiben kostenlos."
+  },
+  "Omejitev Free: %0. Trenutno: %1.": {
+    "en": "Free limit: %0. Current usage: %1.",
+    "de": "Free-Limit: %0. Aktuelle Nutzung: %1."
+  },
+  "3 EUR na mesec z DDV ali 30 EUR na leto z DDV.": {
+    "en": "EUR 3 per month including VAT or EUR 30 per year including VAT.",
+    "de": "3 EUR pro Monat inklusive MwSt. oder 30 EUR pro Jahr inklusive MwSt."
+  },
+  "Oglej si Pro": {
+    "en": "Explore Pro",
+    "de": "Pro ansehen"
+  },
+  "Prosi skrbnika": {
+    "en": "Ask the admin",
+    "de": "Admin fragen"
+  },
+  "Ostani na Free": {
+    "en": "Stay on Free",
+    "de": "Bei Free bleiben"
+  },
+  "Preverjam pravice …": {
+    "en": "Checking access …",
+    "de": "Zugriff wird geprüft …"
+  },
+  "Na voljo s Sotovor Pro za celotno družino.": {
+    "en": "Available with Sotovor Pro for the whole family.",
+    "de": "Mit Sotovor Pro für die ganze Familie verfügbar."
+  },
+  "O tej možnosti": {
+    "en": "About this feature",
+    "de": "Über diese Funktion"
+  },
+  "Brez naročnine": {
+    "en": "No subscription",
+    "de": "Kein Abonnement"
+  },
+  "Aktivna": {
+    "en": "Active",
+    "de": "Aktiv"
+  },
+  "Preizkus": {
+    "en": "Trial",
+    "de": "Testphase"
+  },
+  "Plačilo ni uspelo": {
+    "en": "Payment failed",
+    "de": "Zahlung fehlgeschlagen"
+  },
+  "Odpovedana": {
+    "en": "Canceled",
+    "de": "Gekündigt"
+  },
+  "Potekla": {
+    "en": "Expired",
+    "de": "Abgelaufen"
+  },
+  "Preostanek preizkusa: %0 dni.": {
+    "en": "Trial days remaining: %0.",
+    "de": "Verbleibende Testtage: %0."
+  },
+  "Odpoved velja od %0.": {
+    "en": "Cancellation takes effect on %0.",
+    "de": "Kündigung wirksam ab %0."
+  },
+  "Naslednja obnova: %0.": {
+    "en": "Renews on %0.",
+    "de": "Nächste Verlängerung: %0."
+  },
+  "Rok za ureditev plačila: %0.": {
+    "en": "Payment grace ends on %0.",
+    "de": "Zahlungsfrist endet am %0."
+  },
+  "Dodeljeni Pro velja do %0.": {
+    "en": "Granted Pro access ends on %0.",
+    "de": "Gewährter Pro-Zugriff endet am %0."
+  },
+  "Naročnina": {
+    "en": "Subscription",
+    "de": "Abonnement"
+  },
+  "Upravljaj naročnino": {
+    "en": "Manage subscription",
+    "de": "Abonnement verwalten"
+  },
+  "Računi, plačilna kartica in odpoved so v portalu. Odpoveš lahko kadar koli; dostop ostane do izteka plačanega obdobja.": {
+    "en": "Invoices, payment methods and cancellation are in the portal. Cancel anytime; access continues until the paid period ends.",
+    "de": "Rechnungen, Zahlungsmethoden und Kündigung findest du im Portal. Jederzeit kündbar; der Zugriff bleibt bis zum Ende des bezahlten Zeitraums erhalten."
+  },
+  "Kdo plača naročnino?": {
+    "en": "Who pays for the subscription?",
+    "de": "Wer bezahlt das Abonnement?"
+  },
+  "Skrbnik plača eno naročnino za celoten družinski prostor. Člani ne plačujejo posebej.": {
+    "en": "The admin pays one subscription for the whole family space. Members do not pay separately.",
+    "de": "Der Admin bezahlt ein Abonnement für den gesamten Familienbereich. Mitglieder zahlen nicht einzeln."
+  },
+  "Kaj se zgodi ob izteku?": {
+    "en": "What happens when it ends?",
+    "de": "Was passiert nach Ablauf?"
+  },
+  "Pro možnosti se izključijo, osnovna opravila in koledar pa ostanejo. Podatkov nikoli ne izbrišemo zaradi izteka naročnine.": {
+    "en": "Pro features stop, while basic tasks and the calendar remain available. We never delete data because a subscription expires.",
+    "de": "Pro-Funktionen enden, grundlegende Aufgaben und der Kalender bleiben verfügbar. Wir löschen niemals Daten wegen eines abgelaufenen Abonnements."
+  },
+  "Ali lahko kadar koli odpovem?": {
+    "en": "Can I cancel anytime?",
+    "de": "Kann ich jederzeit kündigen?"
+  },
+  "Da. V profilu izberi Upravljaj naročnino in nato odpoved v portalu. Dostop ostane do izteka plačanega obdobja.": {
+    "en": "Yes. In Profile choose Manage subscription, then cancel in the portal. Access continues until the paid period ends.",
+    "de": "Ja. Wähle im Profil Abonnement verwalten und kündige im Portal. Der Zugriff bleibt bis zum Ende des bezahlten Zeitraums erhalten."
+  },
+  "Kje najdem račune?": {
+    "en": "Where are my invoices?",
+    "de": "Wo finde ich Rechnungen?"
+  },
+  "Skrbnik najde račune in podatke o plačilih v portalu naročnine.": {
+    "en": "The admin can find invoices and payment details in the subscription portal.",
+    "de": "Der Admin findet Rechnungen und Zahlungsdetails im Abonnementportal."
+  },
+  "Opravila in skupni koledar": {
+    "en": "Tasks and shared calendar",
+    "de": "Aufgaben und gemeinsamer Kalender"
+  },
+  "Člani v prostoru": {
+    "en": "Members per space",
+    "de": "Mitglieder pro Bereich"
+  },
+  "Pametni predlogi na mesec": {
+    "en": "Smart plans per month",
+    "de": "Intelligente Vorschläge pro Monat"
+  },
+  "Shranjene glasovne beležke": {
+    "en": "Stored voice notes",
+    "de": "Gespeicherte Sprachnotizen"
+  },
+  "Neomejeno": {
+    "en": "Unlimited",
+    "de": "Unbegrenzt"
+  },
+  "Vključeno": {
+    "en": "Included",
+    "de": "Enthalten"
+  },
+  "Ni vključeno": {
+    "en": "Not included",
+    "de": "Nicht enthalten"
+  },
+  "Primerjava Free in Pro": {
+    "en": "Compare Free and Pro",
+    "de": "Free und Pro vergleichen"
+  },
+  "Možnost": {
+    "en": "Feature",
+    "de": "Funktion"
+  },
+  "Želim uporabiti Sotovor Pro za naš družinski prostor. Stane 3 EUR na mesec ali 30 EUR na leto z DDV. Skrbnik ga lahko vključi tukaj: %0": {
+    "en": "I'd like Sotovor Pro for our family space. It costs EUR 3/month or EUR 30/year including VAT. The admin can enable it here: %0",
+    "de": "Ich möchte Sotovor Pro für unseren Familienbereich nutzen. Es kostet 3 EUR/Monat oder 30 EUR/Jahr inklusive MwSt. Der Admin kann es hier aktivieren: %0"
+  },
+  "Vse možnosti so na voljo.": {
+    "en": "All features are available.",
+    "de": "Alle Funktionen sind verfügbar."
+  },
+  "Na tem strežniku je vse vključeno brez naročnine.": {
+    "en": "Everything on this server is included without a subscription.",
+    "de": "Auf diesem Server sind alle Funktionen ohne Abonnement enthalten."
+  },
+  "Več prostora za življenje skupaj.": {
+    "en": "More room for life together.",
+    "de": "Mehr Raum für das gemeinsame Leben."
+  },
+  "En paket za vso družino. Vsakdan ostane preprost.": {
+    "en": "One plan for the whole family. Keep everyday life simple.",
+    "de": "Ein Tarif für die ganze Familie. Damit der Alltag einfach bleibt."
+  },
+  "Obračunsko obdobje": {
+    "en": "Billing period",
+    "de": "Abrechnungszeitraum"
+  },
+  "Letno": {
+    "en": "Yearly",
+    "de": "Jährlich"
+  },
+  "na mesec, z DDV": {
+    "en": "per month, VAT included",
+    "de": "pro Monat, inklusive MwSt."
+  },
+  "na leto, z DDV": {
+    "en": "per year, VAT included",
+    "de": "pro Jahr, inklusive MwSt."
+  },
+  "Naročnina velja za en družinski prostor. Brez cene na posameznega člana.": {
+    "en": "One subscription covers one family space. No per-member pricing.",
+    "de": "Ein Abonnement gilt für einen Familienbereich. Kein Preis pro Mitglied."
+  },
+  "Najprej se prijavi": {
+    "en": "Sign in first",
+    "de": "Zuerst anmelden"
+  },
+  "Najprej ustvari družinski prostor": {
+    "en": "Create a family space first",
+    "de": "Zuerst einen Familienbereich erstellen"
+  },
+  "Nadgradi": {
+    "en": "Upgrade",
+    "de": "Upgrade"
+  },
+  "Začni 14-dnevni preizkus": {
+    "en": "Start a 14-day trial",
+    "de": "14 Tage kostenlos testen"
+  },
+  "Sporočilo za skrbnika": {
+    "en": "Message for the admin",
+    "de": "Nachricht an den Admin"
+  },
+  "Sporočilo je kopirano": {
+    "en": "Message copied",
+    "de": "Nachricht kopiert"
+  },
+  "Kopiraj sporočilo": {
+    "en": "Copy message",
+    "de": "Nachricht kopieren"
+  },
+  "Čakamo na potrditev plačila": {
+    "en": "Waiting for payment confirmation",
+    "de": "Warten auf Zahlungsbestätigung"
+  },
+  "Plačilo je potrjeno. Sotovor Pro je pripravljen.": {
+    "en": "Payment confirmed. Sotovor Pro is ready.",
+    "de": "Zahlung bestätigt. Sotovor Pro ist bereit."
+  },
+  "Potrditev še ni prispela. Preveri stanje pozneje; nakupa ne ponavljaj.": {
+    "en": "Confirmation has not arrived yet. Check again later; do not repeat the purchase.",
+    "de": "Die Bestätigung ist noch nicht eingetroffen. Prüfe den Status später erneut und wiederhole den Kauf nicht."
+  },
+  "Pogosta vprašanja": {
+    "en": "Frequently asked questions",
+    "de": "Häufige Fragen"
+  },
+  "Pogoji naročnine": {
+    "en": "Subscription terms",
+    "de": "Abonnementbedingungen"
+  },
+  "Zasebnost": {
+    "en": "Privacy",
+    "de": "Datenschutz"
+  },
+  "TODO: upravljavec, kontakt, veljavno pravo in pravila uporabe.": {
+    "en": "TODO: operator identity, contact, applicable law and usage rules.",
+    "de": "TODO: Anbieterangaben, Kontakt, anwendbares Recht und Nutzungsregeln."
+  },
+  "TODO: upravljavec podatkov, nameni, pravne podlage, hramba, pravice posameznika in kontakt.": {
+    "en": "TODO: data controller, purposes, legal bases, retention, individual rights and contact.",
+    "de": "TODO: Verantwortlicher, Zwecke, Rechtsgrundlagen, Speicherung, Betroffenenrechte und Kontakt."
+  },
+  "TODO: pregled naročniških pogojev pred objavo in resničnimi plačili.": {
+    "en": "TODO: review subscription terms before publication and live payments.",
+    "de": "TODO: Abonnementbedingungen vor Veröffentlichung und echten Zahlungen prüfen."
+  },
+  "TODO — potreben človeški in pravni pregled. Ta osnutek še ni odobreno pravno besedilo.": {
+    "en": "TODO — human and legal review required. This draft is not approved legal text.",
+    "de": "TODO — menschliche und rechtliche Prüfung erforderlich. Dieser Entwurf ist noch kein freigegebener Rechtstext."
+  },
+  "Plačilni podatki": {
+    "en": "Payment data",
+    "de": "Zahlungsdaten"
+  },
+  "Naročnina Sotovor Pro": {
+    "en": "Sotovor Pro subscription",
+    "de": "Sotovor Pro-Abonnement"
+  },
+  "TODO: navedi plačilnega ponudnika, njegove vloge pri obdelavi podatkov, prejemnike, prenose, roke hrambe in povezavo do njegove politike zasebnosti. Vloge obdelovalca in samostojnega upravljavca mora potrditi pravni pregled. Sotovor ne prejema podatkov o kartici; plačilo se uredi pri ponudniku.": {
+    "en": "TODO: identify the payment provider, its data-processing roles, recipients, transfers, retention periods and privacy-policy link. Legal review must confirm its processor and independent-controller roles. Sotovor does not receive card details; payment takes place with the provider.",
+    "de": "TODO: Zahlungsanbieter, Datenschutzrollen, Empfänger, Übermittlungen, Speicherfristen und Link zur Datenschutzerklärung nennen. Die Rollen als Auftragsverarbeiter und eigenständig Verantwortlicher müssen rechtlich geprüft werden. Sotovor erhält keine Kartendaten; die Zahlung erfolgt beim Anbieter."
+  },
+  "Cena je 3 EUR na mesec ali 30 EUR na leto, z DDV, za en družinski prostor.": {
+    "en": "The price is EUR 3/month or EUR 30/year, including VAT, for one family space.",
+    "de": "Der Preis beträgt 3 EUR/Monat oder 30 EUR/Jahr inklusive MwSt. für einen Familienbereich."
+  },
+  "Naročnina se samodejno obnavlja, dokler je ne odpoveš. V profilu izberi Upravljaj naročnino za portal ponudnika; tam so tudi računi. Po odpovedi dostop ostane do izteka plačanega obdobja. Iztek ne izbriše podatkov.": {
+    "en": "The subscription renews automatically until canceled. In Profile choose Manage subscription to open the provider portal, where invoices are also available. After cancellation, access continues until the paid period ends. Expiry does not delete data.",
+    "de": "Das Abonnement verlängert sich automatisch bis zur Kündigung. Wähle im Profil Abonnement verwalten, um das Anbieterportal mit deinen Rechnungen zu öffnen. Nach der Kündigung bleibt der Zugriff bis zum Ende des bezahlten Zeitraums erhalten. Der Ablauf löscht keine Daten."
+  },
+  "TODO: dopolni pravila vračil in 14-dnevnega odstopa pri digitalnih storitvah, zahtevo za takojšen začetek, morebitni sorazmerni znesek ter zakonske izjeme. Soglasje samo po sebi ne pomeni samodejne izgube vseh pravic do odstopa.": {
+    "en": "TODO: complete refund and 14-day withdrawal rules for digital services, the immediate-start request, any proportionate payment and statutory exceptions. Consent alone does not automatically remove all withdrawal rights.",
+    "de": "TODO: Erstattungsregeln, das 14-tägige Widerrufsrecht für digitale Dienstleistungen, den Wunsch nach sofortigem Beginn, einen möglichen anteiligen Betrag und gesetzliche Ausnahmen ergänzen. Die Zustimmung allein hebt nicht automatisch sämtliche Widerrufsrechte auf."
+  },
+  "Besedilo upravljavca": {
+    "en": "Operator-provided terms",
+    "de": "Vom Betreiber bereitgestellter Text"
   }
 }

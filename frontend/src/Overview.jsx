@@ -1,3 +1,4 @@
+import { ProBadge } from './Billing.jsx';
 import { clockTime, eventBlock } from './event-time.js';
 import { t, errorText } from './i18n.js';
 import { useState } from 'react';
@@ -476,7 +477,7 @@ export function Workload({ members, tasks, memberId, compact, onOpen }) {
       </div>
       {!compact && (
         <label className="workload-filter">
-          {t('Obdobje za zaključena opravila')}
+          {t('Obdobje za zaključena opravila')} <ProBadge feature="allTimeStatistics" />
           <select value={days} disabled={checking} onChange={(event) => void selectRange(event.target.value)}>
             <option value="7">{t('Zadnjih 7 dni')}</option>
             <option value="30">{t('Zadnjih 30 dni')}</option>

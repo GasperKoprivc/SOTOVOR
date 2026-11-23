@@ -1,4 +1,5 @@
 import { t, errorText, getLanguage, setLanguage, subscribe } from './i18n.js';
+import { useBilling, BillingProfile, FeatureGate, ProBadge } from './Billing.jsx';
 import ThemeSelect from './ThemeSelect.jsx';
 import { getTheme, setTheme } from './theme.js';
 import LanguageSelect from './LanguageSelect.jsx';
@@ -344,7 +345,11 @@ function EntryDialog({
             )}
           </>
         )}
-        {entry?.voice && transcriptionEnabled && <Transcription entryId={entry.id} />}
+        {entry?.voice && transcriptionEnabled && (
+          <FeatureGate feature="transcription" title="Glas v besedilo">
+            <Transcription entryId={entry.id} />
+          </FeatureGate>
+        )}
         {!entry && (
           <VoiceRecorder onChange={setVoice} busy={busy || recordingBusy} setBusy={setRecordingBusy} />
         )}
@@ -511,7 +516,14 @@ function WhatsAppDialog({ linked, onClose, onUpdate }) {
 
 export default function App() {
   useSyncExternalStore(subscribe, getLanguage);
-  const [inApp, setInApp] = useState(Boolean(desktopBridge || initialInvite));
+  const [inApp, setInApp] = useState(
+    Boolean(
+      desktopBridge ||
+      initialInvite ||
+      location.hash === '#profil' ||
+      new URLSearchParams(location.search).has('profile'),
+    ),
+  );
   const [data, setData] = useState(undefined);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -524,6 +536,10 @@ export default function App() {
   const [calendarView, setCalendarView] = useState('month');
   const [entryDate, setEntryDate] = useState('');
   const [today, setToday] = useState(() => dateKey(new Date()));
+  const { setSpaceId, refresh: refreshBilling } = useBilling();
+  useEffect(() => {
+    setSpaceId(data?.household?.id ?? null);
+  }, [data?.household?.id, setSpaceId]);
   const appearance = data?.profile?.appearance;
   useEffect(() => {
     if (appearance?.language) setLanguage(appearance.language);
@@ -571,6 +587,10 @@ export default function App() {
       }
     }
     void refresh(true);
+    const onFocus = () => {
+      void refresh();
+    };
+    window.addEventListener('focus', onFocus);
     const timer = setInterval(() => {
       setToday(dateKey(new Date()));
       void refresh();
@@ -579,6 +599,7 @@ export default function App() {
       active = false;
       controller.abort();
       clearInterval(timer);
+      window.removeEventListener('focus', onFocus);
     };
   }, []);
 
@@ -591,6 +612,7 @@ export default function App() {
     setError('');
     try {
       await work();
+      await refreshBilling();
     } catch (error) {
       setError(error.message);
     } finally {
@@ -680,6 +702,15 @@ export default function App() {
   const onAuth = (mode, fields) =>
     run(async () => {
       await request('/auth/' + mode, fields, undefined, null);
+      const redirect = new URLSearchParams(location.search).get('returnTo');
+      if (redirect) {
+        const target = new URL(redirect, location.origin);
+        if (target.origin === location.origin && target.pathname === '/pro') {
+          location.assign(target.href);
+          return;
+        }
+      }
+
       updateWorkspace(await request('/dashboard', undefined, undefined, null), setData);
       go('profile');
       setInApp(true);
@@ -802,7 +833,7 @@ export default function App() {
             )}
             {data.admin && (
               <button className="soft-button" onClick={() => open('invite')}>
-                <UserRoundPlus size={17} /> {t('Povabi člana')}
+                <UserRoundPlus size={17} /> {t('Povabi člana')} <ProBadge feature="members" />
               </button>
             )}
             <button className="soft-button" type="button" onClick={logout} disabled={busy}>
@@ -851,7 +882,9 @@ export default function App() {
           {page === 'shopping' && <ShoppingList key={household.id} householdId={household.id} />}
           {page === 'calendar' && (
             <>
-              <CalendarSubscription />
+              <FeatureGate feature="ics" title="Zasebna naročnina na koledar">
+                <CalendarSubscription />
+              </FeatureGate>
               <div className="calendar-view" aria-label={t('Pogled koledarja')}>
                 <button
                   className="soft-button"
@@ -886,7 +919,9 @@ export default function App() {
           {page === 'workload' && (
             <div className="right-stack">
               <Workload {...{ members, tasks, memberId }} />
-              <Rewards key={household.id} householdId={household.id} admin={data.admin} />
+              <FeatureGate feature="rewards" title="Točke in nagrade">
+                <Rewards key={household.id} householdId={household.id} admin={data.admin} />
+              </FeatureGate>
               {data.admin && (
                 <SmartPlanning
                   busy={busy}
@@ -915,6 +950,7 @@ export default function App() {
           )}
           {page === 'profile' && (
             <div className="profile-grid">
+              <BillingProfile />
               <section className="panel account-card">
                 <h2>
                   {data.profile.firstName} {data.profile.lastName}

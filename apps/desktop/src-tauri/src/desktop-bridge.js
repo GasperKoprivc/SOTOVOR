@@ -1,5 +1,5 @@
 (() => {
-  if (window.top !== window || location.pathname !== '/' || location.search !== '?app=desktop') return;
+  if (window.top !== window || !['/', '/pro', '/pogoji', '/zasebnost', '/pogoji-narocnine'].includes(location.pathname)) return;
   let link;
   const toHex = bytes => Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
 
@@ -14,6 +14,7 @@
   }
 
   Object.defineProperty(window, 'sotovorDesktop', { value: Object.freeze({
+    openExternal(url) { location.assign(url); },
     async begin(mode) {
       if (!['login', 'register'].includes(mode)) throw new Error('Neveljaven način prijave.');
       const verifier = toHex(crypto.getRandomValues(new Uint8Array(32)));

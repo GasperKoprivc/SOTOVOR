@@ -1,0 +1,44 @@
+# Disposable, loopback-only test stack. Never use this environment for production.
+services:
+  app:
+    build: .
+    environment:
+      NODE_ENV: test
+      SOTOVOR_BILLING_ENABLED: 'true'
+      SOTOVOR_BILLING_PROVIDER: mock
+      SOTOVOR_BILLING_WEBHOOK_SECRET: mock-billing-e2e-fixture-not-for-production
+      SOTOVOR_LIMIT_FREE_PLANNING_PROPOSALS: '0'
+      SOTOVOR_HOST: 0.0.0.0
+      SOTOVOR_PORT: '3000'
+      SOTOVOR_MONGO_URI: mongodb://mongo:27017
+      SOTOVOR_DB: sotovor_billing_quality
+      SOTOVOR_PUBLIC_URL: http://127.0.0.1:3062
+      SOTOVOR_TEST_MAIL_SINK: '1'
+      SOTOVOR_SMTP_HOST: mail
+      SOTOVOR_SMTP_PORT: '1025'
+    ports: ['127.0.0.1:3062:3000']
+    depends_on:
+      mongo: { condition: service_healthy }
+      mail: { condition: service_started }
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  mongo:
+    image: mongo:8.0.38
+    tmpfs: /data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  mail:
+    image: axllent/mailpit:v1.27.10
+    ports: ['127.0.0.1:3063:8025']

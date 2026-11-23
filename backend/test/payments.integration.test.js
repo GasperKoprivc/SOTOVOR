@@ -12,6 +12,7 @@ import { createBilling } from '../src/billing.js';
 import { paymentConfiguration } from '../src/billing/config.js';
 import { createProvider } from '../src/billing/provider.js';
 import { createBillingRuntime } from '../src/billing/runtime.js';
+import { registerBillingSite } from '../src/billing/site.js';
 import { registerBillingPublic } from '../src/billing/routes.js';
 
 let database, server, base, config, provider, billing, runtime, now;
@@ -41,6 +42,10 @@ before(async () => {
     clock,
     sendMail: async (mail) => messages.push(mail),
   });
+  registerBillingSite(app, billing.config, config);
+  const disabled = express();
+  registerBillingSite(disabled, { enabled: false }, {});
+  app.use('/disabled', disabled);
   registerBillingPublic(app, runtime, database);
   const production = express();
   registerBillingPublic(
@@ -498,4 +503,23 @@ test('checkout cannot duplicate a completed purchase after reservation expiry wh
   assert.equal(result.body.error.code, 'SUBSCRIPTION_EXISTS');
   assert.equal((await snapshot(f)).subscription.status, 'active');
   assert.equal(await database.mockBilling.countDocuments({ kind: 'checkout', spaceId: String(f.id) }), 1);
+});
+
+test('public billing config is sanitized, honors feature overrides and hides all pricing metadata when disabled', async () => {
+  const publicConfig = await (await fetch(base + '/api/v1/billing/config')).json();
+  assert.equal(publicConfig.enabled, true);
+  assert.equal(publicConfig.free.members, 5);
+  assert.equal(publicConfig.pro.members, 12);
+  assert.equal(publicConfig.freeFeatures.ics, false);
+  assert.equal(publicConfig.proFeatures.ics, true);
+  assert.doesNotMatch(JSON.stringify(publicConfig), /secret|key|price_|provider|customer/i);
+  assert.deepEqual(await (await fetch(base + '/disabled/api/v1/billing/config')).json(), { enabled: false });
+  assert.deepEqual(await (await fetch(base + '/api/v1/legal/terms')).json(), { text: null });
+  const f = await family();
+  const url = await checkout(f);
+  const record = await database.mockBilling.findOne({ id: new URL(url).searchParams.get('session') });
+  assert.equal(new URL(record.successUrl).pathname, '/pro');
+  assert.equal(new URL(record.successUrl).searchParams.get('billing'), 'success');
+  assert.equal(new URL(record.cancelUrl).pathname, '/pro');
+  assert.equal(new URL(record.cancelUrl).searchParams.has('billing'), false);
 });

@@ -1,6 +1,8 @@
 import { createRoot } from 'react-dom/client';
 import { useSyncExternalStore } from 'react';
 import App from './App.jsx';
+import { BillingProvider, ProPage } from './Billing.jsx';
+import LegalPage from './LegalPage.jsx';
 import { EmailVerificationPage, getVerificationToken } from './EmailVerification.jsx';
 import PasswordReset from './PasswordReset.jsx';
 import Downloads from './Downloads.jsx';
@@ -29,10 +31,17 @@ function subscribeToHash(listener) {
 function Root() {
   const fragment = useSyncExternalStore(subscribeToHash, () => location.hash);
   if (location.pathname.replace(/\/$/, '') === '/prenesi') return <Downloads />;
+  if (location.pathname.replace(/\/$/, '') === '/pro') return <ProPage />;
+  if (['/pogoji', '/zasebnost', '/pogoji-narocnine'].includes(location.pathname.replace(/\/$/, '')))
+    return <LegalPage />;
   const passwordToken = new URLSearchParams(fragment.slice(1)).get('reset-password');
   if (passwordToken !== null) return <PasswordReset key={passwordToken} token={passwordToken} />;
   const token = getVerificationToken();
   return token === null ? <App /> : <EmailVerificationPage key={token} token={token} />;
 }
 
-createRoot(document.getElementById('root')).render(<Root />);
+createRoot(document.getElementById('root')).render(
+  <BillingProvider>
+    <Root />
+  </BillingProvider>,
+);

@@ -18,6 +18,7 @@ import { billingConfiguration } from './entitlements.js';
 import { paymentConfiguration } from './billing/config.js';
 import { createProvider } from './billing/provider.js';
 import { createBillingRuntime } from './billing/runtime.js';
+import { registerBillingSite } from './billing/site.js';
 import { registerBillingPublic } from './billing/routes.js';
 
 const host = process.env.SOTOVOR_HOST || '127.0.0.1';
@@ -47,6 +48,7 @@ app.use((_req, res, next) => {
   next();
 });
 const whatsapp = whatsappConfig();
+registerBillingSite(app, billingConfig, paymentConfig);
 registerBillingPublic(app, billingRuntime, database);
 registerAppLinks(app);
 registerReleases(app, await releaseConfiguration());
@@ -102,7 +104,9 @@ app.use(
   }),
 );
 app.use('/api', json, createApi(database, apiOptions));
-app.get('/prenesi', (_req, res) => res.sendFile('index.html', { root: dist }));
+app.get(['/prenesi', '/pro', '/pogoji', '/zasebnost', '/pogoji-narocnine'], (_req, res) =>
+  res.sendFile('index.html', { root: dist }),
+);
 app.use(express.static(dist));
 app.use(handleError);
 

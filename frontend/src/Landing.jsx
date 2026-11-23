@@ -1,4 +1,5 @@
 import { t, errorText } from './i18n.js';
+import { useBilling, proHref } from './Billing.jsx';
 import ThemeSelect from './ThemeSelect.jsx';
 import LanguageSelect from './LanguageSelect.jsx';
 import { useEffect, useRef, useState } from 'react';
@@ -264,7 +265,10 @@ export default function Landing({
   onLanguage,
   onTheme,
 }) {
-  const [mode, setMode] = useState(startWithInvite ? 'login' : null);
+  const { config } = useBilling();
+  const [mode, setMode] = useState(
+    startWithInvite || new URLSearchParams(location.search).get('auth') === 'login' ? 'login' : null,
+  );
   const [active, setActive] = useState(0);
   const [motion, setMotion] = useState(true);
   const selected = modules[active];
@@ -275,6 +279,7 @@ export default function Landing({
           <Mark /> <span>SOTOVOR</span>
         </a>
         <nav aria-label={t('Predstavitev')}>
+          {config?.enabled && <a href={proHref()}>Sotovor Pro</a>}
           <a href="#funkcije">{t('Funkcije')}</a>
           <a href="#naprave">{t('Aplikacije in naprava')}</a>
           <a href="#zgodba">{t('Zakaj Sotovor')}</a>
@@ -458,6 +463,9 @@ export default function Landing({
         <a className="landing-brand" href="#domov">
           <Mark /> SOTOVOR
         </a>
+        {config?.enabled && <a href={proHref()}>Sotovor Pro</a>}
+        <a href="/pogoji">{t('Pogoji uporabe')}</a>
+        <a href="/zasebnost">{t('Zasebnost')}</a>
         <a href="/prenesi">{t('Prenesi')}</a>
         <a href="#domov">
           {t('Nazaj na vrh')} <ArrowUpRight size={16} />

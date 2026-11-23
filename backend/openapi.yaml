@@ -3,10 +3,48 @@ info: { title: Sotovor native API, version: 1.0.0 }
 servers: [{ url: /api/v1 }]
 security: [{ bearer: [] }, { browserSession: [] }]
 paths:
+  /billing/config:
+    get:
+      security: []
+      summary: Public non-sensitive billing UI configuration
+      description: Returns only enabled=false when disabled; clients must hide all pricing, upsells, badges and profile billing sections. When enabled includes effective Free/Pro numeric limits (null means unlimited) and feature flags. Never contains provider credentials, IDs or checkout capabilities.
+      responses:
+        '200':
+          description: Public policy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [enabled]
+                properties:
+                  enabled: { type: boolean }
+                  free: { type: object, additionalProperties: { type: integer, nullable: true } }
+                  pro: { type: object, additionalProperties: { type: integer, nullable: true } }
+                  freeFeatures: { type: object, additionalProperties: { type: boolean } }
+                  proFeatures: { type: object, additionalProperties: { type: boolean } }
+  /legal/terms:
+    get:
+      security: []
+      summary: Public operator-provided terms text
+      responses:
+        '200':
+          description: Public UTF-8 text for legal pages (rendered as text; never HTML); no file paths exposed
+          content:
+            {
+              application/json:
+                {
+                  schema:
+                    {
+                      type: object,
+                      required: [text],
+                      properties: { text: { type: string, nullable: true } },
+                    },
+                },
+            }
   /spaces/{id}/billing/checkout:
     post:
       summary: Admin creates a hosted subscription checkout
-      description: Enabled billing only (404 otherwise). Price and return URLs are server-controlled. Rejects extra fields. Checks existing provider subscriptions and atomically reserves one checkout for 32 minutes. Cookie and bearer authentication have identical authorization. A return redirect never grants Pro.
+      description: Enabled billing only (404 otherwise). Price and return URLs are server-controlled. Rejects extra fields. Checks existing provider subscriptions and atomically reserves one checkout for 32 minutes. Cookie and bearer authentication have identical authorization. A return redirect never grants Pro. Success returns to /pro?billing=success&space=id for bounded polling; cancellation returns quietly to /pro?space=id.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, pattern: '^[a-f0-9]{24}$' } }
         - {
@@ -87,9 +125,33 @@ paths:
       responses:
         '200':
           {
-            description: Human-provided UTF-8 terms or explicitly labeled testing draft,
+            description: Translated SPA terms page with operator-provided text and explicit legal-review TODOs,
             content: { text/html: { schema: { type: string } } },
           }
+  /pogoji-narocnine:
+    servers: [{ url: / }]
+    get:
+      security: []
+      summary: Translated draft subscription terms with human/legal-review TODOs
+      responses:
+        '200':
+          { description: Public HTML application shell, content: { text/html: { schema: { type: string } } } }
+  /zasebnost:
+    servers: [{ url: / }]
+    get:
+      security: []
+      summary: Translated draft privacy page with processor-role review TODOs
+      responses:
+        '200':
+          { description: Public HTML application shell, content: { text/html: { schema: { type: string } } } }
+  /pro:
+    servers: [{ url: / }]
+    get:
+      security: []
+      summary: Public translated Pro page (neutral all-features page when disabled)
+      responses:
+        '200':
+          { description: Public HTML application shell, content: { text/html: { schema: { type: string } } } }
   /billing/portal/{id}:
     servers: [{ url: / }]
     get:

@@ -1,3 +1,4 @@
+import { ProBadge } from './Billing.jsx';
 import { t } from './i18n.js';
 import { useState } from 'react';
 import { Sparkles } from 'lucide-react';
@@ -11,7 +12,9 @@ export default function SmartPlanning({ busy, onPreview, onApply }) {
     <section className="panel smart-planning">
       <div className="panel-heading">
         <div>
-          <h2>{t('Pametna razporeditev')}</h2>
+          <h2>
+            {t('Pametna razporeditev')} <ProBadge feature="planningProposals" />
+          </h2>
           <p>{t('Sotovor predlaga dodelitve glede na vloge, odsotnost in obremenitev članov.')}</p>
         </div>
         <Sparkles size={22} aria-hidden="true" />

@@ -373,8 +373,8 @@ export function createBillingRuntime(
       space: { ...space, providerCustomerId: record.providerCustomerId, checkoutKey: key },
       plan,
       customerEmail: account.email,
-      successUrl: config.publicUrl + '/?billing=success&space=' + space._id,
-      cancelUrl: config.publicUrl + '/?billing=cancel&space=' + space._id,
+      successUrl: config.publicUrl + '/pro?billing=success&space=' + space._id,
+      cancelUrl: config.publicUrl + '/pro?space=' + space._id,
       locale,
     });
     const url = URL.parse(session.url ?? '');
