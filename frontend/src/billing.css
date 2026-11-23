@@ -1,0 +1,228 @@
+.pro-page {
+  min-height: 100vh;
+  color: var(--ink);
+  background: var(--background, #142b2b);
+}
+.pro-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px clamp(16px, 5vw, 72px);
+  border-bottom: 1px solid #80808055;
+  flex-wrap: wrap;
+}
+.pro-header > div {
+  display: flex;
+  gap: 10px;
+}
+.pro-brand {
+  font-weight: 900;
+  font-size: 1.4rem;
+  letter-spacing: -0.05em;
+}
+.pro-page main {
+  max-width: 1050px;
+  margin: auto;
+  padding: 36px 20px 72px;
+}
+.pro-hero {
+  text-align: center;
+  max-width: 760px;
+  margin: 0 auto 48px;
+}
+.pro-hero h1 {
+  font-family: 'Zalando Sans Expanded Variable', sans-serif;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1.1;
+  margin: 24px 0;
+  letter-spacing: -0.045em;
+}
+.pro-hero p {
+  line-height: 1.7;
+}
+.pro-price {
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  font-weight: 800;
+  margin: 24px 0 8px;
+}
+.pro-price span {
+  font-size: 1rem;
+  font-weight: 400;
+  display: block;
+}
+.pro-switch {
+  display: inline-flex;
+  padding: 4px;
+  gap: 4px;
+  border: 1px solid #80808077;
+  border-radius: 12px;
+}
+.pro-switch button {
+  min-height: 44px;
+  padding: 10px 24px;
+  border-radius: 8px;
+}
+.pro-switch button[aria-pressed='true'] {
+  background: #f2b58c;
+  color: #142b2b;
+}
+.pro-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: #f2b58c;
+  color: #172d2d;
+  font-size: 0.75rem;
+  font-weight: 800;
+  vertical-align: middle;
+}
+.pro-actions {
+  margin: 28px auto 0;
+  max-width: 520px;
+  display: grid;
+  gap: 12px;
+  text-align: left;
+  padding: 24px;
+  border: 1px solid #80808066;
+  border-radius: 16px;
+}
+.pro-state p {
+  margin: 6px 0;
+}
+.pro-actions textarea {
+  width: 100%;
+  resize: vertical;
+}
+.pro-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #80808066;
+  border-radius: 12px;
+}
+.pro-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.95rem;
+}
+.pro-table caption {
+  font-size: 1.4rem;
+  font-weight: 700;
+  padding: 24px;
+  text-align: left;
+}
+.pro-table td,
+.pro-table th {
+  padding: 16px 12px;
+  border-top: 1px solid #80808044;
+  overflow-wrap: anywhere;
+}
+.pro-table th:first-child {
+  width: 55%;
+}
+.pro-table thead th:last-child {
+  color: var(--accent);
+}
+.pro-faq {
+  margin: 48px 0;
+}
+.pro-faq details {
+  padding: 18px 0;
+  border-bottom: 1px solid #80808055;
+}
+.pro-faq summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.pro-page footer {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.pro-dialog {
+  max-width: 480px;
+  width: calc(100% - 32px);
+  padding: 28px;
+  border: 1px solid #80808077;
+  border-radius: 16px;
+}
+.pro-dialog::backdrop {
+  background: #0009;
+}
+.pro-dialog h2 {
+  padding-right: 30px;
+}
+.pro-dialog p {
+  line-height: 1.6;
+}
+.pro-close {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+}
+.pro-dialog .primary {
+  display: inline-flex;
+  margin: 8px 12px 8px 0;
+}
+.pro-locked h2 .pro-badge {
+  margin-left: 8px;
+}
+.billing-profile .soft-button {
+  display: inline-flex;
+  margin-top: 12px;
+}
+.pro-page :focus-visible,
+.pro-dialog :focus-visible {
+  outline: 3px solid #e7965e;
+  outline-offset: 4px;
+}
+.pro-page a.primary,
+.pro-page a.soft-button {
+  display: inline-flex;
+  justify-content: center;
+  text-decoration: none;
+  min-height: 44px;
+  align-items: center;
+  padding: 12px 20px;
+}
+.legal-copy {
+  white-space: pre-wrap;
+  line-height: 1.8;
+}
+.legal-todo {
+  padding: 20px;
+  border: 2px dashed #ac6432;
+  border-radius: 12px;
+  margin: 24px 0;
+}
+@media (max-width: 480px) {
+  .pro-actions {
+    padding: 16px;
+  }
+  .pro-table th,
+  .pro-table td {
+    padding: 12px 8px;
+  }
+  .pro-table {
+    font-size: 0.85rem;
+  }
+  .pro-header {
+    gap: 12px;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pro-hero {
+    animation: pro-enter 0.4s ease-out;
+  }
+  @keyframes pro-enter {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}

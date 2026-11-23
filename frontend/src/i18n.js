@@ -37,6 +37,7 @@ export function t(message, ...values) {
 }
 
 export function errorText(message) {
+  if (!message) return '';
   const length =
     /^(Ime|Priimek|E-pošta|Telefon|Koda povabila|Ime prostora|Naslov) mora imeti od 1 do (\d+) znakov\.$/.exec(
       message,

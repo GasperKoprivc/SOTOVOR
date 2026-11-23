@@ -77,7 +77,15 @@ export async function request(
         };
   const response = await fetch('/api' + path, options);
   const data = await response.json();
-  if (!response.ok)
-    throw Object.assign(new Error(data.error?.message ?? data.error), { status: response.status });
+  if (!response.ok) {
+    const detail = typeof data.error === 'object' ? data.error : { message: data.error };
+    if (detail.code === 'PLAN_REQUIRED')
+      window.dispatchEvent(new CustomEvent('sotovor:plan-required', { detail: detail.details }));
+    throw Object.assign(new Error(detail.code === 'PLAN_REQUIRED' ? '' : detail.message), {
+      status: response.status,
+      code: detail.code,
+      details: detail.details,
+    });
+  }
   return data;
 }

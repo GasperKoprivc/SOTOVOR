@@ -1,3 +1,4 @@
+import { ProBadge } from './Billing.jsx';
 import { t, errorText } from './i18n.js';
 import { useEffect, useRef, useState } from 'react';
 import { Mic, Square, Trash2 } from 'lucide-react';
@@ -92,6 +93,7 @@ export default function VoiceRecorder({ onChange, busy, setBusy }) {
 
   return (
     <div className="voice-field">
+      <ProBadge feature="voiceNotes" />
       {recording ? (
         <button type="button" className="soft-button" onClick={() => control.current?.stop()}>
           <Square size={16} /> {t('Ustavi snemanje')}

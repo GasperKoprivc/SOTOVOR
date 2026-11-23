@@ -96,20 +96,6 @@ export function registerBillingPublic(app, runtime, database) {
     },
   );
 
-  app.get('/pogoji', (req, res) => {
-    const lang = languageOf(req.query.lang);
-    const copy = labels[lang];
-    const draft = {
-      sl: 'Osnutek za testiranje. Pred pravimi plačili mora pogoje pregledati in dopolniti upravljavec. Sotovor Pro: 3 EUR/mesec ali 30 EUR/leto z DDV. Naročnina velja za družinski prostor. Odpoved se uredi v portalu. Iztek naročnine ne izbriše vaših podatkov. Pravila odstopa, podatke upravljavca, kontakt, veljavno pravo in politiko vračil mora dopolniti upravljavec.',
-      en: 'Testing draft. The operator must review and complete the terms before live payments. Sotovor Pro: EUR 3/month or EUR 30/year including VAT, per family space. Cancellation is managed in the portal. Subscription expiry does not delete your data. The operator must supply withdrawal rules, business identity, contact details, applicable law and refund policy.',
-      de: 'Testentwurf. Vor echten Zahlungen muss der Betreiber die Bedingungen prüfen und vervollständigen. Sotovor Pro: 3 EUR/Monat oder 30 EUR/Jahr einschließlich MwSt., je Familienbereich. Die Kündigung erfolgt im Portal. Beim Ablauf werden eure Daten nicht gelöscht. Widerrufsregeln, Anbieterangaben, Kontakt, anwendbares Recht und Erstattungsregeln muss der Betreiber ergänzen.',
-    };
-    res
-      .set('Cache-Control', 'no-store')
-      .type('html')
-      .send(page(lang, copy.terms, '<p class="terms">' + escape(config.termsText ?? draft[lang]) + '</p>'));
-  });
-
   app.get('/billing/portal/:id', (req, res) => {
     if (!/^[a-f0-9]{24}$/.test(req.params.id)) return res.sendStatus(404);
     const lang = languageOf(req.query.lang),
