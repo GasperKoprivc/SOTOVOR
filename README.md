@@ -1,458 +1,458 @@
 # Sotovor
 
-> **Pregled pred objavo, 22. november 2026:** domena in VPS še nista vzpostavljena. Koda vsebuje pripravo za produkcijo, javni zagon pa še ni opravljen. Preverjene korake in preostale pogoje spremljamo v [seznamu za javno objavo](docs/LAUNCH_CHECKLIST.md); nastavitev produkcije, podpisov in Firebase je opisana v [navodilih za skrbnika](docs/HUMAN_TASKS.md).
+> **Pre-launch review, November 22, 2026:** the domain and VPS have not been set up yet. The code includes production deployment support, but the public launch has not taken place. Verified steps and remaining requirements are tracked in the [launch checklist](docs/LAUNCH_CHECKLIST.md); production, signing and Firebase configuration are covered in the [operator instructions](docs/HUMAN_TASKS.md).
 
-### Manj usklajevanja. Več skupnega časa.
+### Less coordination. More time together.
 
-**Sotovor je skupni družinski prostor za opravila, dogovore, koledar in pregled razporeditve dela.** Na enem mestu pokaže, kaj je treba urediti, kdo je kaj prevzel, kateri roki se bližajo in kako so obveznosti razdeljene med družinske člane.
+**Sotovor is a shared family space for tasks, plans, a calendar and workload tracking.** It brings together what needs doing, who has taken responsibility, which deadlines are approaching and how responsibilities are distributed among family members.
 
-Namenjen je vsakodnevnim stvarem: pospravljanju, nakupom, prevzemu otrok, družinskim dogodkom in drugim obveznostim, ki sicer hitro ostanejo v sporočilih ali v glavi enega človeka. Člani lahko delo prevzamejo sami, prosijo za zamenjavo ali ga dobijo dodeljenega. Skrbnik lahko pripravi tudi predlog razporeditve glede na vloge, razpoložljivost in dosedanjo obremenitev.
+It is designed for everyday activities: cleaning, shopping, picking up children, family events and other commitments that otherwise get buried in messages or remain in one person's head. Members can claim tasks, request a swap or receive assignments. The admin can also generate an allocation proposal based on roles, availability and existing workload.
 
-> **Trenutno stanje · 17. november 2026**
-> Na voljo so spletna aplikacija, namizni odjemalec za Windows in projekt za Android, ki uporabljajo skupni API in MongoDB. Na telefonu lahko še vedno uporabiš odzivno spletno različico.
+> **Current status · November 17, 2026**
+> A web app, Windows desktop client and Android project share the same API and MongoDB database. The responsive web version is also available on phones.
 
 **React 19 · Vite 8 · Node.js 24+ · Express 5 · MongoDB · Tauri 2**
 
-**Sotovor Pro — P2:** strežniške pravice in enkratni 14-dnevni preizkus dopolnjujejo
-Stripe ter lokalni mock checkout, podpisani webhooki, sedemdnevni rok po neuspelem
-plačilu, dnevno usklajevanje stanja in e-pošta SL/EN/DE. Privzeti
-`SOTOVOR_BILLING_ENABLED=false` še vedno vsem odklene vse funkcije. Ceni sta
-3 EUR/mesec ali 30 EUR/leto z DDV na družinski prostor. Zasloni za upravljanje
-naročnine na odjemalcih sledijo v P3; resnična plačila še niso vključena.
-[Mock in Stripe testni postopek](docs/BILLING.md)
-· [Pravice in matrika](docs/FEATURE_PARITY.md)
-· [Človeške nastavitve pred plačili](docs/HUMAN_TASKS.md#sotovor-pro-p2-stripe-setup)
+**Sotovor Pro — P2:** server-enforced entitlements and a one-time 14-day trial are
+complemented by Stripe and a local mock checkout, signed webhooks, a seven-day
+payment-failure grace period, daily reconciliation and SL/EN/DE emails. The default
+`SOTOVOR_BILLING_ENABLED=false` still unlocks every feature for everyone. Pricing is
+EUR 3/month or EUR 30/year including VAT, per family space. Client subscription
+management screens follow in P3; live payments have not been enabled.
+[Mock and Stripe testing guide](docs/BILLING.md)
+· [Entitlements and feature matrix](docs/FEATURE_PARITY.md)
+· [Human setup before payments](docs/HUMAN_TASKS.md#sotovor-pro-p2-stripe-setup)
 
 ---
 
-## Vsebina
+## Contents
 
-- [Kaj Sotovor že omogoča](#kaj-sotovor-že-omogoča)
-- [Funkcionalnosti podrobneje](#funkcionalnosti-podrobneje)
-- [Primer vsakodnevne uporabe](#primer-vsakodnevne-uporabe)
-- [Hiter zagon na Windows](#hiter-zagon-na-windows)
-- [Namizna aplikacija](#namizna-aplikacija)
-- [Zagon z Docker Compose](#zagon-z-docker-compose)
-- [Produkcijska namestitev](docs/DEPLOY.md)
-- [Objava namestitvenih paketov za stran Prenesi](docs/HUMAN_TASKS.md#publish-the-installers)
-- [Demo družina](#demo-družina)
-- [Povezava z WhatsAppom](#povezava-z-whatsappom)
-- [Dostop s telefona](#dostop-s-telefona)
-- [Aplikacija za Android](apps/android/README.md)
-- [Tehnična zasnova in struktura](#tehnična-zasnova-in-struktura)
-- [Nastavitve okolja](#nastavitve-okolja)
-- [Razvoj in preverjanja](#razvoj-in-preverjanja)
-- [Trenutne meje in nadaljnji razvoj](#trenutne-meje-in-nadaljnji-razvoj)
+- [What Sotovor already supports](#what-sotovor-already-supports)
+- [Features in detail](#features-in-detail)
+- [An everyday example](#an-everyday-example)
+- [Quick start on Windows](#quick-start-on-windows)
+- [Desktop app](#desktop-app)
+- [Running with Docker Compose](#running-with-docker-compose)
+- [Production deployment](docs/DEPLOY.md)
+- [Publishing installers for the download page](docs/HUMAN_TASKS.md#publish-the-installers)
+- [Demo family](#demo-family)
+- [WhatsApp integration](#whatsapp-integration)
+- [Access from a phone](#access-from-a-phone)
+- [Android app](apps/android/README.md)
+- [Architecture and structure](#architecture-and-structure)
+- [Environment settings](#environment-settings)
+- [Development and checks](#development-and-checks)
+- [Current limitations and further development](#current-limitations-and-further-development)
 
-## Kaj Sotovor že omogoča
+## What Sotovor already supports
 
-| Področje                 | Kaj je na voljo                                                                                      |
-| ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| **Računi**               | Registracija, prijava, odjava in prikaz osebnih podatkov v profilu.                                  |
-| **Jezik vmesnika**       | Angleščina (privzeto), slovenščina in nemščina v spletnem in namiznem odjemalcu.                     |
-| **Družinski prostori**   | Ustvarjanje družin, povabila s kodo ali povezavo in preklapljanje med prostori.                      |
-| **Člani in pravice**     | Skrbniško upravljanje članov, dovoljenj, družinskih vlog, bolezni in odsotnosti.                     |
-| **Opravila**             | Dodajanje, urejanje, roki, kategorije, dodeljevanje, prevzem, prošnja za zamenjavo in zaključevanje. |
-| **Ponavljanje**          | Naslednje opravilo po zaključku in izbirna rotacija odgovornega člana.                               |
-| **Koledar**              | Mesečni in tedenski pogled dogodkov ter opravil z datumom.                                           |
-| **Pregled dela**         | Osebni kazalniki, filtri, iskanje in primerjava odprtih ter zaključenih opravil po članih.           |
-| **Pametna razporeditev** | Lokalni predlog dodelitev, pregled predloga in skrbniška potrditev.                                  |
-| **Obvestila**            | Dodelitve, opomniki za roke in prošnje za zamenjavo znotraj aplikacije.                              |
-| **Glasovne beležke**     | Snemanje do 30 sekund ob dodajanju opravila ali dogodka in predvajanje članom prostora.              |
-| **WhatsApp**             | Neobvezna povezava številke za ustvarjanje opravil in dogodkov iz besedilnih sporočil.               |
-| **Odjemalci in zagon**   | Splet, Windows Tauri, lokalni zaganjalniki in Docker Compose.                                        |
+| Area                        | Available functionality                                                                           |
+| --------------------------- | ------------------------------------------------------------------------------------------------- |
+| **Accounts**                | Registration, sign-in, sign-out and personal details in Profile.                                  |
+| **Interface language**      | English (default), Slovenian and German in the web and desktop clients.                           |
+| **Family spaces**           | Creating families, invitations by code or link, and switching between spaces.                     |
+| **Members and permissions** | Admin management of members, permissions, family roles, illness and absence.                      |
+| **Tasks**                   | Creating, editing, deadlines, categories, assignments, claiming, requesting swaps and completing. |
+| **Recurrence**              | Creating the next task on completion, with optional rotation of the responsible member.           |
+| **Calendar**                | Monthly and weekly views of events and dated tasks.                                               |
+| **Workload overview**       | Personal metrics, filters, search and comparison of open and completed tasks by member.           |
+| **Smart planning**          | Local assignment proposals, preview and admin confirmation.                                       |
+| **Notifications**           | In-app assignments, deadline reminders and swap requests.                                         |
+| **Voice notes**             | Recording up to 30 seconds when adding a task or event, with playback for space members.          |
+| **WhatsApp**                | Optional phone-number pairing to create tasks and events from text messages.                      |
+| **Clients and startup**     | Web, Windows Tauri, local launchers and Docker Compose.                                           |
 
-## Funkcionalnosti podrobneje
+## Features in detail
 
-### 1. Naslovnica, račun in prvi vstop
+### 1. Landing page, account and first sign-in
 
-Predstavitvena stran predstavi Sotovor in omogoča prijavo, registracijo ter vstop prek povabila. Registracija zajema ime, priimek, e-poštni naslov, telefon in geslo. Po prijavi uporabnik v profilu vidi svoje podatke in lahko odpre nadzorno ploščo.
+The landing page introduces Sotovor and provides sign-in, registration and invitation-based access. Registration collects first name, last name, email address, phone number and password. After signing in, users can view their personal details in Profile and open the dashboard.
 
-Jezik izbereš v zgornji vrstici naslovnice ali nadzorne plošče. Aplikacija si ga zapomni v trenutnem brskalniku oziroma namiznem odjemalcu. Izbira spremeni tudi prikaz datumov, naslovi opravil in imena članov pa ostanejo v jeziku, v katerem so bili vneseni.
+Choose a language in the top bar of the landing page or dashboard. The app remembers it in the current browser or desktop client. This also changes date formatting; task titles and member names remain in the language in which they were entered.
 
-Če račun še nima družinskega prostora, ponudi aplikacija dve poti:
+If the account does not yet have a family space, the app offers two paths:
 
-- **Ustvari družino:** določi ime prostora in načrtovano število članov.
-- **Pridruži se s povabilom:** vnese kodo obstoječega prostora.
+- **Create a family:** enter the space name and expected number of members.
+- **Join with an invitation:** enter an existing space's code.
 
-Registracija v brskalniku s sejo starejše različice lahko obstoječe članstvo poveže z novim računom.
+Registration in a browser with a session from an older version can link the existing membership to the new account.
 
-### 2. Družinski prostori in povabila
+### 2. Family spaces and invitations
 
-Vsak prostor ima svoje člane, opravila, dogodke in nastavitve. Njegov ustvarjalec je skrbnik.
+Each space has its own members, tasks, events and settings. Its creator is the admin.
 
-- Skrbnik lahko ustvari dodatne družinske prostore in med njimi preklaplja v profilu.
-- V meniju **Povabi člana** lahko kopira kodo ali deli povezavo, ki odpre pot za pridružitev.
-- Z ustvarjanjem nove kode prejšnje povabilo preneha veljati.
-- Uporabnik, ki že upravlja svoj prostor, ga ob sprejemu povabila v drugo družino obdrži.
-- Račun je lahko navaden član ene družine naenkrat, poleg prostorov, ki jih upravlja sam.
-- Navaden član lahko zaprosi za izstop. Skrbnik prošnjo odobri ali zavrne; po odobrenem izstopu lahko član ustvari svoj prostor.
+- The admin can create additional family spaces and switch between them in Profile.
+- The **Invite member** menu lets the admin copy a code or share a link that opens the joining flow.
+- Generating a new code invalidates the previous invitation.
+- Users who already manage a space keep it when accepting an invitation to another family.
+- An account can be an ordinary member of one family at a time, in addition to the spaces it manages.
+- An ordinary member can request to leave. The admin approves or rejects the request; after an approved departure, the member can create their own space.
 
-### 3. Člani, dovoljenja in razpoložljivost
+### 3. Members, permissions and availability
 
-V **Profilu** skrbnik vidi aktivne člane in njihovo število glede na načrtovano velikost družine. Člana lahko odstrani, obravnava prošnjo za izstop in mu ločeno nastavi štiri pravice:
+In **Profile**, the admin sees active members and their count against the expected family size. They can remove members, handle requests to leave and configure four separate permissions:
 
-| Pravica           | Kaj dovoljuje                                                |
-| ----------------- | ------------------------------------------------------------ |
-| Dodaja vnose      | Ustvarjanje opravil in dogodkov.                             |
-| Ureja vsebino     | Spreminjanje vsebine vnosa, kategorije in drugih nastavitev. |
-| Premika datume    | Spreminjanje datuma dogodka oziroma roka opravila.           |
-| Odstranjuje vnose | Odstranjevanje opravil in dogodkov.                          |
+| Permission     | What it allows                                       |
+| -------------- | ---------------------------------------------------- |
+| Create entries | Creating tasks and events.                           |
+| Edit content   | Changing entry content, category and other settings. |
+| Move dates     | Changing event dates or task deadlines.              |
+| Remove entries | Removing tasks and events.                           |
 
-Nov navaden član ima privzeto dovoljeno dodajanje vnosov; urejanje, premikanje datumov in odstranjevanje mu omogoči skrbnik. Prevzem prostega opravila, prošnja za zamenjavo in zaključek lastnega opravila so ločena dejanja.
+New ordinary members can create entries by default; the admin grants editing, date changes and removal permissions separately. Claiming an unassigned task, requesting a swap and completing one's own task are separate actions.
 
-Za razporejanje lahko skrbnik vsakemu članu, tudi sebi, določi:
+For planning, the admin can configure the following for each member, including themselves:
 
-- **Družinsko vlogo:** oče, mati, skrbnik otroka, otrok ali drugo.
-- **Razpoložljivost:** na voljo, bolan/a ali odsoten/na.
-- **Konec odsotnosti:** neobvezen datum, do katerega velja odsotnost oziroma bolezen.
+- **Family role:** father, mother, guardian, child or other.
+- **Availability:** available, sick or absent.
+- **Absence end date:** an optional date until which the absence or illness applies.
 
-Družinska vloga opisuje člana za potrebe razporejanja; skrbniški status določa upravljanje prostora.
+The family role describes a member for planning purposes; admin status determines space management rights.
 
-### 4. Nadzorna plošča »Pregled«
+### 4. The Overview dashboard
 
-Osrednji pogled združuje osebni pozdrav, današnji datum in najpomembnejše informacije:
+The main view brings together a personal greeting, today's date and key information:
 
-- **Moja odprta opravila:** število odprtih nalog trenutnega člana.
-- **Na voljo za prevzem:** število opravil brez odgovornega člana.
-- **Opomniki za roke:** opravila, ki so dosegla nastavljeni prag opomnika, vključno z zamujenimi.
-- **Družinska opravila:** seznam z iskanjem in filtri.
-- **Ta teden:** strnjen koledar z označenimi dnevi z vnosi.
-- **Razporeditev dela:** strnjen prikaz odprtih in zaključenih opravil po članih.
+- **My open tasks:** the current member's open task count.
+- **Available to claim:** the number of tasks without a responsible member.
+- **Deadline reminders:** tasks that have reached their configured reminder threshold, including overdue tasks.
+- **Family tasks:** a searchable, filterable list.
+- **This week:** a compact calendar highlighting days with entries.
+- **Workload:** a compact view of open and completed tasks by member.
 
-Klik na kazalnik odpre ustrezno filtriran seznam opravil; koledar in razporeditev imata povezavi do podrobnega pogleda.
+Clicking a metric opens the corresponding filtered task list; the calendar and workload sections link to their detailed views.
 
-### 5. Opravila od nastanka do zaključka
+### 5. Tasks from creation to completion
 
-Opravilo ima naslov, kategorijo in po želji rok ter odgovornega člana. Na voljo so kategorije **Dom, Družina, Opravki, Zdravje in Drugo**. Opravilo brez dodeljenega člana je objavljeno za prevzem.
+A task has a title and category, with an optional deadline and responsible member. Categories are **Home, Family, Errands, Health and Other**. A task without an assignee is available to claim.
 
-Običajen potek je:
+A typical workflow is:
 
-1. Član z dovoljenjem ustvari opravilo in ga dodeli ali pusti na voljo.
-2. Drug član prosto opravilo prevzame z gumbom **Prevzemi**.
-3. Če ga ne more opraviti, izbere **Prosi za zamenjavo**. Opravilo postane ponovno na voljo in drugi dobijo obvestilo v aplikaciji.
-4. Odgovorni član opravilo zaključi. Ostane vidno med zaključenimi opravili in v pregledu opravljenega dela.
+1. A member with permission creates a task and assigns it or leaves it available.
+2. Another member claims an available task using **Claim**.
+3. If they cannot do it, they select **Request a swap**. The task becomes available again and other members receive an in-app notification.
+4. The responsible member completes the task. It remains visible among completed tasks and in workload reports.
 
-Upravičeni člani lahko odprte vnose urejajo, prestavijo ali odstranijo. Odstranjevanje zahteva potrditev v vmesniku. Strežnik pri urejanju in odstranjevanju preverja različico vnosa, da starejši prikaz ne prepiše vmesnih sprememb drugega člana.
+Authorized members can edit, reschedule or remove open entries. Removal requires confirmation in the UI. The server checks entry versions during editing and removal to prevent an outdated view from overwriting another member's changes.
 
-### 6. Iskanje, filtri in preglednost
+### 6. Search, filters and visibility
 
-V **Pregledu** in pod **Opravila** so na voljo pogledi **Odprta, Moja, Za prevzem, Rok blizu, Ponavljajoča in Zaključena**.
+**Overview** and **Tasks** offer **Open, Mine, Available, Due soon, Recurring and Completed** views.
 
-Vsak pogled lahko dodatno zožiš z iskanjem po naslovu, kategorijo in izbranim članom oziroma možnostjo **Nedodeljeno**. Filtri delujejo skupaj. Opravila so urejena po roku, tista brez roka pa sledijo na koncu. Večji seznami so razdeljeni na strani po 12 opravil.
+Each view can be narrowed further by title search, category and selected member or **Unassigned**. Filters work together. Tasks are sorted by deadline, with undated tasks at the end. Larger lists are paginated with 12 tasks per page.
 
-Seznam prikazuje odgovorno osebo, rok, zamudo, kategorijo ter nastavitve ponavljanja in rotacije.
+The list displays the responsible person, deadline, overdue status, category, recurrence and rotation settings.
 
-### 7. Ponavljajoča opravila in rotacija
+### 7. Repeating tasks and rotation
 
-Pri opravilu z rokom lahko določiš interval ponavljanja v dnevih. Vrednost `0` pomeni, da se opravilo ne ponavlja.
+For a task with a deadline, you can set a recurrence interval in days. A value of `0` means the task does not repeat.
 
-Ko član ponavljajoče opravilo zaključi, Sotovor ustvari naslednji vnos. Novi rok izračuna iz **prejšnjega roka**, povečanega za nastavljeni interval. Če vključiš rotacijo, naslednji vnos dobi naslednji aktivni član po vrstnem redu pridružitve; sicer ostane dodeljen istemu članu.
+When a member completes a recurring task, Sotovor creates the next entry. Its deadline is calculated from the **previous deadline**, increased by the configured interval. With rotation enabled, the next entry goes to the next active member in joining order; otherwise, it remains assigned to the same person.
 
-Primer: opravilo »Odnesi smeti« z intervalom treh dni in rotacijo po zaključku dobi naslednji rok ter naslednjega odgovornega člana. Naslednji vnos nastane ob zaključku, zato koledar vnaprej ne napolni vseh prihodnjih ponovitev.
+For example, completing a "Take out the rubbish" task with a three-day interval and rotation gives the next occurrence a new deadline and the next responsible member. The next entry is created on completion, so the calendar is not filled with all future occurrences in advance.
 
-### 8. Skupni koledar
+### 8. Shared calendar
 
-Koledar poveže **dogodke** in **opravila z rokom**. Dogodek zahteva datum; opravilo ga lahko nima.
+The calendar combines **events** and **tasks with deadlines**. Events require a date; tasks can be undated.
 
-| Pogled                          | Uporaba                                                                         |
-| ------------------------------- | ------------------------------------------------------------------------------- |
-| **Mesec**                       | Pregled meseca; klik na dan odpre seznam njegovih opravil in dogodkov.          |
-| **Teden**                       | Vnosi po dnevih od ponedeljka do nedelje, premik med tedni in vrnitev na danes. |
-| **Ta teden na nadzorni plošči** | Hiter pregled dni z vnosi in njihovega skupnega števila.                        |
+| View                           | Use                                                                                          |
+| ------------------------------ | -------------------------------------------------------------------------------------------- |
+| **Month**                      | Monthly overview; clicking a day opens its tasks and events.                                 |
+| **Week**                       | Entries by day from Monday to Sunday, navigation between weeks and a return-to-today action. |
+| **This week on the dashboard** | A quick overview of days with entries and their total count.                                 |
 
-V koledarju lahko glede na pravice dodajaš dogodke in urejaš vnose. Pri dodajanju iz izbranega dne se datum že izpolni. Opravila brez roka ostanejo v seznamu opravil.
+Depending on permissions, you can add events and edit entries in the calendar. Adding from a selected day pre-fills the date. Undated tasks remain in the task list.
 
-### 9. Razporeditev dela in pametni predlogi
+### 9. Workload and smart proposals
 
-Pogled **Razporeditev** za vsakega člana prikaže odprta in zaključena opravila ter primerjalni stolpčni prikaz. Zaključena opravila lahko omejiš na zadnjih **7 dni**, **30 dni** ali **vse od začetka**. Odprta opravila se prikazujejo neodvisno od tega filtra. Posebej je navedeno število odprtih opravil brez odgovornega člana.
+The **Workload** view shows each member's open and completed tasks with a comparative bar chart. Completed tasks can be limited to the last **7 days**, **30 days** or **all time**. Open tasks are shown independently of this filter. The number of open unassigned tasks is listed separately.
 
-Skrbniku je na voljo še **Pametna razporeditev**:
+Admins also have access to **Smart planning**:
 
-1. V profilu nastavi vloge in razpoložljivost članov.
-2. Izbere, ali želi prerazporediti tudi že dodeljena opravila razpoložljivih članov.
-3. Klikne **Pripravi predlog** in pregleda naslove opravil ter predlagane odgovorne člane.
-4. S potrditvijo uporabi predlagane spremembe.
+1. Configure member roles and availability in Profile.
+2. Choose whether to redistribute tasks already assigned to available members.
+3. Click **Create proposal** and review task titles and proposed assignees.
+4. Confirm to apply the proposed changes.
 
-Razporejevalnik zajame odprta opravila od danes do šest dni naprej, zamujena opravila in opravila brez roka. Pri odločanju upošteva odprte obveznosti ter z manjšo utežjo opravljeno delo zadnjih 14 dni. Trenutno bolne in odsotne člane izpusti. Otrokom pripiše manjšo zmogljivost in jim dodeljuje samo kategorije Dom, Družina in Drugo.
+The planner considers open tasks from today through the next six days, overdue tasks and undated tasks. It accounts for open responsibilities and, with a lower weight, work completed in the last 14 days. Currently sick or absent members are excluded. Children receive a lower capacity and are assigned only Home, Family and Other categories.
 
-Brez izbrane prerazporeditve ohrani dodelitve razpoložljivih članov. Če za opravilo ni primernega člana, ga preskoči in to prikaže v predlogu. Ob potrjevanju preveri veljavnost predloga in vmesne spremembe.
+Without redistribution selected, assignments to available members are preserved. If no suitable member exists for a task, it is skipped and shown in the proposal. Confirmation checks the proposal's validity and any intervening changes.
 
-**Razporejanje je lokalni algoritem na strežniku. Ne uporablja zunanjega jezikovnega modela in mu ne pošilja družinskih podatkov.**
+**Planning uses a local server-side algorithm. It does not use an external language model or send family data to one.**
 
-### 10. Opomniki, obvestila in osveževanje
+### 10. Reminders, notifications and refresh
 
-Pri opravilu določiš, koliko dni pred rokom naj se pojavi med opomniki: od **0 do 30 dni**, privzeto dva dni.
+For each task, choose how many days before its deadline it should appear among reminders: **0 to 30 days**, with a default of two days.
 
-Meni **Obvestila** prikazuje nove dodelitve trenutnemu članu, bližnje oziroma zamujene roke njegovih opravil in prošnje za zamenjavo. Klik na obvestilo odpre ustrezen seznam, kljukica pa ga označi kot prebranega.
+The **Notifications** menu shows new assignments to the current member, upcoming or overdue deadlines for their tasks, and swap requests. Clicking a notification opens the relevant list; the check mark marks it as read.
 
-Prebrana obvestila se shranijo na strežniku in se sinhronizirajo med spletom, namizjem in Androidom. Strežnik pregleda dodelitve, roke in zamenjave vsakih 30 sekund. Nadzorna plošča preverja spremembe približno vsakih **8 sekund**, dokler je dokument viden.
+Read notifications are stored on the server and synchronized across web, desktop and Android. The server checks assignments, deadlines and swaps every 30 seconds. The dashboard checks for changes approximately every **8 seconds** while the document is visible.
 
-### 11. Glasovne beležke
+### 11. Voice notes
 
-Ob ustvarjanju opravila ali dogodka lahko posnameš do **30 sekund** dolgo glasovno beležko. Posnetek se shrani v MongoDB in je dostopen članom istega družinskega prostora. Predvajanje je vključeno v seznam oziroma koledarski prikaz.
+When creating a task or event, you can record a voice note up to **30 seconds** long. The recording is stored in MongoDB and is accessible to members of the same family space. Playback is available in the list or calendar view.
 
-Snemanje zahteva dovoljenje za mikrofon in varen kontekst brskalnika: **localhost ali HTTPS**. Strežnik omejuje velikost posnetka na 2 MB. Beležka je zvočna priloga; samodejnega prepisa govora v besedilo trenutno ni.
+Recording requires microphone permission and a secure browser context: **localhost or HTTPS**. The server limits recording size to 2 MB. A note is an audio attachment; automatic speech-to-text transcription is not currently available.
 
-## Primer vsakodnevne uporabe
+## An everyday example
 
-1. Ana ustvari račun in prostor »Družina Novak« ter povabi druge člane.
-2. Doda opravili »Nakup živil« in »Pospravi kuhinjo« ter dogodek »Družinsko kosilo«.
-3. Matej prevzame nakup, kuhinja pa je dodeljena Luki in nastavljena na ponavljanje z rotacijo.
-4. Luka opravilo zaključi; Sotovor ustvari naslednjo ponovitev za naslednjega člana.
-5. Če Matej ne more v trgovino, zaprosi za zamenjavo in opravilo prevzame drug član.
-6. Ana pred novim tednom preveri razporeditev dela, označi odsotnosti in potrdi ustrezen predlog dodelitev.
-7. Družina v koledarju spremlja skupne dogodke, v obvestilih pa svoje bližnje roke.
+1. Ana creates an account and a "Novak family" space, then invites the other members.
+2. She adds "Buy groceries" and "Clean the kitchen" tasks and a "Family lunch" event.
+3. Matej claims the shopping task; the kitchen task is assigned to Luka with recurrence and rotation enabled.
+4. Luka completes the task; Sotovor creates its next occurrence for the next member.
+5. If Matej cannot go shopping, he requests a swap and another member claims the task.
+6. Before the new week, Ana reviews the workload, marks absences and confirms a suitable assignment proposal.
+7. The family follows shared events in the calendar and upcoming deadlines in notifications.
 
-## Hiter zagon na Windows
+## Quick start on Windows
 
-Potrebuješ **Node.js 24 ali novejši** in **MongoDB Community Server**. Za namizno različico so potrebna še orodja, navedena v naslednjem razdelku.
+You need **Node.js 24 or newer** and **MongoDB Community Server**. The desktop version also requires the tools listed in the next section.
 
-V korenski mapi projekta zaženi:
+From the project root, run:
 
 ```powershell
 .\start.bat
 ```
 
-Lahko tudi dvoklikneš [start.bat](start.bat). Zaganjalnik ob prvem zagonu namesti pakete, zgradi React in zažene MongoDB ter Express. Ko je aplikacija pripravljena, odpre [http://127.0.0.1:3000](http://127.0.0.1:3000). Na Windows z razpoložljivim Rustom zgradi in odpre tudi namizno aplikacijo.
+You can also double-click [start.bat](start.bat). On the first run, the launcher installs packages, builds React and starts MongoDB and Express. When the app is ready, it opens [http://127.0.0.1:3000](http://127.0.0.1:3000). On Windows with Rust available, it also builds and opens the desktop app.
 
-Za samo spletno različico:
+For the web version only:
 
 ```powershell
 $env:SOTOVOR_WEB_ONLY = '1'
 .\start.bat
 ```
 
-Za ustavitev pritisni **Ctrl+C** v zagonskem oknu.
+To stop, press **Ctrl+C** in the launcher window.
 
-| Lokalni vir               | Privzeta lokacija       |
-| ------------------------- | ----------------------- |
-| Spletna aplikacija in API | `http://127.0.0.1:3000` |
-| Projektni MongoDB         | `127.0.0.1:27027`       |
-| Podatki lokalne baze      | `data/mongodb`          |
-| Dnevnik MongoDB           | `data/mongodb.log`      |
+| Local resource       | Default location        |
+| -------------------- | ----------------------- |
+| Web app and API      | `http://127.0.0.1:3000` |
+| Project MongoDB      | `127.0.0.1:27027`       |
+| Local database files | `data/mongodb`          |
+| MongoDB log          | `data/mongodb.log`      |
 
-Zaganjalnik poišče `mongod` v običajni namestitveni mapi ali sistemski poti. Za drugo lokacijo nastavi `SOTOVOR_MONGOD` na absolutno pot do `mongod.exe`.
+The launcher looks for `mongod` in the usual installation directory or on the system path. For another location, set `SOTOVOR_MONGOD` to the absolute path of `mongod.exe`.
 
-## Namizna aplikacija
+## Desktop app
 
-Windows odjemalec uporablja **Tauri 2, Rust in WebView2** ter isti React vmesnik in strežnik kot spletna aplikacija. Družinski podatki ostajajo na skupnem strežniku.
+The Windows client uses **Tauri 2, Rust and WebView2**, with the same React UI and server as the web app. Family data stays on the shared server.
 
-Za razvoj in lokalno gradnjo potrebuješ stabilni Rust za `x86_64-pc-windows-msvc`, Microsoft C++ Build Tools in WebView2, poleg Node.js in MongoDB. Prva gradnja prenese in prevede Rust odvisnosti.
+Development and local builds require stable Rust for `x86_64-pc-windows-msvc`, Microsoft C++ Build Tools and WebView2, in addition to Node.js and MongoDB. The first build downloads and compiles Rust dependencies.
 
-Za namizno okno brez spletnega zavihka zaženi:
+To open the desktop window without a browser tab, run:
 
 ```powershell
 .\start-desktop.bat
 ```
 
-**Prijava v namizno aplikacijo:**
+**Signing in to the desktop app:**
 
-1. Izberi **Prijava v brskalniku** ali **Registracija**.
-2. V privzetem brskalniku se prijavi oziroma ustvari račun.
-3. Primerjaj prikazano kodo s kodo v namiznem oknu in potrdi povezavo.
-4. Vrni se v aplikacijo, kjer se odpre tvoj prostor oziroma izbira družine.
+1. Choose **Sign in through browser** or **Register**.
+2. Sign in or create an account in your default browser.
+3. Compare the displayed code with the code in the desktop window and approve the link.
+4. Return to the app, where your space or the family selector opens.
 
-Namizna prijava se ohrani med zagoni. Brskalnik in namizna aplikacija imata ločeni seji. Za povezavo z objavljenim strežnikom uporabi `SOTOVOR_URL`.
+Desktop sign-in persists between launches. The browser and desktop app have separate sessions. Use `SOTOVOR_URL` to connect to a published server.
 
-Podrobnosti o izvršljivi datoteki, izdelavi namestitvenega paketa NSIS in objavi so v [navodilih za namizno aplikacijo](apps/desktop/README.md).
+Executable, NSIS installer and publishing details are in the [desktop app instructions](apps/desktop/README.md).
 
-## Zagon z Docker Compose
+## Running with Docker Compose
 
-Za lokalni zagon potrebuješ Docker Desktop. V korenu projekta zaženi:
+Local Docker startup requires Docker Desktop. From the project root, run:
 
 ```powershell
 Copy-Item .env.example .env
 docker compose up --build
 ```
 
-Če `.env` že obstaja, ga ohrani in po potrebi dopolni. Aplikacija je nato dosegljiva na [http://127.0.0.1:3000](http://127.0.0.1:3000).
+If `.env` already exists, keep it and add settings as needed. The app is then available at [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
-Compose zažene dve storitvi: aplikacijo z Reactom in Expressom ter uradni `mongo:8.0`. Podatki MongoDB so v imenovanem volumnu `mongodb-data`. Dostop do obeh storitev je privzeto vezan na lokalni računalnik.
+Compose starts two services: the React/Express app and the official `mongo:8.0` image. MongoDB data is stored in the named `mongodb-data` volume. Both services are bound to the local computer by default.
 
 ```powershell
-# Ustavi storitve in ohrani podatke.
+# Stop services and keep data.
 docker compose down
 
-# Ponovno zaženi v ozadju.
+# Start again in the background.
 docker compose up -d
 ```
 
-Pred prehodom na lokalni `start.bat` ustavi Compose, da isti vrati ne bosta zasedeni. Lokalni zaganjalnik in Compose uporabljata ločeni shrambi podatkov: `data/mongodb` oziroma Docker volume.
+Stop Compose before switching to local `start.bat` to avoid port conflicts. The local launcher and Compose use separate data stores: `data/mongodb` and a Docker volume, respectively.
 
-### Objava slike Docker v CI
+### Publishing the Docker image in CI
 
-GitHub Actions po uspešnem preverjanju potiska na `main` objavi sliko **`gasperkoprivc/sotovor`** z oznakama `latest` in `sha-<celoten-commit>`. CI posebej objavi označene izdaje `v*`. React in Express sta v isti sliki, saj Express streže zgrajeni frontend. MongoDB ostane ločena storitev.
+After a successful push check on `main`, GitHub Actions publishes the **`gasperkoprivc/sotovor`** image with `latest` and `sha-<full-commit>` tags. CI also publishes tagged `v*` releases. React and Express share one image because Express serves the built frontend. MongoDB remains a separate service.
 
-Za javno namestitev z domensko HTTPS povezavo, SMTP potrditvijo e-pošte in dnevnimi varnostnimi kopijami uporabi [produkcijska navodila](docs/DEPLOY.md).
+For a public installation with domain-based HTTPS, SMTP email verification and daily backups, follow the [production deployment guide](docs/DEPLOY.md).
 
-V nastavitvah GitHub Actions nastavi secrets:
+Configure these GitHub Actions secrets:
 
-| Secret               | Vsebina                                                          |
-| -------------------- | ---------------------------------------------------------------- |
-| `DOCKERHUB_USERNAME` | Uporabniško ime Docker Hub.                                      |
-| `DOCKERHUB_TOKEN`    | Dostopni token z dovoljenjem za zapis v `gasperkoprivc/sotovor`. |
+| Secret               | Value                                                           |
+| -------------------- | --------------------------------------------------------------- |
+| `DOCKERHUB_USERNAME` | Docker Hub username.                                            |
+| `DOCKERHUB_TOKEN`    | Access token with write permission for `gasperkoprivc/sotovor`. |
 
-Token sodi v GitHub secrets, ne v repozitorij ali `.env`. CI pri testiranju uporablja začasno MongoDB storitev.
+Keep the token in GitHub secrets, not in the repository or `.env`. CI uses a temporary MongoDB service for testing.
 
-## Demo družina
+## Demo family
 
-Za hitri preizkus najprej zaženi `start.bat`, nato v drugem PowerShellu iz korena projekta izvedi:
+For a quick demo, start `start.bat`, then run the following from the project root in a second PowerShell window:
 
 ```powershell
 npm.cmd run seed:demo
 Get-Content .\data\demo-password.txt
 ```
 
-Ukaz ustvari **Družina Novak · Demo**, štiri račune in **sedem opravil za vsak dan trenutnega meseca**. Za izbrani mesec:
+The command creates **Družina Novak · Demo**, four accounts and **seven tasks for every day of the current month**. To choose a month:
 
 ```powershell
 npm.cmd run seed:demo -- 2026-11
 ```
 
-November 2026 tako dobi 210 opravil. Ponovitev za isti mesec ne podvoji vnosov.
+November 2026 therefore gets 210 tasks. Repeating the command for the same month does not duplicate entries.
 
-| Oseba       | Dostop   | E-pošta za prijavo        |
-| ----------- | -------- | ------------------------- |
-| Ana Novak   | Skrbnica | `ana@demo.sotovor.test`   |
-| Matej Novak | Član     | `matej@demo.sotovor.test` |
-| Luka Novak  | Član     | `luka@demo.sotovor.test`  |
-| Ema Novak   | Članica  | `ema@demo.sotovor.test`   |
+| Person      | Access | Sign-in email             |
+| ----------- | ------ | ------------------------- |
+| Ana Novak   | Admin  | `ana@demo.sotovor.test`   |
+| Matej Novak | Member | `matej@demo.sotovor.test` |
+| Luka Novak  | Member | `luka@demo.sotovor.test`  |
+| Ema Novak   | Member | `ema@demo.sotovor.test`   |
 
-Vsi štirje računi uporabljajo skupno geslo, ki se ustvari lokalno v `data/demo-password.txt`.
+All four accounts share a password generated locally in `data/demo-password.txt`.
 
-Na naslovnici izberi **Prijava**, nato v profilu odpri **Nadzorno ploščo**. Z Ano preveri povabila, pravice in razporejanje; z drugimi računi preizkusi članski pogled. Za sočasni preizkus dveh oseb uporabi zasebno okno ali ločena profila brskalnika.
+Choose **Sign in** on the landing page, then open the **Dashboard** from Profile. Use Ana's account to check invitations, permissions and planning; use the other accounts to try the member view. To test two people simultaneously, use a private window or separate browser profiles.
 
-## Povezava z WhatsAppom
+## WhatsApp integration
 
-Integracija je neobvezna in uporablja **Meta WhatsApp Cloud API**. Običajen lokalni zagon deluje tudi brez nje.
+This optional integration uses the **Meta WhatsApp Cloud API**. Normal local startup also works without it.
 
-1. V lokalni `.env` nastavi `SOTOVOR_WHATSAPP_APP_SECRET`, `SOTOVOR_WHATSAPP_VERIFY_TOKEN` in `SOTOVOR_WHATSAPP_PHONE_ID`.
-2. V Meta nastavitvah naroči dogodek `messages` in registriraj javno dosegljiv HTTPS webhook na poti `/webhooks/whatsapp`.
-3. Če izpostavljaš le integracijo lokalnega strežnika, naj posredniški strežnik na internet posreduje samo to pot.
-4. Kot skrbnik v Sotovorovem družinskem prostoru odpri **WhatsApp** in ustvari kodo.
-5. Z izbrane telefonske številke na poslovno številko pošlji prikazano sporočilo `poveži <koda>`. Koda velja 10 minut.
+1. Set `SOTOVOR_WHATSAPP_APP_SECRET`, `SOTOVOR_WHATSAPP_VERIFY_TOKEN` and `SOTOVOR_WHATSAPP_PHONE_ID` in the local `.env`.
+2. In Meta settings, subscribe to the `messages` event and register a publicly accessible HTTPS webhook at `/webhooks/whatsapp`.
+3. If exposing only the local server's integration, configure the reverse proxy to forward only this path to the internet.
+4. As the admin, open **WhatsApp** in the Sotovor family space and generate a code.
+5. From the chosen phone number, send the displayed `poveži <code>` message to the business number. The code is valid for 10 minutes.
 
-Po povezavi so podprti naslednji vnosi:
+After pairing, these inputs are supported:
 
-| Sporočilo                             | Rezultat                                  |
-| ------------------------------------- | ----------------------------------------- |
-| `Kupi mleko in kruh`                  | Novo nedodeljeno opravilo s tem naslovom. |
-| `dogodek 2027-02-10 Družinsko kosilo` | Nov koledarski dogodek na navedeni datum. |
+| Message                           | Result                                      |
+| --------------------------------- | ------------------------------------------- |
+| `Buy milk and bread`              | A new unassigned task with that title.      |
+| `dogodek 2027-02-10 Family lunch` | A new calendar event on the specified date. |
 
-Na družinski prostor je lahko povezana ena številka. Skrbnik jo lahko odklopi v istem meniju. Strežnik preverja podpis webhooka in preprečuje, da bi ista dostavljena sporočila ustvarila podvojene vnose.
+One phone number can be linked to each family space. The admin can unlink it in the same menu. The server verifies webhook signatures and prevents duplicate entries from repeated message deliveries.
 
-## Dostop s telefona
+## Access from a phone
 
-Odzivno spletno aplikacijo lahko odpreš v telefonu v istem domačem omrežju. Ustavi prejšnji lokalni zagon in izvedi:
+You can open the responsive web app on a phone connected to the same home network. Stop the previous local instance and run:
 
 ```powershell
 $env:SOTOVOR_HOST = '0.0.0.0'
 .\start.bat
 ```
 
-Na telefonu odpri `http://<lokalni-IP-računalnika>:3000`. Lokalni naslov računalnika poišči z `ipconfig`. MongoDB ostane dostopen samo na računalniku s strežnikom.
+On the phone, open `http://<computer-local-IP>:3000`. Find the computer's local address with `ipconfig`. MongoDB remains accessible only on the server computer.
 
-Ta razvojni dostop uporablja HTTP. Za snemanje z mikrofonom na telefonu je potreben HTTPS, saj lokalni omrežni IP ni `localhost`.
+This development setup uses HTTP. Recording with a phone's microphone requires HTTPS because a local network IP is not `localhost`.
 
-## Tehnična zasnova in struktura
+## Architecture and structure
 
-Spletni in namizni odjemalec uporabljata skupni **Express API**, ki preverja sejo, članstvo in dovoljenja ter bere in zapisuje v **MongoDB**. Express hkrati streže zgrajeni React frontend. Razvojni Vite strežnik posreduje zahteve API-ja Expressu.
+The web and desktop clients share an **Express API** that validates sessions, membership and permissions, then reads and writes **MongoDB**. Express also serves the built React frontend. The Vite development server proxies API requests to Express.
 
-| Del                 | Tehnologija oziroma naloga                                                |
-| ------------------- | ------------------------------------------------------------------------- |
-| Uporabniški vmesnik | React 19, Vite 8, CSS in ikone Lucide.                                    |
-| Strežnik            | Node.js 24+, Express 5 in moduli JavaScript ESM.                          |
-| Podatki             | MongoDB in uradni gonilnik `mongodb`.                                     |
-| Namizni odjemalec   | Tauri 2, Rust in Windows WebView2.                                        |
-| Preverjanja         | Vgrajeni Node.js test runner, integracijski testi API-ja in gradnja Vite. |
-| Distribucija        | Lokalni zaganjalniki, Docker Compose in GitHub Actions.                   |
+| Component      | Technology or responsibility                                        |
+| -------------- | ------------------------------------------------------------------- |
+| User interface | React 19, Vite 8, CSS and Lucide icons.                             |
+| Server         | Node.js 24+, Express 5 and JavaScript ESM modules.                  |
+| Data           | MongoDB and the official `mongodb` driver.                          |
+| Desktop client | Tauri 2, Rust and Windows WebView2.                                 |
+| Checks         | Built-in Node.js test runner, API integration tests and Vite build. |
+| Distribution   | Local launchers, Docker Compose and GitHub Actions.                 |
 
-### Organizacija repozitorija
+### Repository organization
 
 ```text
 SOTOVOR/
 ├── frontend/
-│   └── src/                 # Strani, komponente, slog in odjemalec API-ja
+│   └── src/                 # Pages, components, styles and API client
 ├── backend/
-│   ├── src/                 # API, računi, baza in poslovna logika
-│   └── test/                # Integracijski testi
+│   ├── src/                 # API, accounts, database and business logic
+│   └── test/                # Integration tests
 ├── apps/
-│   ├── desktop/             # Tauri, Rust, prijava in navodila za Windows
-│   └── mobile/              # Izhodišče za prihodnjo aplikacijo Android
-├── scripts/                 # Lokalni zagon in ustvarjanje demo podatkov
-├── .github/workflows/       # CI in objava slike Docker
-├── .env.example             # Primer nastavitev okolja
-├── Dockerfile               # Skupna slika frontenda in API-ja
-├── compose.yaml             # Aplikacija in MongoDB za lokalni Docker
-├── start.bat                # Običajni zagon na Windows
-├── start-desktop.bat        # Zagon namizne aplikacije
-└── package.json             # npm workspaces in skupni ukazi
+│   ├── desktop/             # Tauri, Rust, sign-in and Windows instructions
+│   └── mobile/              # Starting point for a future Android app
+├── scripts/                 # Local startup and demo data generation
+├── .github/workflows/       # CI and Docker image publishing
+├── .env.example             # Example environment settings
+├── Dockerfile               # Shared frontend and API image
+├── compose.yaml             # App and MongoDB for local Docker
+├── start.bat                # Standard Windows startup
+├── start-desktop.bat        # Desktop app startup
+└── package.json             # npm workspaces and shared commands
 ```
 
-Ključne datoteke za nadaljnji razvoj:
+Key files for further development:
 
-| Datoteka                                              | Namen                                                         |
+| File                                                  | Purpose                                                       |
 | ----------------------------------------------------- | ------------------------------------------------------------- |
-| [App.jsx](frontend/src/App.jsx)                       | Navigacija, stanje prostora, obrazci in povezovanje pogledov. |
-| [Overview.jsx](frontend/src/Overview.jsx)             | Kazalniki, opravila, tedenski koledar in obremenitev.         |
-| [MonthCalendar.jsx](frontend/src/MonthCalendar.jsx)   | Mesečni koledar in podrobnosti dneva.                         |
-| [FamilySettings.jsx](frontend/src/FamilySettings.jsx) | Člani, dovoljenja, vloge in odsotnosti.                       |
-| [SmartPlanning.jsx](frontend/src/SmartPlanning.jsx)   | Prikaz in potrditev predloga dodelitev.                       |
-| [api.js](backend/src/api.js)                          | API družin, opravil, dogodkov, pravic in glasovnih beležk.    |
-| [planning.js](backend/src/planning.js)                | Lokalni algoritem razporejanja.                               |
-| [recurrence.js](backend/src/recurrence.js)            | Naslednje ponovitve in rotacija.                              |
-| [desktop-auth.js](backend/src/desktop-auth.js)        | Povezava namizne prijave z brskalniško potrditvijo.           |
-| [whatsapp.js](backend/src/whatsapp.js)                | Preverjanje in obdelava webhookov WhatsApp.                   |
+| [App.jsx](frontend/src/App.jsx)                       | Navigation, space state, forms and connecting views.          |
+| [Overview.jsx](frontend/src/Overview.jsx)             | Metrics, tasks, weekly calendar and workload.                 |
+| [MonthCalendar.jsx](frontend/src/MonthCalendar.jsx)   | Monthly calendar and day details.                             |
+| [FamilySettings.jsx](frontend/src/FamilySettings.jsx) | Members, permissions, roles and absences.                     |
+| [SmartPlanning.jsx](frontend/src/SmartPlanning.jsx)   | Assignment proposal preview and confirmation.                 |
+| [api.js](backend/src/api.js)                          | API for families, tasks, events, permissions and voice notes. |
+| [planning.js](backend/src/planning.js)                | Local planning algorithm.                                     |
+| [recurrence.js](backend/src/recurrence.js)            | Next occurrences and rotation.                                |
+| [desktop-auth.js](backend/src/desktop-auth.js)        | Linking desktop sign-in with browser approval.                |
+| [whatsapp.js](backend/src/whatsapp.js)                | WhatsApp webhook verification and processing.                 |
 
-### Shranjevanje in zaščita dostopa
+### Storage and access protection
 
-Podatki računov, družin, vnosov in glasovnih beležk se shranjujejo v MongoDB. Gesla se obdelujejo s `scrypt`; brskalniške seje uporabljajo piškotek `HttpOnly` in `SameSite=Strict`. Dostop do podatkov ter glasovnih prilog je omejen na ustrezni prostor, dovoljenja pa preverja strežnik.
+Account, family, entry and voice-note data is stored in MongoDB. Passwords are processed with `scrypt`; browser sessions use an `HttpOnly`, `SameSite=Strict` cookie. Data and voice attachments are restricted to the appropriate space, with permissions enforced by the server.
 
-Urejanje in odstranjevanje vnosov uporabljata preverjanje različic. Ponavljajoča opravila imajo mehanizem za dokončanje ustvarjanja naslednjega vnosa tudi po prekinjenem zapisu. Namizna prijava zahteva brskalniško potrditev, preverjanje povezave in enkratni prevzem prijave.
+Editing and removing entries uses version checks. Recurring tasks have a recovery mechanism to finish creating the next entry after an interrupted write. Desktop sign-in requires browser approval, link verification and a one-time sign-in exchange.
 
-## Nastavitve okolja
+## Environment settings
 
-Osnovni primer je v [.env.example](.env.example). Za začasno nastavitev v PowerShellu uporabi `$env:IME = 'vrednost'` pred zagonom.
+The basic example is [.env.example](.env.example). For a temporary PowerShell setting, use `$env:NAME = 'value'` before startup.
 
-| Spremenljivka                   | Namen / privzeta vrednost                                                                                                    |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `SOTOVOR_HOST`                  | Naslov poslušanja API-ja; lokalno `127.0.0.1`.                                                                               |
-| `SOTOVOR_PORT`                  | Vrata spletne aplikacije; `3000`.                                                                                            |
-| `SOTOVOR_MONGO_PORT`            | Vrata projektnega lokalnega MongoDB; `27027`.                                                                                |
-| `SOTOVOR_MONGOD`                | Izbirna absolutna pot do programa `mongod.exe`.                                                                              |
-| `SOTOVOR_MONGO_URI`             | Povezava z MongoDB za neposredni zagon API-ja, teste in orodja; lokalni zaganjalnik API-ju nastavi svojo projektno povezavo. |
-| `SOTOVOR_DB`                    | Ime podatkovne baze; `sotovor`.                                                                                              |
-| `SOTOVOR_NO_BROWSER`            | `1` prepreči samodejno odpiranje brskalnika.                                                                                 |
-| `SOTOVOR_WEB_ONLY`              | `1` izbere samo spletni zagon prek `start.bat`.                                                                              |
-| `SOTOVOR_URL`                   | Osnovni naslov strežnika za namizni odjemalec.                                                                               |
-| `SOTOVOR_WHATSAPP_APP_SECRET`   | Meta App Secret za preverjanje podpisa webhooka.                                                                             |
-| `SOTOVOR_WHATSAPP_VERIFY_TOKEN` | Izbrana vrednost za preverjanje webhooka pri povezavi z Meto.                                                                |
-| `SOTOVOR_WHATSAPP_PHONE_ID`     | ID poslovne številke WhatsApp.                                                                                               |
+| Variable                        | Purpose / default                                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `SOTOVOR_HOST`                  | API listening address; locally `127.0.0.1`.                                                                                    |
+| `SOTOVOR_PORT`                  | Web app port; `3000`.                                                                                                          |
+| `SOTOVOR_MONGO_PORT`            | Project-local MongoDB port; `27027`.                                                                                           |
+| `SOTOVOR_MONGOD`                | Optional absolute path to `mongod.exe`.                                                                                        |
+| `SOTOVOR_MONGO_URI`             | MongoDB connection for direct API startup, tests and tools; the local launcher supplies its own project connection to the API. |
+| `SOTOVOR_DB`                    | Database name; `sotovor`.                                                                                                      |
+| `SOTOVOR_NO_BROWSER`            | `1` prevents automatic browser opening.                                                                                        |
+| `SOTOVOR_WEB_ONLY`              | `1` selects web-only startup through `start.bat`.                                                                              |
+| `SOTOVOR_URL`                   | Base server URL for the desktop client.                                                                                        |
+| `SOTOVOR_WHATSAPP_APP_SECRET`   | Meta App Secret for webhook signature verification.                                                                            |
+| `SOTOVOR_WHATSAPP_VERIFY_TOKEN` | Chosen value for webhook verification when connecting to Meta.                                                                 |
+| `SOTOVOR_WHATSAPP_PHONE_ID`     | WhatsApp business phone number ID.                                                                                             |
 
-## Razvoj in preverjanja
+## Development and checks
 
-Projekt uporablja npm workspaces za `frontend` in `backend`. Za razvoj Reacta pusti lokalni strežnik zagnan, nato v drugem terminalu izvedi:
+The project uses npm workspaces for `frontend` and `backend`. To develop React, keep the local server running and execute this in a second terminal:
 
 ```powershell
 npm.cmd run dev --workspace frontend
 ```
 
-Vite posreduje API klice Expressu na vratih 3000. Če uporabljaš druga vrata, nastavi `SOTOVOR_PORT` tudi v terminalu za Vite. Po spremembi zaklenjenih odvisnosti iz korena projekta zaženi `npm.cmd ci`.
+Vite proxies API calls to Express on port 3000. If using another port, also set `SOTOVOR_PORT` in the Vite terminal. After changes to locked dependencies, run `npm.cmd ci` from the project root.
 
-### Lokalni ukazi
+### Local commands
 
-| Ukaz                                   | Namen                                          |
+| Command                                | Purpose                                        |
 | -------------------------------------- | ---------------------------------------------- |
-| `npm.cmd ci`                           | Namestitev odvisnosti iz zaklenjenih različic. |
-| `npm.cmd run build`                    | Produkcijska gradnja React vmesnika.           |
-| `npm.cmd test`                         | Integracijski testi API-ja z MongoDB.          |
-| `npm.cmd run seed:demo`                | Priprava demo družine za trenutni mesec.       |
-| `npm.cmd run dev --workspace frontend` | Vite razvojni strežnik.                        |
+| `npm.cmd ci`                           | Install dependencies from locked versions.     |
+| `npm.cmd run build`                    | Production build of the React UI.              |
+| `npm.cmd test`                         | MongoDB-backed API integration tests.          |
+| `npm.cmd run seed:demo`                | Prepare the demo family for the current month. |
+| `npm.cmd run dev --workspace frontend` | Vite development server.                       |
 
-V Windows PowerShellu uporabi `npm.cmd`, če pravilnik izvajanja blokira `npm.ps1`.
+Use `npm.cmd` in Windows PowerShell if the execution policy blocks `npm.ps1`.
 
-Za preverjanje sintakse in gradnje:
+To check syntax and build:
 
 ```powershell
 Get-ChildItem backend/src/*.js, scripts/*.js | ForEach-Object { node --check $_.FullName }
@@ -460,28 +460,28 @@ npm.cmd test
 npm.cmd run build
 ```
 
-Za teste mora biti MongoDB dosegljiv na `127.0.0.1:27027` oziroma na naslovu v `SOTOVOR_MONGO_URI`.
+Tests require MongoDB at `127.0.0.1:27027` or the address in `SOTOVOR_MONGO_URI`.
 
-### Kaj preverjajo testi in CI
+### What tests and CI cover
 
-Integracijski testi pokrivajo prevzem opravil, izolacijo prostorov, članstvo in pravice, ponavljanje z rotacijo, dostop do glasovnih beležk, podpisane WhatsApp vnose, zaščito pred zastarelim urejanjem, pametno razporejanje in namizno prijavo.
+Integration tests cover task claiming, space isolation, membership and permissions, recurrence with rotation, voice-note access, signed WhatsApp input, stale-edit protection, smart planning and desktop sign-in.
 
-GitHub Actions preveri ESLint, Prettier, API, OpenAPI, Kotlin in odvisnosti. Playwright in Androidov emulator uporabljata začasen Docker Compose sklad s testnim poštnim nabiralnikom. Ukaza za lokalni pregled sta `npm run lint` in `npm run format:check`. Podroben postopek je v [seznamu za javno objavo](docs/LAUNCH_CHECKLIST.md).
+GitHub Actions checks ESLint, Prettier, the API, OpenAPI, Kotlin and dependencies. Playwright and the Android emulator use a temporary Docker Compose stack with a test mail sink. Local review commands are `npm run lint` and `npm run format:check`. See the [launch checklist](docs/LAUNCH_CHECKLIST.md) for the detailed procedure.
 
-## Trenutne meje in nadaljnji razvoj
+## Current limitations and further development
 
-Ta README opisuje trenutno implementirano stanje. Pri nadaljnjem razvoju so pomembne naslednje meje:
+This README describes the currently implemented state. The following limitations matter for further development:
 
-- **Android:** [projekt za Android Studio](apps/android/README.md) lahko zgradiš lokalno ali uporabiš debug APK iz GitHub Actions. Za javno objavo in preverjene povezave sta potrebna podpis in nastavljena javna domena.
-- **Povezava s strežnikom:** spletni in namizni odjemalec uporabljata skupni API in MongoDB; samostojno delo brez povezave ni implementirano.
-- **Obvestila:** Androidova potisna obvestila potrebujejo nastavljen Firebase in uporabnikovo dovoljenje.
-- **Osveževanje:** nakupovalni seznam uporablja SSE, ostali pogledi pa periodično osveževanje.
-- **Koledar:** podpira datume, čas, trajanje in zasebno naročnino ICS. Uporabnik potrdi dodajanje posameznega dogodka v koledar telefona.
-- **Ponavljanje:** podpira interval v dnevih, izbrane dneve tedna in dan meseca. Naslednji vnos nastane ob zaključku opravila.
-- **Glas:** prepis je privzeto izklopljen in potrebuje nastavljenega ponudnika ter izrecno uporabnikovo dejanje.
-- **Pametna razporeditev:** lokalni deterministični algoritem upošteva ocenjene minute, vloge in razpoložljivost.
-- **WhatsApp:** potrebuje nastavitev Meta Cloud API in javni HTTPS webhook; podpira tudi ukaz `nakup mleko`.
+- **Android:** build the [Android Studio project](apps/android/README.md) locally or use the debug APK from GitHub Actions. Public distribution and verified links require signing and a configured public domain.
+- **Server connection:** the web and desktop clients share an API and MongoDB; standalone offline operation is not implemented.
+- **Notifications:** Android push notifications require Firebase configuration and user permission.
+- **Refresh:** the shopping list uses SSE; other views use periodic refresh.
+- **Calendar:** supports dates, times, durations and a private ICS subscription. Users confirm adding individual events to their phone's calendar.
+- **Recurrence:** supports intervals in days, selected weekdays and a day of the month. The next entry is created when a task is completed.
+- **Voice:** transcription is off by default and requires a configured provider and an explicit user action.
+- **Smart planning:** the local deterministic algorithm accounts for estimated minutes, roles and availability.
+- **WhatsApp:** requires Meta Cloud API configuration and a public HTTPS webhook; it also supports the `nakup mleko` command.
 
-Spletna in namizna različica že uporabljata isto osnovo, zato se nadaljnje funkcionalnosti lahko razvijajo na skupnem API-ju in uporabniškem vmesniku.
+The web and desktop versions already share the same foundation, so further features can be developed through the shared API and user interface.
 
-[Podpora funkcij po odjemalcih](docs/FEATURE_PARITY.md) · [Androidov ročni preizkus](docs/ANDROID_MANUAL_TEST.md) · [Meritve](docs/PERF.md) · [Osnutki za Google Play](docs/PLAY_STORE_CHECKLIST.md)
+[Client feature parity](docs/FEATURE_PARITY.md) · [Android manual testing](docs/ANDROID_MANUAL_TEST.md) · [Performance measurements](docs/PERF.md) · [Google Play drafts](docs/PLAY_STORE_CHECKLIST.md)
