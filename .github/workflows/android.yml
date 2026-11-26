@@ -35,7 +35,7 @@ jobs:
       - name: Install SDK 36
         run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
       - uses: gradle/actions/setup-gradle@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with: { node-version: '24' }
       - name: Kotlin static checks
         run: ./gradlew ktlintCheck detekt
