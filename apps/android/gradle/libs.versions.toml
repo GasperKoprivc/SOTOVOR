@@ -39,7 +39,7 @@ firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
 junit = "junit:junit:4.13.2"
 mockk = "io.mockk:mockk:1.14.6"
 turbine = "app.cash.turbine:turbine:1.2.1"
-coroutines-test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2"
+coroutines-test = "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0"
 compose-test = { module = "androidx.compose.ui:ui-test-junit4" }
 compose-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 android-test-runner = "androidx.test:runner:1.7.0"
