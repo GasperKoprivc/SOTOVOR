@@ -145,7 +145,7 @@ jobs:
           log-accepted-android-sdk-licenses: false
       - name: Install Android SDK 36
         run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Build Android APK and AAB
         env:
           ANDROID_KEYSTORE_BASE64: ${{ github.ref_type == 'tag' && secrets.ANDROID_KEYSTORE_BASE64 || '' }}

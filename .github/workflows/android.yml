@@ -34,7 +34,7 @@ jobs:
           log-accepted-android-sdk-licenses: false
       - name: Install SDK 36
         run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - uses: actions/setup-node@v4
         with: { node-version: '24' }
       - name: Kotlin static checks
